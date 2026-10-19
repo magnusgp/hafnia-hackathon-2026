@@ -1,0 +1,11 @@
+You are reviewing one continuous clip from a fixed security camera. Evaluate only what the video visibly supports.
+
+Question: Does the clip directly show a person causing new physical damage to a window or other property?
+
+Return exactly this format, with short factual descriptions:
+DECISION: <one of H26_DAMAGE_EVENT, H26_NO_DAMAGE_EVENT, H26_UNCERTAIN>
+OBSERVATIONS: <what is visibly present and happens>
+VISIBLE_CHANGE: <specific before/after change, or none established>
+LIMITATIONS: <anything that cannot be established from the clip>
+
+Use H26_DAMAGE_EVENT only when the damaging action AND resulting new damage are both directly visible. Use H26_NO_DAMAGE_EVENT only when it is clear no damaging event occurred in the clip. Otherwise choose H26_UNCERTAIN. Do not infer criminal intent or identify the person. Do not assume damage from the camera name, and do not claim something happened outside the visible footage. Never repeat or mention another decision token except on the DECISION line.
