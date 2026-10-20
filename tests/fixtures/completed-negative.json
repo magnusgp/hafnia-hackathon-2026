@@ -1,0 +1,5 @@
+{
+  "Id": "fixture-negative-001",
+  "Progress": "Completed",
+  "Response": "DECISION: H26_NO_DAMAGE_EVENT\nOBSERVATIONS: An empty scene remains unchanged throughout the clip.\nVISIBLE_CHANGE: none established\nLIMITATIONS: Only this interval is assessed."
+}

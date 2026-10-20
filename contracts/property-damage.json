@@ -1,0 +1,26 @@
+{
+  "id": "property-damage",
+  "version": "1",
+  "name": "Visually observed property damage",
+  "camera_names": [
+    "vandalism"
+  ],
+  "expected_condition": "No person visibly causes new physical damage to property.",
+  "assessment_prompt": "You are reviewing one continuous clip from a fixed security camera. Evaluate only what the video visibly supports.\n\nQuestion: Does the clip directly show a person causing new physical damage to a window or other property?\n\nReturn exactly this format, with short factual descriptions:\nDECISION: <one of H26_DAMAGE_EVENT, H26_NO_DAMAGE_EVENT, H26_UNCERTAIN>\nOBSERVATIONS: <what is visibly present and happens>\nVISIBLE_CHANGE: <specific before/after change, or none established>\nLIMITATIONS: <anything that cannot be established from the clip>\n\nUse H26_DAMAGE_EVENT only when the damaging action AND resulting new damage are both directly visible. Use H26_NO_DAMAGE_EVENT only when it is clear no damaging event occurred in the clip. Otherwise choose H26_UNCERTAIN. Do not infer criminal intent or identify the person. Do not assume damage from the camera name, and do not claim something happened outside the visible footage. Never repeat or mention another decision token except on the DECISION line.",
+  "gateway_prompt_title": "H26 Incident Review v0.1",
+  "outcomes": {
+    "H26_DAMAGE_EVENT": "positive",
+    "H26_NO_DAMAGE_EVENT": "negative",
+    "H26_UNCERTAIN": "uncertain"
+  },
+  "response_fields": [
+    "OBSERVATIONS",
+    "VISIBLE_CHANGE",
+    "LIMITATIONS"
+  ],
+  "positive_evidence_fields": [
+    "OBSERVATIONS",
+    "VISIBLE_CHANGE"
+  ],
+  "operator_action": "Review the source footage and verify the observed physical damage. Do not infer intent or physical resolution."
+}

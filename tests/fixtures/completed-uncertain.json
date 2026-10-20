@@ -1,0 +1,5 @@
+{
+  "Id": "fixture-uncertain-001",
+  "Progress": "Completed",
+  "Response": "DECISION: H26_UNCERTAIN\nOBSERVATIONS: A person passes in front of the window, occluding it.\nVISIBLE_CHANGE: unknown\nLIMITATIONS: The pane is obscured during the action."
+}

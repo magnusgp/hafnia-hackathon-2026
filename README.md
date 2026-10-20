@@ -1,4 +1,17 @@
-# Hafnia Hackathon 2026 — incident review integration v0.1
+# Hafnia Hackathon 2026 — Scene Contracts v0.2
+
+Scene Contracts adds versioned conditions, conservative assessment, a SQLite evidence ledger and read-only XProtect REST integration. **v0.2 is offline-tested; its REST integration still needs Windows VM verification.** See [architecture, VM commands and verification gates](docs/scene-contracts-v02.md).
+
+```powershell
+uv sync --frozen
+uv run --frozen python -m unittest discover -s tests -v
+uv run --frozen python scene26.py contracts
+uv run --frozen python scene26.py cases
+```
+
+Python is pinned to 3.11 with uv. No third-party Python dependencies. Existing v0.1 commands below are preserved.
+
+## Validated v0.1 integration
 
 This is a small Python *gateway integration proof*, not a product commitment. Its purpose is to verify `XProtect video → Hafnia VLM → decision token → gateway rule → XProtect analytics event → Smart Client Alarm Manager`.
 

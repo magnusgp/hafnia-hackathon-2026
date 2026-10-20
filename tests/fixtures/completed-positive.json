@@ -1,0 +1,5 @@
+{
+  "Id": "fixture-positive-001",
+  "Progress": "Completed",
+  "Response": "DECISION: H26_DAMAGE_EVENT\nOBSERVATIONS: A person strikes the window with an object.\nVISIBLE_CHANGE: The intact pane fractures immediately after the strike.\nLIMITATIONS: Intent and identity cannot be established."
+}

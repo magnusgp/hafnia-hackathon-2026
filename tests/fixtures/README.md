@@ -1,0 +1,1 @@
+These are synthetic, sanitized protocol examples matching the validated v0.1 response format, not captured VM output. IDs are fixture identifiers; no real camera identities, times, credentials or tokens are included. Add operator-sanitized real gateway response envelopes after VM verification, recording their provenance without sensitive values. Tests must remain fully offline.

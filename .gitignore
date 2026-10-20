@@ -1,6 +1,1 @@
-runs/
-.env
-*.local.json
 __pycache__/
-.pytest_cache/
-.venv/

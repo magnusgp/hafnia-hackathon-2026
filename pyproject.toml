@@ -1,0 +1,9 @@
+[project]
+name = "hafnia-scene-contracts"
+version = "0.2.0"
+description = "Recorded scene assessment and operator evidence cases"
+requires-python = ">=3.11,<3.12"
+dependencies = []
+
+[tool.uv]
+package = false
