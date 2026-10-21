@@ -68,6 +68,18 @@ class DinoExtractor:
         tokens = torch.nn.functional.normalize(tokens.float(), dim=-1)
         return tokens.reshape(b, th // 14, tw // 14, -1).half().cpu().numpy()
 
+    def embed(self, frames: np.ndarray) -> np.ndarray:
+        """uint8 [B,H,W,3] -> global descriptor [B,768]: CLS token ++ mean patch token (unnormalised)."""
+        torch = self.torch
+        b, h, w, _ = frames.shape
+        th, tw = input_size(h, w)
+        x = torch.from_numpy(frames).permute(0, 3, 1, 2).float() / 255.0
+        x = torch.nn.functional.interpolate(x, size=(th, tw), mode="bilinear", antialias=True, align_corners=False)
+        x = (x - torch.from_numpy(_MEAN)[:, None, None]) / torch.from_numpy(_STD)[:, None, None]
+        with torch.inference_mode():
+            hidden = self.model(pixel_values=x.to(self.device, self.dtype)).last_hidden_state.float()
+        return torch.cat([hidden[:, 0], hidden[:, 1:].mean(1)], dim=1).cpu().numpy()
+
 
 def motion_signal(prev: np.ndarray, cur: np.ndarray) -> tuple[float, float]:
     """Mean and 99th-percentile absolute grey-level difference between consecutive frames."""

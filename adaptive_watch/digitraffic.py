@@ -108,10 +108,11 @@ def collect_once(cams: list[dict], last_negative: dict[str, float], rng: random.
             continue
         try:
             body, headers = _get(f"https://weathercam.digitraffic.fi/{c['preset']}.jpg", raw=True)
-        except Exception:  # network errors are counted, never fatal; the next cycle tries again
+            # No capture time means no label alignment: skip the image, not the cycle.
+            captured = parsedate_to_datetime(headers["Last-Modified"]).astimezone(timezone.utc)
+        except Exception:  # network/header errors are counted, never fatal; the next cycle tries again
             stats["errors"] += 1
             continue
-        captured = parsedate_to_datetime(headers["Last-Modified"]).astimezone(timezone.utc)
         skew = abs((captured - _ts(measured)).total_seconds())
         if skew > MAX_SKEW_S:
             stats["skipped_skew"] += 1
