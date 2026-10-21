@@ -5,5 +5,27 @@ description = "Recorded scene assessment and operator evidence cases"
 requires-python = ">=3.11,<3.12"
 dependencies = []
 
+# Adaptive Watch ML experiments. Opt in with `uv sync --group ml`; the
+# gateway/XProtect tooling above stays dependency-free.
+[dependency-groups]
+ml = [
+    "numpy==2.1.3",
+    "pillow==11.0.0",
+    "scikit-learn==1.5.2",
+    "scipy==1.14.1",
+    "torch==2.5.1",
+    "transformers==4.46.3",
+    "av==13.1.0",
+]
+
 [tool.uv]
 package = false
+
+# CUDA 12.1 wheels on the Windows T4 VM; default (CPU/MPS) wheels elsewhere.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu121", marker = "sys_platform == 'win32'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
