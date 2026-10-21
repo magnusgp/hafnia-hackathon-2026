@@ -14,6 +14,10 @@ import numpy as np
 
 from .datasets import Sequence
 
+# DINOv2's positional-embedding interpolation (bicubic) has no MPS kernel; it is tiny,
+# so let it fall back to CPU on Apple silicon. No effect on CUDA or CPU.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
 DINO_MODEL = "facebook/dinov2-small"
 DINO_REVISION = "ed25f3a31f01632728cabb09d1542f84ab7b0056"  # Apache-2.0
 INPUT_HEIGHT = 224  # 16 patches of 14 px; width keeps the camera's aspect ratio
@@ -55,11 +59,12 @@ class DinoExtractor:
         torch = self.torch
         b, h, w, _ = frames.shape
         th, tw = input_size(h, w)
-        x = torch.from_numpy(frames).to(self.device).permute(0, 3, 1, 2).float() / 255.0
+        # Resize on CPU on every device: identical preprocessing, and MPS lacks antialiasing.
+        x = torch.from_numpy(frames).permute(0, 3, 1, 2).float() / 255.0
         x = torch.nn.functional.interpolate(x, size=(th, tw), mode="bilinear", antialias=True, align_corners=False)
-        x = (x - torch.from_numpy(_MEAN).to(x)[:, None, None]) / torch.from_numpy(_STD).to(x)[:, None, None]
+        x = (x - torch.from_numpy(_MEAN)[:, None, None]) / torch.from_numpy(_STD)[:, None, None]
         with torch.inference_mode():
-            tokens = self.model(pixel_values=x.to(self.dtype)).last_hidden_state[:, 1:]
+            tokens = self.model(pixel_values=x.to(self.device, self.dtype)).last_hidden_state[:, 1:]
         tokens = torch.nn.functional.normalize(tokens.float(), dim=-1)
         return tokens.reshape(b, th // 14, tw // 14, -1).half().cpu().numpy()
 
