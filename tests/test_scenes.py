@@ -239,7 +239,8 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(item['Progress'], 'Completed')
             self.assertEqual([c.args[0] for c in client.request.call_args_list], ['POST', 'GET'])
             payload = client.request.call_args_list[0].args[2]
-            self.assertEqual(payload['PromptId'], 'prompt-id')
+            self.assertNotIn('PromptId', payload)
+            client.exact_item.assert_not_called()
             self.assertEqual(payload['Prompt'], contract['assessment_prompt'])
             manifest = json.loads(next(Path(tmp).glob('*.json')).read_text())
             self.assertEqual(manifest['result'], fixture())
@@ -262,16 +263,17 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(manifest['result']['Id'], 'recover-this-id')
             self.assertEqual(len(client.request.call_args_list), 2)
 
-    def test_prompt_mismatch_never_submits(self):
+    def test_saved_prompt_is_never_resolved_by_scene_contracts(self):
         contract = load_contracts()[0]
         with tempfile.TemporaryDirectory() as tmp:
             args = Mock(camera='vandalism', apply=True, output_dir=tmp, max_wait=10)
             client = Mock()
             client.exact_item.return_value = {'Id': 'prompt-id', 'Text': 'different'}
+            client.request.return_value = fixture()
             with patch('scene26.Gateway', return_value=client), redirect_stdout(io.StringIO()):
-                with self.assertRaises(ValueError):
-                    scene26.evaluate(args, contract, CAMERA, START, END)
-            client.request.assert_not_called()
+                scene26.evaluate(args, contract, CAMERA, START, END)
+            client.exact_item.assert_not_called()
+            self.assertNotIn('PromptId', client.request.call_args.args[2])
 
     def test_existing_summary_uses_only_get(self):
         with tempfile.TemporaryDirectory() as tmp:

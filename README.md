@@ -1,6 +1,10 @@
-# Hafnia Hackathon 2026 — Scene Contracts v0.2
+# Hafnia Hackathon 2026 — Scene Contracts
 
-Scene Contracts adds versioned conditions, conservative assessment, a SQLite evidence ledger and read-only XProtect REST integration. **v0.2 is offline-tested; its REST integration still needs Windows VM verification.** See [architecture, VM commands and verification gates](docs/scene-contracts-v02.md).
+Give every security camera an operational responsibility. The local browser console provides fixed-template contracts, exact request previews, single recorded-interval inferences, persistent evidence cases and operator reviews. It works with saved Hafnia results while the gateway is unavailable.
+
+**Start here:** [operator MVP setup, current limits, rebuild steps, real-data acceptance checklist and demonstration script](docs/operator-mvp.md). Run `.\scripts\start_scene_contracts.ps1` on p022, then open `http://127.0.0.1:8086` in the VM browser. Export the camera catalog first as described in the guide.
+
+New Scene Contracts evaluations send inline prompts **without the legacy PromptId**. The unchanged v0.1 route below remains a separate regression demonstration; its gateway keyword rule acts before Python validation. REST event writes and a second real roadway analysis remain VM acceptance gates. The [v0.2 architecture document](docs/scene-contracts-v02.md) is retained as historical context.
 
 ```powershell
 uv sync --frozen
@@ -55,7 +59,7 @@ Avoid using motion detection as a webhook input. A later iteration may use a man
 ## What isn't implemented yet
 
 - Reading cameras by name directly from the XProtect REST API: use MilestonePSTools to resolve GUIDs in this first iteration.
-- Tracking cases over time, controlled alarm acknowledgements, policy engine, UI/overlay, learned CV models, or webhook origin automation.
+- Controlled native alarm acknowledgements, continuous monitoring, learned CV models, or webhook origin automation. Cases, a fixed policy template and the local operator UI are implemented.
 - Enforcing format semantics inside gateway rules: the gateway checks a whole-word keyword anywhere in the response. Python also checks a strict decision line, but the gateway does not use Python's validation; **never auto-close alarms on this basis**.
 
 ## Reproducibility

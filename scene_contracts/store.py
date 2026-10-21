@@ -32,6 +32,11 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.execute('PRAGMA foreign_keys=ON')
         self.db.executescript('''
+            CREATE TABLE IF NOT EXISTS operator_contracts (
+                id TEXT PRIMARY KEY, contract_json TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS requests (
+                id TEXT PRIMARY KEY, status TEXT NOT NULL, metadata TEXT NOT NULL,
+                summary_id TEXT, message TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS cases (
                 id INTEGER PRIMARY KEY, camera_id TEXT NOT NULL, contract_id TEXT NOT NULL,
                 state TEXT NOT NULL CHECK(state IN ('observed','review_required','reviewed')),

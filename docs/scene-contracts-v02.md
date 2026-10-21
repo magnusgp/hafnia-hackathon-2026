@@ -1,5 +1,7 @@
 # Scene Contracts v0.2
 
+> Historical v0.2 behavior below. The [operator MVP](operator-mvp.md) supersedes its submission behavior: `scene26.py evaluate` now always uses an inline prompt without `PromptId`; only `hack26.py run` retains the legacy saved-prompt route. The new UI uses the same isolation. Existing contracts/evidence snapshots remain unchanged.
+
 v0.1's Windows native round-trip is validated. v0.2 is implemented and tested offline on Mac; **its XProtect REST integration has not been tested on the Windows VM**. Do not change services, firewall, Tailscale, alarm definitions or the saved gateway rule to try it.
 
 ## Architecture and data

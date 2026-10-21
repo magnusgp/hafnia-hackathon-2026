@@ -15,6 +15,7 @@ from scene_contracts.contracts import DEFAULT_CONTRACTS, load_contracts
 from scene_contracts.gateway import Gateway, GatewayError, video_uri
 from scene_contracts.store import Store, interval
 from scene_contracts.xprotect import XProtect, XProtectError, associate
+from scene_contracts.contracts import inference_request
 
 
 def show(value):
@@ -47,19 +48,13 @@ def evaluate(args, contract, camera_id, start, end):
     show({'contract': contract['id'], 'version': contract['version'], 'camera': args.camera,
           'video_uri': uri, 'prompt': contract['assessment_prompt'], 'apply': args.apply})
     if not args.apply:
-        print('DRY RUN: no network access or VLM call. Add --apply to submit once; the existing gateway rule may create an alarm.')
+        print('DRY RUN: no network access or VLM call. Add --apply to submit once with an inline prompt (no legacy PromptId).')
         return None
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)
     client = Gateway()
     client.authenticate()
-    title = contract.get('gateway_prompt_title')
-    prompt = client.exact_item('Prompts', 'Title', title) if title else None
-    if title and (not prompt or prompt.get('Text', '').strip() != contract['assessment_prompt'].strip()):
-        raise ValueError('Saved gateway prompt missing or differs from contract; no inference submitted')
-    payload = {'Prompt': contract['assessment_prompt'], 'VideoUris': [uri]}
-    if prompt:
-        payload['PromptId'] = prompt['Id']
+    payload = inference_request(contract, uri)
     item = client.request('POST', '/api/Summaries', payload)
     if not isinstance(item, dict) or not isinstance(item.get('Id'), str) or not item['Id']:
         raise GatewayError('Submission returned no summary ID; do not retry automatically')

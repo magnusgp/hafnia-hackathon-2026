@@ -1,1 +1,15 @@
 __pycache__/
+.venv/
+runs/
+*.local.json
+*.sqlite*
+*.db
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.mp4
+*.avi
+*.mkv
+.DS_Store
