@@ -1,5 +1,7 @@
 # Hafnia Hackathon 2026 — Scene Contracts
 
+> **Adaptive Watch (branch `feat/adaptive-watch`):** camera-specific visual novelty as a pre-filter for Hafnia. Checkpoint A (ML feasibility) — [report](docs/adaptive-watch/checkpoint-a.md), [pre-registration](docs/adaptive-watch/preregistration.md). The ML code is opt-in: `uv sync --group ml`, then `uv run --group ml python aw.py --help`.
+
 Give every security camera an operational responsibility. The local browser console provides fixed-template contracts, exact request previews, single recorded-interval inferences, persistent evidence cases and operator reviews. It works with saved Hafnia results while the gateway is unavailable.
 
 **Start here:** [operator MVP setup, current limits, rebuild steps, real-data acceptance checklist and demonstration script](docs/operator-mvp.md). Run `.\scripts\start_scene_contracts.ps1` on p022, then open `http://127.0.0.1:8086` in the VM browser. Export the camera catalog first as described in the guide.

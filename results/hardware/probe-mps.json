@@ -1,0 +1,10 @@
+{
+  "python": "3.11.13",
+  "torch": "2.5.1",
+  "cuda": null,
+  "cuda_available": false,
+  "nvidia_smi": null,
+  "dino_ms_per_frame_640x360": 14.931878124480136,
+  "novelty_ms_per_frame_1340_memory_frames": 49.97843293676851,
+  "device": "mps"
+}

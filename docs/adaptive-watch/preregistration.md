@@ -83,4 +83,6 @@ No VLM accuracy is reported: no Hafnia request is part of Checkpoint A.
 
 ## Deviations
 
-None yet.
+None from the registered protocol. Each final test ran once with the committed configuration.
+Added afterwards and labelled post-hoc in the report: per-clip diagnosis, patch-novelty overlays,
+and a clip-level bootstrap (`scripts/adaptive_watch/bootstrap.py`).
