@@ -1,0 +1,7 @@
+{
+  "note": "Exact Analytics Event names configured in Management Client > Rules and Events > Analytics Events. Only validated positive evidence is mapped. Add a row only after the event exists in XProtect; unmapped outcomes are never sent.",
+  "events": [
+    {"contract": "property-damage", "outcome": "positive", "message": "H26 Visually Observed Damage"},
+    {"contract": "scene-property-damage", "outcome": "positive", "message": "H26 Visually Observed Damage"}
+  ]
+}

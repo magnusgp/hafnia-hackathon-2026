@@ -16,6 +16,7 @@ from scene_contracts.gateway import Gateway, GatewayError, video_uri
 from scene_contracts.store import Store, interval
 from scene_contracts.xprotect import XProtect, XProtectError, associate
 from scene_contracts.contracts import inference_request
+from scene_contracts import analytics_event as ae
 
 
 def show(value):
@@ -123,10 +124,104 @@ def parser():
             cmd.add_argument('--alarm-name', required=True)
             cmd.add_argument('--alarm-id', help='Explicit operator-confirmed alarm GUID')
             cmd.add_argument('--note')
+    ev = sub.add_parser('analytics-event', help='Native XML analytics event: preview (default), send, status, reconcile')
+    ev.add_argument('action', choices=['preview', 'send', 'status', 'reconcile'])
+    ev.add_argument('--summary-id', help='Observation already ingested in the local store')
+    ev.add_argument('--manual-test', action='store_true', help='Operator integration test, not tied to an observation')
+    ev.add_argument('--test-id', help='Unique ID for a --manual-test event (dispatch key input)')
+    ev.add_argument('--message', help='--manual-test only: exact Analytics Event name')
+    ev.add_argument('--at', help='--manual-test only: event UTC time, fixed so preview and send bytes match')
+    ev.add_argument('--camera', help='--manual-test only: exact camera name')
+    ev.add_argument('--camera-map', help='Local JSON export of Get-VmsCamera Name/Id')
+    ev.add_argument('--server-id', help='Optional FQID ServerId GUID (only if the Event Server requires it)')
+    ev.add_argument('--event-map', default=str(ae.DEFAULT_EVENT_MAP))
+    ev.add_argument('--target', help='Event Server analytics receive host:port, e.g. 127.0.0.1:9090')
+    ev.add_argument('--approve', help='First 12+ hex digits of the previewed payload SHA-256')
+    ev.add_argument('--reattempt', action='store_true', help='One new attempt after a definite rejection')
+    ev.add_argument('--dispatch-key')
+    ev.add_argument('--sent', choices=['yes', 'no'], help='reconcile: operator-verified delivery outcome')
+    ev.add_argument('--note')
     return p
 
 
+def analytics_payload(args, store):
+    """Build the exact event bytes from a validated observation (or an explicit manual test)."""
+    if args.manual_test:
+        if args.summary_id or not (args.test_id and args.message and args.camera and args.camera_map and args.at):
+            raise ValueError('--manual-test needs --test-id, --message, --camera, --camera-map and --at (no --summary-id)')
+        rows = json.loads(Path(args.camera_map).read_text(encoding='utf-8-sig'))
+        rows = [rows] if isinstance(rows, dict) else rows
+        matches = [r for r in rows if isinstance(r, dict) and r.get('Name') == args.camera]
+        if len(matches) != 1:
+            raise ValueError('Camera name must resolve to exactly one camera')
+        camera_id = str(UUID(matches[0]['Id']))
+        key = ae.dispatch_key('manual-test:' + args.test_id, 'manual-test', args.message)
+        data = ae.build(args.message, camera_id, args.at, key, server_id=args.server_id,
+                        description=f'INTEGRATION TEST {args.test_id}: operator-initiated, no observed condition.')
+        return key, data, {'kind': 'manual-test', 'camera': args.camera, 'message': args.message}
+    if not args.summary_id:
+        raise ValueError('Provide --summary-id or --manual-test')
+    row = store.db.execute('SELECT * FROM observations WHERE summary_id=?', (args.summary_id,)).fetchone()
+    if row is None:
+        raise ValueError('Unknown summary ID; ingest the observation first')
+    if row['outcome'] != 'positive':
+        raise ValueError(f"Observation outcome is {row['outcome']}; only validated positive evidence is sent")
+    message = ae.resolve_message(ae.load_event_map(args.event_map), row['contract_id'], row['outcome'])
+    assessment = json.loads(row['assessment'])
+    contract = json.loads(row['contract_json'])
+    evidence = '; '.join(f'{k}: {assessment["evidence"][k]}' for k in contract['positive_evidence_fields'])
+    key = ae.dispatch_key(row['summary_id'], row['contract_id'], message)
+    data = ae.build(message, row['camera_id'], row['clip_start'], key, server_id=args.server_id,
+                    start=row['clip_start'], end=row['clip_end'],
+                    description=f"{contract['name']} ({assessment['decision']}). {evidence}. Operator verification required.")
+    return key, data, {'kind': 'observation', 'summary_id': row['summary_id'], 'camera': row['camera_name'],
+                       'message': message, 'clip': [row['clip_start'], row['clip_end']]}
+
+
+def analytics(args):
+    store = Store(args.db)
+    ledger = ae.Ledger(args.db)
+    try:
+        if args.action in {'status', 'reconcile'}:
+            if not args.dispatch_key:
+                raise ValueError('--dispatch-key is required')
+            if args.action == 'reconcile':
+                if not args.sent:
+                    raise ValueError('--sent yes|no is required')
+                ledger.reconcile(args.dispatch_key, args.sent == 'yes', args.note)
+            show([{k: v for k, v in r.items() if k != 'payload'} for r in ledger.attempts(args.dispatch_key)])
+            return
+        key, data, meta = analytics_payload(args, store)
+        digest = hashlib.sha256(data).hexdigest()
+        if args.action == 'preview':
+            print(data.decode('utf-8'))
+            show({**meta, 'dispatch_key': key, 'payload_sha256': digest, 'bytes': len(data),
+                  'previous_attempts': [{k: r[k] for k in ('attempt', 'state', 'http_status', 'response')}
+                                        for r in ledger.attempts(key)]})
+            print('DRY RUN: nothing was sent. To send exactly once after review:\n'
+                  f'  analytics-event send ... --target 127.0.0.1:9090 --approve {digest[:12]}')
+            return
+        if not args.target:
+            raise ValueError('--target host:port is required to send')
+        result = ae.send(ledger, key, data, args.target, args.approve, args.reattempt)
+        show({k: v for k, v in result.items() if k != 'payload'})
+        if result['state'] == 'accepted':
+            print('Event Server accepted the event (empty 200). This is NOT yet a verified alarm: '
+                  'check Smart Client Alarm Manager for the alarm on this camera.')
+        elif result['state'] == 'uncertain':
+            print('UNCERTAIN outcome. Do not resend. Check Smart Client / Event Server log, then run '
+                  'analytics-event reconcile --dispatch-key ... --sent yes|no --note "..."')
+        else:
+            print('NOT delivered as an alarm-capable event (see state/response). Fix the mapping before any reattempt.')
+    finally:
+        ledger.close()
+        store.close()
+
+
 def run(args):
+    if args.command == 'analytics-event':
+        analytics(args)
+        return
     if args.command == 'contracts':
         show(load_contracts(args.contracts_dir))
         return
@@ -196,7 +291,7 @@ def main():
     args = parser().parse_args()
     try:
         run(args)
-    except (GatewayError, XProtectError) as exc:
+    except (GatewayError, XProtectError, ae.AnalyticsEventError) as exc:
         print(f'ERROR: {exc}', file=sys.stderr)
         return 1
     except (ValueError, OSError, sqlite3.Error, KeyError, TypeError):

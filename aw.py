@@ -5,7 +5,8 @@
     uv run --group ml python aw.py evaluate ped2 --phase val    # chooses + freezes config
     git add results/ped2/config.json && git commit ...           # pre-registration lock
     uv run --group ml python aw.py evaluate ped2 --phase test   # once, frozen config
-    uv run --group ml python aw.py probe                        # hardware / latency
+    uv run --group ml python aw.py probe --require-cuda --save  # hardware / latency (T4)
+    uv run --group ml python aw.py footage --manifest runs/xprotect/<clip>/manifest.json --save
 """
 
 from __future__ import annotations
@@ -203,37 +204,91 @@ def cmd_probe(args) -> None:
 
     import torch
 
+    from adaptive_watch import footage
+
     info = {"python": platform.python_version(), "torch": torch.__version__, "cuda": torch.version.cuda,
             "cuda_available": torch.cuda.is_available()}
     if torch.cuda.is_available():
         p = torch.cuda.get_device_properties(0)
-        info.update(gpu=p.name, vram_gb=round(p.total_memory / 2**30, 2), capability=f"{p.major}.{p.minor}")
+        free, total = torch.cuda.mem_get_info()
+        info.update(gpu=p.name, vram_gb=round(p.total_memory / 2**30, 2), capability=f"{p.major}.{p.minor}",
+                    vram_free_gb_before=round(free / 2**30, 2), cudnn=torch.backends.cudnn.version())
     try:
         info["nvidia_smi"] = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,driver_version,memory.total,memory.used", "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=20).stdout.strip()
+            ["nvidia-smi", "--query-gpu=name,driver_version,memory.total,memory.used,utilization.gpu",
+             "--format=csv,noheader"], capture_output=True, text=True, timeout=20).stdout.strip()
     except (FileNotFoundError, subprocess.TimeoutExpired):
         info["nvidia_smi"] = None
     ext = features.DinoExtractor()
-    frames = np.random.default_rng(0).integers(0, 255, (args.batch, 360, 640, 3), dtype=np.uint8)
-    ext(frames)  # warm-up
-    features._sync(ext.device)
-    t0 = time.perf_counter()
-    for _ in range(args.iters):
-        grids = ext(frames)
-    features._sync(ext.device)
-    info["dino_ms_per_frame_640x360"] = 1000 * (time.perf_counter() - t0) / (args.iters * args.batch)
+    info["device"] = ext.device.type
+    info["model_dtype"] = str(ext.dtype)
+    if args.require_cuda and ext.device.type != "cuda":
+        print(json.dumps(info, indent=2))
+        sys.exit("FAIL: CUDA not used (CPU/MPS fallback). Check `nvidia-smi` and that torch is the cu121 wheel.")
+    rng = np.random.default_rng(0)
+    for res in args.resolutions.split(","):
+        w, h = (int(v) for v in res.split("x"))
+        frames = rng.integers(0, 255, (args.batch, h, w, 3), dtype=np.uint8)
+        ext(frames)  # warm-up
+        features._sync(ext.device)
+        t0 = time.perf_counter()
+        for _ in range(args.iters):
+            grids = ext(frames)
+        features._sync(ext.device)
+        info[f"dino_ms_per_frame_{w}x{h}"] = 1000 * (time.perf_counter() - t0) / (args.iters * args.batch)
     memory = novelty.PatchMemory([np.repeat(grids, 1340 // args.batch * novelty.MEMORY_STRIDE, axis=0)])
     _, dt = novelty.timed_patch_scores(memory, np.repeat(grids, 4, axis=0))
     info["novelty_ms_per_frame_1340_memory_frames"] = 1000 * dt / (4 * args.batch)
+    # Synthetic: no decode/acquisition cost. `aw.py footage` measures real recordings end to end.
+    for res in args.resolutions.split(","):
+        info[f"capacity_model_only_{res}"] = footage.capacity(
+            info[f"dino_ms_per_frame_{res}"] + info["novelty_ms_per_frame_1340_memory_frames"])
     if ext.device.type == "cuda":
         info["peak_vram_gb"] = round(torch.cuda.max_memory_allocated() / 2**30, 2)
-    info["device"] = ext.device.type
     print(json.dumps(info, indent=2))
     if args.save:
         out = RESULTS / "hardware"
         out.mkdir(parents=True, exist_ok=True)
         (out / f"probe-{ext.device.type}.json").write_text(json.dumps(info, indent=2) + "\n")
+
+
+def cmd_footage(args) -> None:
+    """Real recorded footage -> tensors: exact timestamps, decode/model latency, throughput."""
+    from adaptive_watch import footage
+
+    t_total = time.perf_counter()
+    if args.manifest:
+        frames, meta = footage.snapshot_frames(Path(args.manifest))
+        m = meta["manifest"]
+        source = {"path": "Get-Snapshot JPEG", "camera_name": m.get("camera_name"),
+                  "acquisition_s": m.get("elapsed_s"), "pstools_version": m.get("pstools_version")}
+        start, end = footage.parse_utc(m["requested_start_utc"]), footage.parse_utc(m["requested_end_utc"])
+    else:
+        start = footage.parse_utc(args.start)
+        frames, meta = footage.mkv_frames(Path(args.mkv), start, args.sample_fps)
+        source = {"path": "MKV export", "codec": meta["codec"], "decoded_frames": meta["decoded_frames"],
+                  "sample_fps": args.sample_fps, "acquisition_s": args.acquisition_s}
+        end = frames[-1].timestamp
+    if not frames:
+        sys.exit("No frames decoded.")
+    report = {"source": source,
+              "timestamps": footage.timestamp_report([f.timestamp for f in frames], start, end),
+              "decode_ms_per_frame": 1000 * meta["decode_s"] / len(frames)}
+    report["model"] = footage.process(frames, batch=args.batch)
+    report["end_to_end_wall_s"] = time.perf_counter() - t_total
+    per_frame = report["decode_ms_per_frame"] + report["model"]["dino_ms_per_frame"] + \
+        report["model"]["novelty_ms_per_frame"]
+    report["decode_plus_model_ms_per_frame"] = per_frame
+    report["capacity_excluding_acquisition"] = footage.capacity(per_frame)
+    if source.get("acquisition_s"):
+        report["acquisition_ms_per_frame"] = 1000 * source["acquisition_s"] / len(frames)
+        report["capacity_including_acquisition"] = footage.capacity(per_frame + report["acquisition_ms_per_frame"])
+    print(json.dumps(report, indent=2))
+    if args.save:
+        out = RESULTS / "hardware"
+        out.mkdir(parents=True, exist_ok=True)
+        tag = "snapshot" if args.manifest else "mkv"
+        (out / f"footage-{tag}-{report['model']['device']}.json").write_text(json.dumps(report, indent=2) + "\n")
 
 
 def main() -> None:
@@ -252,7 +307,23 @@ def main() -> None:
     pr.add_argument("--batch", type=int, default=16)
     pr.add_argument("--iters", type=int, default=5)
     pr.add_argument("--save", action="store_true")
+    pr.add_argument("--resolutions", default="640x360,1920x1080")
+    pr.add_argument("--require-cuda", action="store_true", help="exit non-zero on CPU/MPS fallback")
+    fo = sub.add_parser("footage", help="process real recorded XProtect footage (read-only, local files)")
+    src = fo.add_mutually_exclusive_group(required=True)
+    src.add_argument("--manifest", help="manifest.json written by scripts/acquire_recording.ps1")
+    src.add_argument("--mkv", help="MKV exported by scripts/acquire_recording.ps1 -Mkv")
+    fo.add_argument("--start", help="UTC start of the MKV export (required with --mkv)")
+    fo.add_argument("--sample-fps", type=float, default=2.0, help="MKV only: frames kept per second")
+    fo.add_argument("--acquisition-s", type=float, help="MKV only: Start-Export wall time printed by the script")
+    fo.add_argument("--batch", type=int, default=16)
+    fo.add_argument("--save", action="store_true")
+    dc = sub.add_parser("dt-collect", help="poll Finnish road weather cameras + visibility sensors (CC BY 4.0)")
+    dc.add_argument("--hours", type=float, default=240.0)
+    dc.add_argument("--interval", type=int, default=600)
     a = p.parse_args()
+    if a.cmd == "footage" and a.mkv and not a.start:
+        p.error("--mkv requires --start (UTC export start)")
     if a.cmd == "fetch":
         datasets.fetch(a.dataset)
     elif a.cmd == "extract":
@@ -261,6 +332,12 @@ def main() -> None:
         features.extract(a.dataset, datasets.sequences(a.dataset, names), force=a.force)
     elif a.cmd == "evaluate":
         cmd_evaluate(a)
+    elif a.cmd == "footage":
+        cmd_footage(a)
+    elif a.cmd == "dt-collect":
+        from adaptive_watch import digitraffic
+
+        digitraffic.collect(a.hours, a.interval)
     else:
         cmd_probe(a)
 
