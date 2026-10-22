@@ -14,6 +14,7 @@ param(
     [string]$OutRoot = 'runs\xprotect'
 )
 $ErrorActionPreference = 'Stop'
+Import-Module MilestonePSTools
 Connect-Vms -ServerAddress 'http://localhost' -AcceptEula | Out-Null
 $pstools = (Get-Module MilestonePSTools).Version.ToString()
 
@@ -47,6 +48,7 @@ if ($Start) {
 $startUtc = [DateTime]::SpecifyKind($startUtc, [DateTimeKind]::Utc)
 $endUtc = $startUtc.AddSeconds($Seconds)
 $covered = @($seqs | Where-Object { (AsUtc $_.EventSequence.StartDateTime) -le $startUtc -and (AsUtc $_.EventSequence.EndDateTime) -ge $endUtc })
+if ($covered.Count -eq 0) { throw 'Requested interval is not covered by one recording sequence.' }
 Write-Host "Requested: $(Iso $startUtc) -> $(Iso $endUtc)  (inside one recording sequence: $($covered.Count -gt 0))"
 
 $dir = Join-Path $OutRoot ($CameraName + '_' + $startUtc.ToString('yyyyMMddTHHmmssZ'))
@@ -68,7 +70,8 @@ $i = 0
 foreach ($s in $snaps) {
     $name = 'frame_{0:D4}.jpg' -f $i
     [IO.File]::WriteAllBytes((Join-Path (Resolve-Path $dir) $name), $s.Bytes)
-    $frames += [ordered]@{ file = $name; timestamp_utc = (Iso (AsUtc $s.DateTime)); bytes = $s.Bytes.Length }
+    $frames += [ordered]@{ file = $name; timestamp_utc = (Iso (AsUtc $s.DateTime)); bytes = $s.Bytes.Length
+        sha256 = (Get-FileHash -LiteralPath (Join-Path $dir $name) -Algorithm SHA256).Hash.ToLower() }
     $i++
 }
 $manifest = [ordered]@{
@@ -76,6 +79,9 @@ $manifest = [ordered]@{
     requested_start_utc = (Iso $startUtc); requested_end_utc = (Iso $endUtc); interval_s = $Interval
     elapsed_s = $sw.Elapsed.TotalSeconds; pstools_version = $pstools
     timestamp_kind_reported = $first.DateTime.Kind.ToString(); frames = $frames
+    recording_sequences = @($covered | ForEach-Object { [ordered]@{
+        start_utc = (Iso (AsUtc $_.EventSequence.StartDateTime)); end_utc = (Iso (AsUtc $_.EventSequence.EndDateTime))
+    } })
 }
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $dir 'manifest.json')
 Write-Host ("Get-Snapshot: {0} frames in {1:N2} s ({2:N1} ms/frame). First {3}, last {4}. Kind reported: {5}" -f
@@ -90,6 +96,13 @@ if ($Mkv) {
     $sw.Stop()
     $file = Get-ChildItem -Path $dir -Recurse -Filter *.mkv | Select-Object -First 1
     if (-not $file) { throw 'Start-Export finished but no .mkv was found in the output folder.' }
+    $manifest.mkv_export = [ordered]@{
+        file = $file.Name; sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLower()
+        requested_start_utc = (Iso $startUtc); requested_end_utc = (Iso $endUtc)
+        elapsed_s = $sw.Elapsed.TotalSeconds
+        timestamp_basis = 'Requested start plus stream PTS is an assumption; verify against recorded snapshots before joining evidence.'
+    }
+    $manifest | ConvertTo-Json -Depth 7 | Set-Content -Encoding UTF8 (Join-Path $dir 'manifest.json')
     Write-Host ("MKV export: {0} ({1:N0} KB) in {2:N2} s" -f $file.FullName, ($file.Length / 1KB), $sw.Elapsed.TotalSeconds)
-    Write-Host "Next: uv run --group ml python aw.py footage --mkv `"$($file.FullName)`" --start $(Iso $startUtc) --sample-fps 2 --acquisition-s $([Math]::Round($sw.Elapsed.TotalSeconds, 2)) --save"
+    Write-Host "Next: on Linux, python aw.py footage --mkv `"$($file.FullName)`" --start $(Iso $startUtc) --end $(Iso $endUtc) --sample-fps 2 --acquisition-s $([Math]::Round($sw.Elapsed.TotalSeconds, 2)) --save"
 }

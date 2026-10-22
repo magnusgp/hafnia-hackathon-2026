@@ -268,7 +268,7 @@ def cmd_footage(args) -> None:
         frames, meta = footage.mkv_frames(Path(args.mkv), start, args.sample_fps)
         source = {"path": "MKV export", "codec": meta["codec"], "decoded_frames": meta["decoded_frames"],
                   "sample_fps": args.sample_fps, "acquisition_s": args.acquisition_s}
-        end = frames[-1].timestamp
+        end = footage.parse_utc(args.end) if args.end else None
     if not frames:
         sys.exit("No frames decoded.")
     report = {"source": source,
@@ -314,6 +314,7 @@ def main() -> None:
     src.add_argument("--manifest", help="manifest.json written by scripts/acquire_recording.ps1")
     src.add_argument("--mkv", help="MKV exported by scripts/acquire_recording.ps1 -Mkv")
     fo.add_argument("--start", help="UTC start of the MKV export (required with --mkv)")
+    fo.add_argument("--end", help="Actual requested UTC export end; never substitute the last decoded frame")
     fo.add_argument("--sample-fps", type=float, default=2.0, help="MKV only: frames kept per second")
     fo.add_argument("--acquisition-s", type=float, help="MKV only: Start-Export wall time printed by the script")
     fo.add_argument("--batch", type=int, default=16)

@@ -1,0 +1,2 @@
+# The golden XML is a byte-level protocol fixture, including LF line endings.
+tests/fixtures/analytics-event-golden.xml text eol=lf

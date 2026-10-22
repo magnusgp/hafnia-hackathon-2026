@@ -71,7 +71,8 @@ class Store:
             raise ValueError('Result is still pending; ingest a terminal result later')
         result = assess(contract, item)
         snapshot = json.dumps(contract, sort_keys=True)
-        raw = json.dumps({k: item.get(k) for k in ('Id', 'Progress', 'Response')}, sort_keys=True)
+        raw_fields = ('Id', 'Progress', 'Response', 'LastError') if 'LastError' in item else ('Id', 'Progress', 'Response')
+        raw = json.dumps({k: item.get(k) for k in raw_fields}, sort_keys=True)
         now = datetime.now(timezone.utc).isoformat()
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')

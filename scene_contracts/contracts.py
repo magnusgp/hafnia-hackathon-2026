@@ -34,6 +34,8 @@ def load_contracts(directory=DEFAULT_CONTRACTS):
 
 def assess(contract, item):
     uncertain = {'outcome': 'uncertain', 'decision': None, 'evidence': {}, 'reason': 'Malformed or incomplete response'}
+    if item.get('Progress') == 'Failed':
+        return {**uncertain, 'reason': 'Gateway analysis failed: ' + str(item.get('LastError') or 'No failure detail supplied')}
     if item.get('Progress') != 'Completed' or not isinstance(item.get('Response'), str):
         return uncertain
     fields = {}

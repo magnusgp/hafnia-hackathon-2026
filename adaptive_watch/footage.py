@@ -50,7 +50,7 @@ def load_manifest(path: Path) -> dict:
     return m
 
 
-def timestamp_report(times: list[datetime], start: datetime, end: datetime) -> dict:
+def timestamp_report(times: list[datetime], start: datetime, end: datetime | None) -> dict:
     """Exact first/last timestamps, spacing and duplicates: shows what the server actually returned."""
     gaps = np.diff([t.timestamp() for t in times]) if len(times) > 1 else np.array([])
     return {
@@ -58,8 +58,10 @@ def timestamp_report(times: list[datetime], start: datetime, end: datetime) -> d
         "first_utc": times[0].isoformat().replace("+00:00", "Z"),
         "last_utc": times[-1].isoformat().replace("+00:00", "Z"),
         "requested_start_utc": start.isoformat().replace("+00:00", "Z"),
-        "requested_end_utc": end.isoformat().replace("+00:00", "Z"),
-        "outside_requested_range": sum(not (start <= t <= end) for t in times),
+        "requested_end_utc": end.isoformat().replace("+00:00", "Z") if end else None,
+        "end_provenance": "caller_supplied_requested_end" if end else "unknown_requested_end",
+        "decoded_last_minus_requested_end_s": (times[-1]-end).total_seconds() if end else None,
+        "outside_requested_range": sum(not (start <= t <= end) for t in times) if end else None,
         "duplicate_timestamps": int((gaps == 0).sum()),
         "spacing_s": None if not len(gaps) else {
             "min": float(gaps.min()), "median": float(np.median(gaps)), "max": float(gaps.max())},
