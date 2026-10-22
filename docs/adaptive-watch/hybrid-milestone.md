@@ -172,3 +172,15 @@ Linux reproduction (from an isolated checkout, using the existing ML environment
 
 All ML execution stays on Linux. No frontend, services, network settings, accounts,
 new alarm definitions, or default XProtect rules were changed.
+
+## Publication status
+
+Implementation commit `1163ddf` and the report are committed locally on
+`feat/adaptive-watch`. Publication was attempted through Windows Git, Linux Git
+and the connected GitHub integration. Both Git clients lack noninteractive HTTPS
+credentials; the integration returned HTTP 403, `Resource not accessible by
+integration`, on tree creation. No remote branch was changed. This is a publishing
+permission/authentication boundary, not an Auto-review denial. A private Git
+bundle is retained under `runs/hybrid/milestone.bundle` and on Linux. Once Git
+authentication is available, `git push origin feat/adaptive-watch` publishes the
+local commits; do not merge into `main`.
