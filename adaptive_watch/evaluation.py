@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import math
+import re
 from pathlib import Path
 import sqlite3
 import time
@@ -28,25 +30,59 @@ def prompt(scene, version):
             '"limitations" (what this clip cannot establish). Do not infer intent or facts outside the clip.')
 
 
+PARSER_VERSION = '2'
+
+
 def parse_result(item):
-    if item.get('Progress') != 'Completed':
-        return dict(outcome='uncertain', reason=item.get('LastError') or 'Gateway analysis did not complete', analysis_success=False)
+    """Parse a complete response; record every compatibility normalization."""
+    base = dict(outcome='uncertain', analysis_success=False, parser_version=PARSER_VERSION)
+    if not isinstance(item, dict):
+        return dict(base, category='transport_failure', reason='Invalid gateway envelope')
+    state = item.get('Progress')
+    if state != 'Completed':
+        return dict(base, category='gateway_inference_failure' if state == 'Failed' else 'pending',
+                    reason=item.get('LastError') or 'Gateway analysis did not complete')
+    base['analysis_success'] = True  # gateway completion, not schema validity
+    raw = item.get('Response')
+    if raw is None or isinstance(raw, str) and not raw.strip():
+        return dict(base, category='empty_response', reason='Completed request has no response text')
+    if not isinstance(raw, str):
+        return dict(base, category='malformed_format', reason='Response must be text')
+    text = raw.strip()
+    normalizations = []
+    fence = re.fullmatch(r'```(?:json)?\s*\n(.*?)\n```', text, re.DOTALL)
+    if fence:
+        text = fence[1]
+        normalizations.append('markdown_json_fence')
+    # Recover only an unquoted numeric seconds interval in the timing field.
+    # No substring JSON extraction, decision rewriting, or arbitrary JSON repair.
+    interval = r'("timing"\s*:\s*)([0-9]+(?:\.[0-9]+)? to [0-9]+(?:\.[0-9]+)? seconds)(\s*,)'
+    text, count = re.subn(interval, lambda m: m[1] + json.dumps(m[2]) + m[3], text)
+    if count:
+        normalizations.append('unquoted_timing_interval')
     try:
         def unique(pairs):
             obj = {}
-            for k,v in pairs:
+            for k, v in pairs:
                 if k in obj:
-                    raise ValueError('Duplicate response key')
+                    raise ValueError('Duplicate response key: ' + k)
                 obj[k] = v
             return obj
-        value = json.loads(item.get('Response', ''),object_pairs_hook=unique)
-        if (not isinstance(value,dict) or set(value) != {'outcome','evidence','timing','limitations'}
+        value = json.loads(text, object_pairs_hook=unique)
+        if (not isinstance(value, dict) or set(value) != {'outcome','evidence','timing','limitations'}
+                or not isinstance(value['outcome'], str)
                 or value['outcome'] not in {'supported','not_observed','uncertain'}
-                or any(not isinstance(value[k],str) or not value[k].strip() for k in ('evidence','timing','limitations'))):
+                or any(not isinstance(value[k], str) or not value[k].strip() for k in ('evidence','limitations'))):
             raise ValueError('Invalid response schema')
-        return dict(value,analysis_success=True,reason='Model assessment only; operator verification required')
-    except (ValueError,TypeError):
-        return dict(outcome='uncertain',reason='Completed gateway request; response failed strict parsing',analysis_success=True)
+        timing = value['timing']
+        if not (isinstance(timing, str) and timing.strip() or
+                type(timing) in (int, float) and math.isfinite(timing) and timing >= 0):
+            raise ValueError('Invalid timing: expected text or finite nonnegative seconds')
+        return dict(value, analysis_success=True, parser_version=PARSER_VERSION,
+                    category='valid_model_decision', normalizations=normalizations,
+                    reason='Model assessment only; operator verification required')
+    except (ValueError, TypeError) as exc:
+        return dict(base, category='malformed_format', normalizations=normalizations, reason=str(exc))
 
 
 class Evaluation:
