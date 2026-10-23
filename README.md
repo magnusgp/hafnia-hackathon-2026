@@ -1,11 +1,17 @@
 # Hafnia Hackathon 2026 — Scene Contracts
 
-**Current direction: Adaptive Watch — hybrid, evidence-grounded XProtect video intelligence.**
-The [initial hybrid milestone](docs/adaptive-watch/hybrid-milestone.md) records the
-railway CUDA detection/tracking proof of concept, guarded six-scene evaluation
-runner, provenance fixes, and remaining authentication-dependent Hafnia evaluation.
-The older console and experiment descriptions below are historical work; no new
-frontend is being built. The fog classifier failed its preregistered superiority gate.
+**Adaptive Watch: evidence-grounded qualification of persistent sidewalk objects.**
+The current product combines Linux CUDA object localization and bounded sampled
+stationarity with Hafnia interpretation of the same XProtect recording. Operators
+review private frame playback, camera-specific pedestrian zones, actual model
+responses and an exact native-event preview before any dispatch.
+
+Start with the [setup and architecture guide](docs/adaptive-watch/setup.md) and
+[polygon checkpoint, exact XProtect configuration and demo script](docs/adaptive-watch/final-integration.md).
+The saved scooter/bin evidence is retrospective. Geometry approval, the dedicated
+alarm configuration and a fresh native sidewalk alarm remain live acceptance gates.
+No independent accuracy improvement has been established. Earlier experiments and
+the Scene Contracts console below are historical; the fog improvement gate failed.
 
 > **Adaptive Watch (branch `feat/adaptive-watch`):** camera-specific visual novelty as a pre-filter for Hafnia. Checkpoint A (ML feasibility) — [report](docs/adaptive-watch/checkpoint-a.md), [pre-registration](docs/adaptive-watch/preregistration.md). **ML recovery sprint (2026-10-21):** [handoff](docs/sprint-handoff.md) — T4/XProtect runbook, visibility task ([results](docs/visibility/results.md)), native analytics XML events. The ML code is opt-in: `uv sync --group ml`, then `uv run --group ml python aw.py --help`.
 

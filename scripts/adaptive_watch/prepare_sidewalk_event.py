@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from scene_contracts.analytics_event import build, dispatch_key
+from adaptive_watch.incident import proposal as make_proposal
 
 
 def main():
@@ -22,20 +22,12 @@ def main():
     runs=e['measurements']['qualifying_runs']
     if not runs:
         raise ValueError('No measured review candidate')
-    message='Adaptive Watch Sidewalk Obstruction'
-    # Both prompt variants map to one recording episode, not two events.
-    episode=e['camera_guid'].lower()+'|'+ '|'.join(e['interval_utc'])
-    key=dispatch_key(episode,'sidewalk-obstruction-v1',message)
-    description=('PROPOSAL ONLY; operator must review recording and approve walkway. '
-                 f"Sampled stationary object {runs[0]['sampled_span_s']}s; box overlap only. "
-                 'No clearance or intent inferred. Repaired Hafnia evidence is retrospective only.')
-    payload=build(message,e['camera_guid'],runs[0]['first'],key,description=description,
-                  start=e['interval_utc'][0],end=e['interval_utc'][1],vendor='Adaptive Watch')
+    payload, event_metadata = make_proposal(e)
     a.out.mkdir(parents=True,exist_ok=True)
     (a.out/'proposal.xml').write_bytes(payload)
-    proposal=dict(message=message,camera=matches[0],dispatch_key=key,
+    proposal=dict(**event_metadata,camera=matches[0],
         evidence_sha256=hashlib.sha256(a.evidence.read_bytes()).hexdigest(),
-        xml_sha256=hashlib.sha256(payload).hexdigest(),definition_created=False,event_sent=False,
+        definition_created=False,
         approval_required=['Walkway polygon and observed object overlap',
             'Distinct Analytics Event definition and camera-scoped alarm definition',
             'Operator-reviewed incident eligibility despite retrospective malformed response',
@@ -46,7 +38,7 @@ def main():
             'Rebuild preview after any change; approve SHA-256, claim persistent SQLite dispatch row before POST.',
             'Use existing dispatch tracking and duplicate suppression; no automatic retry.',
             'Reconcile uncertain outcomes; verify actual camera/event/native alarm in Smart Client.'],
-        automatic_dispatch_eligible=False)
+        )
     (a.out/'proposal.json').write_text(json.dumps(proposal,indent=2))
     print('Prepared private proposal only; SHA-256',proposal['xml_sha256'])
 
