@@ -4,12 +4,15 @@ import json
 import importlib.util
 from pathlib import Path
 import tempfile
+import shutil
+from adaptive_watch.capabilities import camera_config
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
-from adaptive_watch.incident import SCOOTER, assemble, box_overlap, proposal, sha, spatial_config
+from adaptive_watch.incident import assemble, box_overlap, proposal, sha, spatial_config
+SCOOTER = camera_config('escooter_left_across_sidewalk')['camera_guid']
 from scene_contracts.gateway import video_uri
 from scene_contracts.analytics_event import NS, validate
 
@@ -28,9 +31,11 @@ class IncidentTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Approval requires'):
                 spatial_config(p,SCOOTER)
 
-    def fixture(self, root, normalized=False):
+    def fixture(self, root, normalized=False, camera_name='escooter_left_across_sidewalk'):
+        capability = camera_config(camera_name)
+        camera = capability['camera_guid']
         start='2026-10-23T10:00:00.000Z';end='2026-10-23T10:00:15.000Z'
-        scene=dict(name='escooter_left_across_sidewalk',start=start,end=end,walkway=[[0,0],[1,0],[1,1],[0,1]])
+        scene=dict(name=camera_name,queries=capability['queries'],start=start,end=end,walkway=[[0,0],[1,0],[1,1],[0,1]])
         obs=[];frames=[]
         for n in range(6):
             name=f'{n}.jpg';(root/name).write_bytes(f'frame {n}'.encode())
@@ -38,18 +43,18 @@ class IncidentTests(unittest.TestCase):
             frames.append(dict(file=name,timestamp_utc=timestamp,sha256=sha(root/name)))
             box=[.1,.1,.3,.3] if n==0 else [.4,.4,.6,.6]
             obs.append(dict(frames[-1],objects=[dict(box=box,box_walkway_overlap=1,score=.3)]))
-        m=dict(camera_id=SCOOTER,camera_name=scene['name'],requested_start_utc=start,requested_end_utc=end,frames=frames)
+        m=dict(camera_id=camera,camera_name=scene['name'],requested_start_utc=start,requested_end_utc=end,frames=frames)
         manifest=root/'manifest.json';manifest.write_text(json.dumps(m))
         cv=dict(scene=scene,manifest_sha256=sha(manifest),source_manifest=m,observations=obs,
                 execution_device='cuda',execution_platform='Linux',host='p022-linux',limitations=[])
         (root/'cv.json').write_text(json.dumps(cv))
-        req=dict(Prompt='Exact prompt',VideoUris=[video_uri(SCOOTER,datetime.fromisoformat(start.replace('Z','+00:00')),datetime.fromisoformat(end.replace('Z','+00:00')))])
+        req=dict(Prompt='Exact prompt',VideoUris=[video_uri(camera,datetime.fromisoformat(start.replace('Z','+00:00')),datetime.fromisoformat(end.replace('Z','+00:00')))])
         response=json.dumps(dict(outcome='supported',evidence='Object left on pavement.',timing=1,limitations='No intent established.'))
         if normalized: response='```json\n'+response+'\n```'
-        record=dict(entry=dict(start=start,end=end,camera_id=SCOOTER,continuity_review='no_loop_boundary'),
+        record=dict(entry=dict(start=start,end=end,camera_id=camera,continuity_review='no_loop_boundary'),
                     manifest_sha256=sha(manifest),request=req,summary=dict(Id='actual-summary-id',Progress='Completed',Request=req,Response=response))
         (root/'record.json').write_text(json.dumps(record))
-        spatial=dict(camera_guid=SCOOTER,polygon=scene['walkway'],approved=True,approved_by='test operator',approved_at=start,reference_frame_sha256=frames[0]['sha256'])
+        spatial=dict(camera_guid=camera,polygon=scene['walkway'],approved=True,approved_by='test operator',approved_at=start,reference_frame_sha256=frames[0]['sha256'])
         (root/'spatial.json').write_text(json.dumps(spatial))
         return [root/'cv.json',manifest,root/'record.json',root/'spatial.json']
 
@@ -95,6 +100,12 @@ class IncidentTests(unittest.TestCase):
         command=importlib.util.module_from_spec(spec);spec.loader.exec_module(command)
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);args=self.fixture(root);e=assemble(*args)
+            acquisition=root/'acquisition'/'clip'; acquisition.mkdir(parents=True)
+            for source in root.glob('*.jpg'): shutil.copyfile(source,acquisition/source.name)
+            shutil.copyfile(args[1],acquisition/'manifest.json')
+            shutil.copyfile(args[0],root/(e['camera_name']+'.json'))
+            (root/'hafnia').mkdir()
+            shutil.copyfile(args[2],root/'hafnia'/'record.json')
             command.write(root/'joined.json',e)
             payload,meta=proposal(e,'2026-10-23T11:00:00Z')
             meta['evidence_sha256']=sha(root/'joined.json')
@@ -108,6 +119,29 @@ class IncidentTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'Episode already reserved'):
                     command.dispatch(a,root)
                 sender.assert_not_called()
+
+    def test_shared_processing_for_both_camera_capabilities(self):
+        for name in ('escooter_left_across_sidewalk','bin_pushed_over_onto_sidewalk'):
+            with self.subTest(camera=name), tempfile.TemporaryDirectory() as d:
+                e=assemble(*self.fixture(Path(d),camera_name=name))
+                self.assertEqual(e['capability'],'persistent_object')
+                self.assertEqual(e['camera_guid'],camera_config(name)['camera_guid'])
+                self.assertTrue(e['dispatch_review_ready'])
+                payload,meta=proposal(e)
+                self.assertTrue(validate(payload))
+                self.assertIn(e['camera_guid'].encode(),payload)
+                self.assertEqual(meta['message'],'Adaptive Watch Sidewalk Obstruction')
+
+    def test_wrong_camera_queries_and_unrelated_region_reference_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            args=self.fixture(Path(d));cv=json.loads(args[0].read_text())
+            cv['scene']['queries']=['wrong target'];args[0].write_text(json.dumps(cv))
+            with self.assertRaisesRegex(ValueError,'queries differ'):
+                assemble(*args)
+            args=self.fixture(Path(d));spatial=json.loads(args[3].read_text())
+            spatial['reference_frame_sha256']='unrelated';args[3].write_text(json.dumps(spatial))
+            with self.assertRaisesRegex(ValueError,'reference frame'):
+                assemble(*args)
 
     def test_terminal_credentials_require_interactive_terminal(self):
         spec=importlib.util.spec_from_file_location('sidewalk_command',Path(__file__).parents[1]/'scripts/adaptive_watch/incident.py')

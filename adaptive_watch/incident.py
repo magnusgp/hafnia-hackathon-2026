@@ -5,11 +5,9 @@ import json
 from pathlib import Path
 
 from adaptive_watch.obstruction import measure, seconds
+from adaptive_watch.capabilities import camera_config
 from scene_contracts.analytics_event import build, dispatch_key
 from scene_contracts.gateway import video_uri
-
-MESSAGE = 'Adaptive Watch Sidewalk Obstruction'
-SCOOTER = '8b27a358-df7e-496b-8dac-722d0f4b151c'
 
 
 def sha(path):
@@ -55,8 +53,12 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
     m = json.loads(Path(manifest_path).read_text(encoding='utf-8-sig'))
     record = json.loads(Path(record_path).read_text())
     scene = cv['scene']
-    if m['camera_id'].lower() != SCOOTER or scene['name'] != m['camera_name']:
-        raise ValueError('Initial demonstration is restricted to verified scooter camera')
+    capability = camera_config(m['camera_name'], m['camera_id'])
+    camera = capability['camera_guid']
+    if scene['name'] != capability['name']:
+        raise ValueError('CV scene and configured camera mismatch')
+    if scene.get('queries') != capability['queries']:
+        raise ValueError('CV object queries differ from camera capability')
     if cv['manifest_sha256'] != sha(manifest_path) or cv['source_manifest'] != m:
         raise ValueError('CV acquisition manifest identity mismatch')
     if record['manifest_sha256'] != sha(manifest_path):
@@ -68,7 +70,7 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
     entry = record['entry']
     if entry.get('continuity_review') != 'no_loop_boundary':
         raise ValueError('Operator continuity review missing')
-    if any(entry[k] != scene[k] for k in ('start','end')) or entry['camera_id'].lower() != SCOOTER:
+    if any(entry[k] != scene[k] for k in ('start','end')) or entry['camera_id'].lower() != camera:
         raise ValueError('CV and Hafnia interval/camera mismatch')
     dt = lambda x: datetime.fromisoformat(x.replace('Z','+00:00'))
     if not dt(m['requested_start_utc']) <= dt(scene['start']) < dt(scene['end']) <= dt(m['requested_end_utc']):
@@ -77,7 +79,7 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
         raise ValueError('Hafnia requires exact whole-second analysis bounds')
     if not cv['observations']:
         raise ValueError('No localized samples')
-    expected = video_uri(SCOOTER, dt(scene['start']), dt(scene['end']))
+    expected = video_uri(camera, dt(scene['start']), dt(scene['end']))
     req, summary = record['request'], record['summary']
     returned = summary.get('Request',{})
     extras = set(returned)-set(req)
@@ -87,8 +89,10 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
         raise ValueError('Unknown gateway enrichment')
     if summary.get('Progress') != 'Completed' or not summary.get('Id'):
         raise ValueError('Hafnia assessment not complete')
-    spatial = spatial_config(spatial_path, SCOOTER)
+    spatial = spatial_config(spatial_path, camera)
     known = {f['file']:f for f in m['frames']}
+    if spatial.get('approved') is True and spatial['reference_frame_sha256'] not in {f.get('sha256') for f in m['frames']}:
+        raise ValueError('Approved reference frame is not in this recording')
     last = None
     for row in cv['observations']:
         source = (Path(manifest_path).parent/row['file']).resolve()
@@ -105,12 +109,12 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
             obj['box_walkway_overlap'] = box_overlap(obj['box'], spatial['polygon'])
     cv['scene']['walkway'] = spatial['polygon']
     cv['scene']['walkway_approved'] = spatial.get('approved') is True
-    measurements = measure(cv['observations'])
+    measurements = measure(cv['observations'], **capability['temporal_policy'])
     from adaptive_watch.evaluation import parse_result
     parsed = parse_result(summary)
     strict = parsed.get('category') == 'valid_model_decision' and not parsed.get('normalizations')
     ready = spatial.get('approved') is True and strict and parsed.get('outcome') == 'supported' and measurements['candidate']
-    return dict(schema_version=2, camera_guid=SCOOTER, camera_name=m['camera_name'],
+    return dict(schema_version=2, camera_guid=camera, capability=capability['capability'], capability_config=capability, evidence_kind='fresh_analysis', camera_name=m['camera_name'],
                 interval_utc=[scene['start'],scene['end']], manifest_sha256=sha(manifest_path),
                 cv_sha256=sha(cv_path), spatial_sha256=sha(spatial_path), spatial=spatial,
                 local_cv=cv, measurements=measurements,
@@ -137,16 +141,18 @@ def proposal(evidence, created=None):
     obj = max(candidates, key=lambda o:(o['box'][2]-o['box'][0])*(o['box'][3]-o['box'][1]))
     l,t,r,b = obj['box']
     episode = evidence['camera_guid'].lower()+'|'+'|'.join(evidence['interval_utc'])
-    key = dispatch_key(episode, 'sidewalk-obstruction-v1', MESSAGE)
+    capability = camera_config(evidence['camera_name'], evidence['camera_guid'])
+    event = capability['event']
+    key = dispatch_key(episode, event['policy_id'], event['name'])
     created = created or datetime.now(timezone.utc).isoformat()
     description = ('Potential sidewalk obstruction — review required. '
                    f"Sampled stationarity {run['sampled_span_s']}s; minimum box overlap {run['min_box_overlap']:.1%}. "
                    f"Evidence UTC {run['first']} to {run['last']}. Event created UTC {created}. "
                    'Partial box overlap does not establish clearance. Operator verification required.')
-    payload = build(MESSAGE, evidence['camera_guid'], run['first'], key, description=description,
+    payload = build(event['name'], evidence['camera_guid'], run['first'], key, description=description,
                     start=evidence['interval_utc'][0], end=evidence['interval_utc'][1],
                     boxes=[dict(left=l,top=t,right=r,bottom=b)], vendor='Adaptive Watch')
-    return payload, dict(message=MESSAGE, dispatch_key=key, xml_sha256=hashlib.sha256(payload).hexdigest(),
+    return payload, dict(message=event['name'], dispatch_key=key, xml_sha256=hashlib.sha256(payload).hexdigest(),
                          event_created_utc=created, source_timestamp_utc=run['first'],
                          interval_utc=evidence['interval_utc'], camera_guid=evidence['camera_guid'],
                          box_timestamp_utc=row['timestamp_utc'], box=obj['box'],

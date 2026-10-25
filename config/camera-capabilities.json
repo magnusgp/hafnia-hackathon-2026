@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "cameras": [
+    {
+      "name": "escooter_left_across_sidewalk",
+      "camera_guid": "8b27a358-df7e-496b-8dac-722d0f4b151c",
+      "capability": "persistent_object",
+      "queries": ["an electric scooter", "a scooter lying on the ground"],
+      "region": {
+        "polygon": [
+          [0, 0.44],
+          [0.18, 0.43],
+          [0.68, 1],
+          [0, 1]
+        ],
+        "approved": false
+      },
+      "temporal_policy": {
+        "tolerance": 0.025,
+        "min_duration": 3.0,
+        "max_gap": 1.5
+      },
+      "event": {
+        "name": "Adaptive Watch Sidewalk Obstruction",
+        "policy_id": "sidewalk-obstruction-v1"
+      }
+    },
+    {
+      "name": "bin_pushed_over_onto_sidewalk",
+      "camera_guid": "7371ddce-8938-42da-8b83-b5e445166338",
+      "capability": "persistent_object",
+      "queries": ["a green wheelie bin", "a fallen trash bin"],
+      "region": {
+        "polygon": [
+          [0, 0.44],
+          [0.18, 0.43],
+          [0.68, 1],
+          [0, 1]
+        ],
+        "approved": false
+      },
+      "temporal_policy": {
+        "tolerance": 0.025,
+        "min_duration": 3.0,
+        "max_gap": 1.5
+      },
+      "event": {
+        "name": "Adaptive Watch Sidewalk Obstruction",
+        "policy_id": "sidewalk-obstruction-v1"
+      }
+    }
+  ]
+}

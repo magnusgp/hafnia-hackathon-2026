@@ -1,0 +1,21 @@
+/* Adaptive Watch — Polar / approved palette; studio-default typography */
+:root {
+  --aw-background: #F5F8FC;
+  --aw-surface: #FFFFFF;
+  --aw-surface-subtle: #EAF1FA;
+  --aw-border: #D3DDE9;
+  --aw-text: #13263A;
+  --aw-text-secondary: #53667D;
+  --aw-primary: #2858D6;
+  --aw-on-primary: #FFFFFF;
+  --aw-confirmed: #176F62;
+  --aw-review: #A65E14;
+  --aw-critical: #B83551;
+  --aw-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --aw-font-body: 'DM Sans', system-ui, sans-serif;
+  --aw-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --aw-radius-sm: 6px;
+  --aw-radius-md: 10px;
+  --aw-radius-lg: 14px;
+  --aw-video-surface: #0A1524; /* supplementary neutral; not a studio palette color */
+}

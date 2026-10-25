@@ -1,4 +1,4 @@
-"""Operator-invoked scooter workflow; acquisition, bounded analysis, review, approved send.
+"""Operator-invoked camera-capability workflow; acquisition, bounded analysis, review, approved send.
 
 No unattended alarms. Run --help for stages. Private outputs only.
 """
@@ -15,13 +15,13 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from adaptive_watch.incident import SCOOTER, assemble, proposal, sha, spatial_config
+from adaptive_watch.incident import assemble, proposal, sha, spatial_config
+from adaptive_watch.capabilities import camera_config, cameras
 from adaptive_watch.evaluation import Evaluation
 from scene_contracts.analytics_event import Ledger, NS, send
 from scene_contracts.gateway import Gateway
 
 REPO = Path(__file__).resolve().parents[2]
-CAMERA = 'escooter_left_across_sidewalk'
 
 
 def write(path, value):
@@ -47,14 +47,16 @@ def terminal_login(gateway):
 
 
 def analyze(a, root):
+    capability = camera_config(a.camera)
+    camera, name = capability['camera_guid'], capability['name']
     manifests = list((root/'acquisition').glob('*/manifest.json'))
     if len(manifests) != 1:
         raise ValueError('Need exactly one acquired recording')
     manifest = manifests[0]
     m = json.loads(manifest.read_text(encoding='utf-8-sig'))
-    if m['camera_id'].lower() != SCOOTER or m['camera_name'] != CAMERA:
+    if m['camera_id'].lower() != camera or m['camera_name'] != name:
         raise ValueError('Camera mapping mismatch')
-    spatial = spatial_config(a.spatial, SCOOTER)
+    spatial = spatial_config(a.spatial, camera)
     if not (root/'continuity.json').exists():
         print('Review acquired snapshots/MKV in', manifest.parent)
         print('Confirm a coherent recording with placement and stationarity; no synthetic loop boundary.')
@@ -80,14 +82,14 @@ def analyze(a, root):
               for k in ('requested_start_utc','requested_end_utc')]
     start,end = [datetime.fromtimestamp(t,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
                  for t in (math.ceil(bounds[0]), math.floor(bounds[1]))]
-    scene = dict(name=CAMERA,manifest=remote+'/recording/manifest.json',
+    scene = dict(name=name,manifest=remote+'/recording/manifest.json',
                  start=start,end=end,
-                 queries=['an electric scooter','a scooter lying on the ground'],
+                 queries=capability['queries'],
                  walkway=spatial['polygon'],walkway_approved=spatial.get('approved') is True)
     cfg = dict(model_id='google/owlvit-base-patch32',
                model_revision='cbc355fb364588351c5d51c7f74465e8e7ec6f72',scenes=[scene])
     write(root/'cv-config.json',cfg)
-    cv_path = root/(CAMERA+'.json')
+    cv_path = root/(name+'.json')
     if not cv_path.exists():
         run(ssh+[host,'mkdir -p '+remote+'/recording'])
         files = [manifest]
@@ -99,13 +101,13 @@ def analyze(a, root):
         run(scp+files+[host+':'+remote+'/recording/'])
         run(scp+[REPO/'scripts/adaptive_watch/sidewalk_cv.py',root/'cv-config.json',host+':'+remote+'/'])
         run(ssh+[host,a.linux_python+' '+remote+'/sidewalk_cv.py '+remote+'/cv-config.json --out '+remote+'/cv'])
-        run(scp+[host+':'+remote+'/cv/'+CAMERA+'.json',cv_path])
+        run(scp+[host+':'+remote+'/cv/'+name+'.json',cv_path])
     cv = json.loads(cv_path.read_text())
     if cv.get('runner_sha256') != sha(REPO/'scripts/adaptive_watch/sidewalk_cv.py') or cv.get('config_sha256') != sha(root/'cv-config.json'):
         raise ValueError('Saved CV runner/config differs; retain evidence and review before a new run')
     ev = Evaluation(root/'hafnia')
     try:
-        entry = dict(scene=CAMERA,camera_id=SCOOTER,start=scene['start'],end=scene['end'],
+        entry = dict(scene=name,camera_id=camera,start=scene['start'],end=scene['end'],
                      prompt_version='v1',continuity_review='no_loop_boundary',recording_manifest=str(manifest.resolve()))
         rows = ev.db.execute('SELECT digest,summary_id,record FROM submissions').fetchall()
         if len(rows)>1:
@@ -145,17 +147,33 @@ def analyze(a, root):
 
 def dispatch(a, root):
     e = json.loads((root/'joined.json').read_text())
+    capability = camera_config(e['camera_name'], e['camera_guid'])
+    camera = capability['camera_guid']
+    if getattr(a, 'camera', capability['name']) != capability['name']:
+        raise ValueError('Selected camera differs from evidence')
     meta = json.loads((root/'proposal.json').read_text())
     payload = (root/'proposal.xml').read_bytes()
     if not meta['dispatch_review_ready'] or not e.get('dispatch_review_ready'):
         raise ValueError('Fresh evidence gates not met; retrospective repair cannot authorize dispatch')
     if sha(root/'joined.json') != meta['evidence_sha256'] or hashlib.sha256(payload).hexdigest()!=meta['xml_sha256']:
         raise ValueError('Evidence or XML changed; rebuild and review')
-    if sha(a.spatial) != e['spatial_sha256'] or spatial_config(a.spatial,SCOOTER).get('approved') is not True:
+    if sha(a.spatial) != e['spatial_sha256'] or spatial_config(a.spatial,camera).get('approved') is not True:
         raise ValueError('Approved camera-specific polygon changed or missing')
+    saved_config = e.get('capability_config')
+    if saved_config != capability:
+        raise ValueError('Camera capability changed after analysis; review a new proposal')
+    cv_path = root/(capability['name']+'.json')
+    manifests = list((root/'acquisition').glob('*/manifest.json'))
+    records = list((root/'hafnia').glob('*.json'))
+    if len(manifests) != 1 or len(records) != 1:
+        raise ValueError('Expected exact persisted source artifacts')
+    rebuilt = assemble(cv_path, manifests[0], records[0], a.spatial)
+    expected, _ = proposal(rebuilt, meta['event_created_utc'])
+    if expected != payload or not rebuilt['dispatch_review_ready']:
+        raise ValueError('Exact proposal differs from validated sources')
     print(payload.decode('utf-8'))
     print('SHA-256:',meta['xml_sha256'])
-    if input('Type CONFIGURED after verifying the dedicated scooter-only alarm definition: ') != 'CONFIGURED':
+    if input('Type CONFIGURED after verifying the dedicated alarm definition restricted to approved camera sources: ') != 'CONFIGURED':
         raise ValueError('Dedicated configuration not confirmed')
     if input('Type REVIEWED after reviewing this recording and potential incident: ') != 'REVIEWED':
         raise ValueError('Incident review pending')
@@ -171,29 +189,31 @@ def dispatch(a, root):
         with ledger.db:
             ledger.db.execute('BEGIN IMMEDIATE')
             overlaps = ledger.db.execute('SELECT key FROM sidewalk_episodes WHERE camera=? AND start<? AND end>?',
-                                         (SCOOTER,end,start)).fetchall()
+                                         (camera,end,start)).fetchall()
             if overlaps:
                 raise ValueError('Episode already reserved; reconcile existing outcome, no automatic retry')
             # Include prior events from the existing persistent dispatch ledger.
             for row in ledger.db.execute('SELECT payload FROM analytics_dispatches'):
                 xml = ET.fromstring(row[0]); ns = {'m':NS}
-                camera = xml.findtext('.//m:Source/m:FQID/m:ObjectId',namespaces=ns)
+                prior_camera = xml.findtext('.//m:Source/m:FQID/m:ObjectId',namespaces=ns)
                 first = xml.findtext('m:StartTime',namespaces=ns)
                 last = xml.findtext('m:EndTime',namespaces=ns)
-                if camera and camera.lower()==SCOOTER and first and last:
+                if prior_camera and prior_camera.lower()==capability['camera_guid'] and first and last:
                     fs,ls = [datetime.fromisoformat(v.replace('Z','+00:00')).timestamp() for v in (first,last)]
                     if fs<end and ls>start:
                         raise ValueError('Overlapping dispatch already exists; review persistent ledger')
-            ledger.db.execute('INSERT INTO sidewalk_episodes VALUES (?,?,?,?)',(meta['dispatch_key'],SCOOTER,start,end))
+            ledger.db.execute('INSERT INTO sidewalk_episodes VALUES (?,?,?,?)',(meta['dispatch_key'],capability['camera_guid'],start,end))
         result = send(ledger,meta['dispatch_key'],payload,a.target,approval)
         write(root/'acceptance.json',result)
         print('Event Server result:',result['state'],'; verify native alarm separately.')
         if result['state']=='accepted':
             alarm_id=input('After Smart Client verification, enter new sidewalk alarm ID (blank if unverified): ').strip()
             if alarm_id:
-                write(root/'operator-alarm.json',dict(alarm_id=alarm_id,camera_guid=SCOOTER,
+                write(root/'operator-alarm.json',dict(alarm_id=alarm_id,camera_guid=capability['camera_guid'],
                     xml_sha256=approval,verified_at=datetime.now(timezone.utc).isoformat(),
-                    overlay_observation=input('Actual native object overlay observation: ')))
+                    source_camera_observation=input('Actual displayed alarm source camera: '),
+                    playback_observation=input('Actual Smart Client playback timestamp/interval observed: '),
+                    overlay_observation=input('Actual native object overlay observation (including absent/unsupported): ')))
     finally:
         ledger.close()
 
@@ -201,6 +221,7 @@ def dispatch(a, root):
 def main():
     p=argparse.ArgumentParser(__doc__)
     p.add_argument('stage',choices=['acquire','analyze','run','dispatch'])
+    p.add_argument('--camera', required=True, choices=[c['name'] for c in cameras()])
     p.add_argument('--root',type=Path,required=True,help='Stable private incident directory; reuse to resume')
     p.add_argument('--spatial',type=Path,help='Camera-specific reviewed spatial.local.json')
     p.add_argument('--ssh-user',default='ubuntu')
@@ -216,7 +237,7 @@ def main():
     if a.stage in {'run','acquire'}:
         if not list((root/'acquisition').glob('*/manifest.json')):
             run(['powershell','-NoProfile','-File',REPO/'scripts/acquire_recording.ps1',
-                 '-CameraName',CAMERA,'-Seconds','15','-Interval','1','-Mkv','-OutRoot',root/'acquisition'])
+                 '-CameraName',a.camera,'-Seconds','15','-Interval','1','-Mkv','-OutRoot',root/'acquisition'])
         print('Acquired recording: inspect snapshots/MKV before analysis.')
     if a.stage in {'run','analyze','dispatch'} and not a.spatial:
         p.error('--spatial is required')

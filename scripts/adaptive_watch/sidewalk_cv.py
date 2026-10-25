@@ -28,6 +28,8 @@ def main():
     p.add_argument('config', type=Path)
     p.add_argument('--out', type=Path, required=True)
     a = p.parse_args()
+    if platform.node().split('.')[0] != 'p022-linux':
+        raise RuntimeError('GPU workloads must run on p022-linux')
     if platform.system() != 'Linux':
         raise RuntimeError('ML execution requires Linux CUDA')
     import numpy as np
@@ -55,7 +57,9 @@ def main():
             raise ValueError('Invalid walkway polygon')
         observations, previous, reference, sheet = [], None, None, None
         for i, f in enumerate(frames):
-            path = manifest.parent / f['file']
+            path = (manifest.parent / f['file']).resolve()
+            if not path.is_relative_to(manifest.parent.resolve()):
+                raise ValueError('Frame path escapes acquisition directory')
             digest = sha(path)
             if f.get('sha256') and digest != f['sha256']:
                 raise ValueError('Frame hash mismatch')
