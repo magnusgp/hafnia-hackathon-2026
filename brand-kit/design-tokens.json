@@ -1,0 +1,58 @@
+{
+  "product": "Adaptive Watch",
+  "direction": "Polar",
+  "status": "approved by product owner on 2026-10-23",
+  "source": "Adaptive Watch local brand studio / Polar preset",
+  "colors": {
+    "background": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "surfaceSubtle": "#EAF1FA",
+    "border": "#D3DDE9",
+    "text": "#13263A",
+    "textSecondary": "#53667D",
+    "primary": "#2858D6",
+    "onPrimary": "#FFFFFF",
+    "confirmed": "#176F62",
+    "reviewRequired": "#A65E14",
+    "critical": "#B83551"
+  },
+  "fonts": {
+    "display": "Space Grotesk",
+    "body": "DM Sans",
+    "mono": "IBM Plex Mono",
+    "note": "The studio defaults to this pairing. Keep unless the operator explicitly selected another pairing."
+  },
+  "typography": {
+    "display": { "font": "display", "size": "clamp(3rem, 5.5vw, 5.75rem)", "lineHeight": 1.04, "weight": 600, "letterSpacing": "-0.055em" },
+    "pageTitle": { "font": "display", "size": "clamp(1.9rem, 3vw, 2.75rem)", "lineHeight": 1.15, "weight": 600, "letterSpacing": "-0.035em" },
+    "sectionTitle": { "font": "display", "size": "1.35rem", "lineHeight": 1.25, "weight": 600 },
+    "body": { "font": "body", "size": "0.9375rem", "lineHeight": 1.55, "weight": 400 },
+    "secondary": { "font": "body", "size": "0.875rem", "lineHeight": 1.5, "weight": 400 },
+    "technical": { "font": "mono", "size": "0.75rem", "lineHeight": 1.5, "weight": 400 }
+  },
+  "geometry": {
+    "spaceScalePx": [4, 8, 12, 16, 24, 32, 48, 64],
+    "radiusSmallPx": 6,
+    "radiusMediumPx": 10,
+    "radiusLargePx": 14,
+    "desktopContentMaxPx": 1600,
+    "focusRingWidthPx": 2
+  },
+  "application": {
+    "videoStage": "Keep CCTV content on a dedicated dark video surface. Do not tint the footage with brand gradients.",
+    "statuses": {
+      "candidate": "reviewRequired",
+      "verified": "confirmed",
+      "critical": "critical",
+      "informational": "primary"
+    },
+    "constraints": [
+      "Never show unverified live data or fabricated enabled camera capabilities.",
+      "Do not equate Hafnia supported decisions with verified operational incidents.",
+      "Show local CV and Hafnia as separate evidence contributors.",
+      "Do not imply that a detected box overlap proves physical pedestrian clearance.",
+      "Preserve explicit human approval for native alarm actions.",
+      "Evidence viewer is one route in a multi-capability XProtect application, not the entire product."
+    ]
+  }
+}
