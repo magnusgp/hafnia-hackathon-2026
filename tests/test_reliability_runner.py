@@ -4,6 +4,9 @@ from pathlib import Path
 import tempfile
 import unittest
 import hashlib
+import json
+from datetime import datetime, timezone, timedelta
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('reliability_runner', Path(__file__).resolve().parents[1] / 'scripts/reliability_runner.py')
 module = importlib.util.module_from_spec(spec)
@@ -108,3 +111,61 @@ class RunnerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.runner.reserve(self.entry,self.payload,remaining)
         self.assertEqual(self.runner.db.execute('SELECT COUNT(*) FROM requests').fetchone()[0],0)
+
+    def test_unverified_or_stale_recording_blocks_before_inference(self):
+        entry = dict(event_id='railway-loop-001',manifest_sha256='source',
+                     start='2026-10-22T11:03:39Z',end='2026-10-22T11:03:52Z')
+        now = datetime(2026,10,26,22,tzinfo=timezone.utc)
+        with self.assertRaisesRegex(ValueError,'unverified'):
+            module.verify_availability(entry,{},now)
+        proof = Path(self.temp.name)/'coverage.json'
+        proof.write_text('{"recording_coverage":"synthetic test fixture"}')
+        check = dict(event_id=entry['event_id'],manifest_sha256='source',available=True,
+            checked_by='Test operator',checked_at=now.isoformat(),coverage_start=entry['start'],
+            coverage_end=entry['end'],evidence_file=str(proof),
+            evidence_sha256=hashlib.sha256(proof.read_bytes()).hexdigest())
+        module.verify_availability(entry,dict(recordings=[check]),now)
+        with self.assertRaisesRegex(ValueError,'15 minutes'):
+            module.verify_availability(entry,dict(recordings=[check]),now+timedelta(minutes=16))
+        check['coverage_end'] = '2026-10-22T11:03:51Z'
+        with self.assertRaisesRegex(ValueError,'coverage'):
+            module.verify_availability(entry,dict(recordings=[check]),now)
+
+    def test_operator_login_ignores_stale_environment(self):
+        class FakeGateway:
+            def request(inner,method,path,payload,login):
+                self.assertEqual(payload['Password'],'typed-in-terminal')
+                self.assertTrue(login)
+                return dict(Id='private-test-session')
+        gateway = FakeGateway()
+        with patch.dict('os.environ',{'HAFNIA_GW_PASSWORD':'stale-value'}), \
+             patch.object(module.sys.stdin,'isatty',return_value=True), \
+             patch.object(module.getpass,'getpass',return_value='typed-in-terminal'):
+            module.operator_authenticate(gateway)
+        self.assertEqual(gateway.session,'private-test-session')
+
+    def test_original_manifest_without_frame_hash_uses_frozen_review_hash(self):
+        root = Path(self.temp.name)
+        frame = root/'frame.jpg'; frame.write_bytes(b'private structural fixture')
+        manifest = root/'manifest.json'
+        camera = '11111111-1111-1111-1111-111111111111'
+        timestamp = '2026-10-22T11:03:40Z'
+        manifest.write_text(json.dumps(dict(camera_id=camera,requested_start_utc='2026-10-22T11:03:39Z',
+            requested_end_utc='2026-10-22T11:03:52Z',frames=[dict(file='frame.jpg',timestamp_utc=timestamp)])))
+        artifact = root/'review.json'
+        artifact.write_text(json.dumps(dict(sources=[dict(event_id='gate-loop-001',
+            manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            frames=[dict(timestamp_utc=timestamp,sha256=hashlib.sha256(frame.read_bytes()).hexdigest())])])) )
+        review = dict(status='reviewed',review_mode='ai_demo',user_authorized_ai_review=True,
+            reviewer='AI',reviewed_at='2026-10-26T22:00:00Z',review_artifact=str(artifact),
+            review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            definitions_sha256=hashlib.sha256((module.REPO/'docs/reliability/label-definitions.json').read_bytes()).hexdigest())
+        entry = dict(experiment_id='REL26-B-gate-v3-r01',stage='B',event_id='gate-loop-001',
+            prompt='Visible gate manipulation',camera_id=camera,start='2026-10-22T11:03:39Z',
+            end='2026-10-22T11:03:52Z',recording_manifest=str(manifest),
+            manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            label_review_sha256=review['review_artifact_sha256'],continuity_review='ai_reviewed_no_loop_boundary')
+        self.assertEqual(len(list(module.validate([entry],review))),1)
+        frame.write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError,'hash mismatch'):
+            list(module.validate([entry],review))

@@ -1,0 +1,48 @@
+{
+  "batch_id": "REL26-B-first4",
+  "expected_new_requests": 4,
+  "saved_requests_verified": 16,
+  "reviewed_frame_counts": {
+    "railway-loop-001": {
+      "negative": 7,
+      "ambiguous": 14,
+      "positive": 5
+    },
+    "gate-loop-001": {
+      "positive": 11,
+      "negative": 4,
+      "ambiguous": 46
+    }
+  },
+  "review_artifact_sha256": "1f02e9b8ca47800f0cee5c6ac67367892cea3c2c71408c002542ced540b6b757",
+  "matrix_sha256": "f223df421d0736b06a03a314023f3076691dc49d58a28e7b25059175cd5c795f",
+  "intervals": [
+    {
+      "experiment_id": "REL26-B-railway-v3-r01",
+      "event_id": "railway-loop-001",
+      "start": "2026-10-22T11:03:39Z",
+      "end": "2026-10-22T11:03:52Z"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v4-r01",
+      "event_id": "railway-loop-001",
+      "start": "2026-10-22T11:03:39Z",
+      "end": "2026-10-22T11:03:52Z"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v3-r01",
+      "event_id": "gate-loop-001",
+      "start": "2026-10-22T11:04:39Z",
+      "end": "2026-10-22T11:04:52Z"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v4-r01",
+      "event_id": "gate-loop-001",
+      "start": "2026-10-22T11:04:39Z",
+      "end": "2026-10-22T11:04:52Z"
+    }
+  ],
+  "status": "Offline verified; no authentication or submissions performed",
+  "source_availability": "Not verified; original October 22 recordings may have expired",
+  "negative_controls": "No new controls in this batch. Short pre-entry and departure periods are frame-level diagnostics only. Busy street is a reused domain-mismatched control; open-lane traffic loops too quickly. No eligible distinct task-matched negative event is established."
+}

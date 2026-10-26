@@ -188,6 +188,88 @@
     }
   },
   "definitions_sha256": "5f8cac6bf86eaa6bfbe523d2bb87d9ae441468db16861e156a57938abd305576",
+  "cv_timing": {
+    "original": {
+      "first_candidate_utc": "2026-10-22T11:03:44.513Z",
+      "reviewed_entry_bracket_utc": [
+        "2026-10-22T11:03:48.013Z",
+        "2026-10-22T11:03:48.513Z"
+      ],
+      "onset_error_seconds": [
+        -4.0,
+        -3.5
+      ],
+      "clear_pre_entry": {
+        "total": 6,
+        "flagged": 0
+      },
+      "ambiguous_pre_entry": {
+        "total": 13,
+        "flagged": 8
+      },
+      "clear_post_entry": {
+        "total": 5,
+        "flagged": 5
+      },
+      "interpretation": "Signed onset error is candidate timing, not proven false physical occupancy"
+    },
+    "revised_calibration_only": {
+      "first_candidate_utc": "2026-10-22T11:03:39.013Z",
+      "reviewed_entry_bracket_utc": [
+        "2026-10-22T11:03:48.013Z",
+        "2026-10-22T11:03:48.513Z"
+      ],
+      "onset_error_seconds": [
+        -9.5,
+        -9.0
+      ],
+      "clear_pre_entry": {
+        "total": 6,
+        "flagged": 6
+      },
+      "ambiguous_pre_entry": {
+        "total": 13,
+        "flagged": 13
+      },
+      "clear_post_entry": {
+        "total": 5,
+        "flagged": 5
+      },
+      "interpretation": "Signed onset error is candidate timing, not proven false physical occupancy"
+    },
+    "track_bed_v3_calibration_only": {
+      "first_candidate_utc": "2026-10-22T11:03:44.513Z",
+      "reviewed_entry_bracket_utc": [
+        "2026-10-22T11:03:48.013Z",
+        "2026-10-22T11:03:48.513Z"
+      ],
+      "onset_error_seconds": [
+        -4.0,
+        -3.5
+      ],
+      "clear_pre_entry": {
+        "total": 6,
+        "flagged": 0
+      },
+      "ambiguous_pre_entry": {
+        "total": 13,
+        "flagged": 8
+      },
+      "clear_post_entry": {
+        "total": 5,
+        "flagged": 5
+      },
+      "interpretation": "Signed onset error is candidate timing, not proven false physical occupancy"
+    }
+  },
+  "detector": {
+    "model": "fasterrcnn_resnet50_fpn_v2",
+    "weights": "COCO_V1",
+    "weights_sha256": "dd69338a24b8d7381807e247652bdc356325bcbaf1cd3e092e00e0a1a58706bf",
+    "revision": "1163ddf94ef7252b8a41563c8ed5e2b46a925612",
+    "track_hypotheses": 10,
+    "identity_limitation": "Fragmented association hypotheses; not distinct people"
+  },
   "cv_source_sha256": "47769c58e0d2b8169fba9ce3e9d8592e613563f40b0c225e9ba5bc3d86f8c65e",
   "independent_events": "At most one source loop per scene; no independent failure-rate estimate",
   "geometry_v3_sha256": "00b6996dea86e4ca55819acc472c5e3e53d2ab6ed05d052fb6daa3b858e9f9c0",

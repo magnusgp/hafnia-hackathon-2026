@@ -1,0 +1,16 @@
+{
+  "batch_id": "REL26-B-first4",
+  "expected_new_requests": 4,
+  "concurrency": 1,
+  "daily_cap": 480,
+  "reuse_saved_requests": 16,
+  "experiments": [
+    {"experiment_id": "REL26-B-railway-v3-r01", "scene": "person_on_railway_tracks", "event_id": "railway-loop-001", "prompt_version": "v3", "body": "Report whether the red-clothed person visibly leaves the platform and stands or moves in the track bed. Sitting on the edge alone is ambiguous."},
+    {"experiment_id": "REL26-B-railway-v4-r01", "scene": "person_on_railway_tracks", "event_id": "railway-loop-001", "prompt_version": "v4", "body": "Review the sequence in time order: platform approach, seated edge, descent, track-bed presence. Decide only whether descent or track-bed presence is visible."},
+    {"experiment_id": "REL26-B-gate-v3-r01", "scene": "school_gate_break_in_night", "event_id": "gate-loop-001", "prompt_version": "v3", "body": "Report whether the person visibly handles or manipulates the gate area. Successful opening is not required; distinguish uncertain tool identity."},
+    {"experiment_id": "REL26-B-gate-v4-r01", "scene": "school_gate_break_in_night", "event_id": "gate-loop-001", "prompt_version": "v4", "body": "Review approach, contact with the gate area, crouching and departure. Decide whether visible gate manipulation occurs, independently of whether opening occurs."}
+  ],
+  "suffix": " Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+  "source_policy": "Use exact saved intervals only if recording availability is verified. Never substitute a later repetition silently.",
+  "negative_control_policy": "No new controls in this batch. Short pre-entry and departure periods are frame-level diagnostics only. Busy street is a reused domain-mismatched control; open-lane traffic loops too quickly. No eligible distinct task-matched negative event is established."
+}

@@ -118,12 +118,27 @@ def analyze(root, responses, review_artifact=None):
         results[name] = dict(counts={label: dict(total=sum(r['label'] == label for r in rows),
             flagged=sum(r['label'] == label and r['positive'] for r in rows))
             for label in ['negative', 'ambiguous', 'positive', 'unreviewed']}, rows=rows)
+        flagged = [r for r in rows if r['positive']]
+        bracket = review['definitions']['railway']['entry_bracket_utc']
+        onset = datetime.fromisoformat(flagged[0]['timestamp_utc'].replace('Z','+00:00')) if flagged else None
+        results[name]['timing'] = dict(first_candidate_utc=flagged[0]['timestamp_utc'] if flagged else None,
+            reviewed_entry_bracket_utc=bracket,
+            onset_error_seconds=sorted((onset-datetime.fromisoformat(t.replace('Z','+00:00'))).total_seconds()
+                                       for t in bracket) if onset else None,
+            clear_pre_entry=dict(total=6,flagged=sum(r['positive'] for r in rows[:6])),
+            ambiguous_pre_entry=dict(total=13,flagged=sum(r['positive'] for r in rows[6:19])),
+            clear_post_entry=dict(total=5,flagged=sum(r['positive'] for r in rows[19:24])),
+            interpretation='Signed onset error is candidate timing, not proven false physical occupancy')
     save(root / 'cv-audit.private.json', dict(source_sha256=sha(cvpath), results=results,
         geometry_v3=geometry,geometry_v3_sha256=sha(geometry_path),
         status='Retrospective same-clip calibration with AI labels; not held-out validation'))
     sanitized = dict(saved_requests=len(records), new_requests=0,
         distributions=[dict(task=k[0], camera=k[1], prompt=k[2], counts=dict(v)) for k,v in sorted(groups.items())],
         cv={k:v['counts'] for k,v in results.items()}, definitions_sha256=review['definitions_sha256'],
+        cv_timing={k:v['timing'] for k,v in results.items()},
+        detector=dict(model=cv['model'],weights=cv['weights'],weights_sha256=cv['weights_sha256'],
+                      revision=cv['revision'],track_hypotheses=len(cv['tracks']),
+                      identity_limitation='Fragmented association hypotheses; not distinct people'),
         cv_source_sha256=sha(cvpath), independent_events='At most one source loop per scene; no independent failure-rate estimate',
         geometry_v3_sha256=sha(geometry_path),
         review_mode=review.get('review_mode','AI_draft'),human_review='Not attested',
