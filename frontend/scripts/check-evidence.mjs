@@ -71,9 +71,9 @@ try {
         data.frames[0].box ? 1 : 0,
       );
       await page
-        .getByRole("button", { name: "Review required" })
+        .getByRole("button", { name: "Mark reviewed" })
         .click();
-      await page.getByRole("status").waitFor();
+      await page.getByRole("status").filter({hasText: "Decision saved."}).waitFor();
       const persisted = await (await page.request.get(`${base}/api/incidents/${record.id}`)).json();
       assert.equal(persisted.state, "review_required");
       assert.ok(persisted.decisions.some(d => d.action === "review_required"));

@@ -61,6 +61,10 @@ async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
     );
   return r.json();
 }
+async function mutate(url: string, body: unknown): Promise<Response> {
+  const session = await read<{csrf:string}>('/api/session');
+  return fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-AW-CSRF':session.csrf}, body:JSON.stringify(body)});
+}
 function Tag({
   children,
   review = false,
@@ -70,16 +74,17 @@ function Tag({
 }) {
   return <span className={`tag ${review ? "review" : ""}`}>{children}</span>;
 }
-function Investigation({ e: initial }: { e: Evidence }) {
+function Investigation({ e: initial, demoSession }: { e: Evidence; demoSession?: string }) {
   const [e, setEvidence] = useState(initial);
   const [saving, setSaving] = useState(false);
   async function decide(action: string) {
+    setDecision("");
     setSaving(true);
     try {
-      const r = await fetch(`/api/incidents/${e.id}/decisions`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action,note,evidence:e.observations.map(o=>o.observationId).sort()})});
+      const r = await mutate(`/api/incidents/${e.id}/decisions`, {action,note,demoSession,evidence:e.observations.map(o=>o.observationId).sort()});
       if (!r.ok) throw Error("Decision rejected. Reload evidence and retry.");
       setEvidence(await r.json());
-      setDecision(action === "request_escalation" ? "Escalation requested. Separate CLI approval is required." : "Decision saved.");
+      setDecision(action === "request_escalation" ? "Escalation requested. Native action is unavailable for this evidence." : "Decision saved.");
     } catch (err) {setDecision(String(err));} finally {setSaving(false);}
   }
   const [semantic, setSemantic] = useState(0);
@@ -249,7 +254,7 @@ function Investigation({ e: initial }: { e: Evidence }) {
         </section>
         <aside className="panel interpretation">
           <div className="eyebrow">INCIDENT / {e.id.slice(0, 8)}</div>
-          <Tag review>{e.status}</Tag>
+          <Tag review>{label(e.state)}</Tag>
           <section className="operator">
             <div className="source-heading">OPERATOR ACTION</div>
             <h2>{e.operatorAction}</h2>
@@ -263,20 +268,20 @@ function Investigation({ e: initial }: { e: Evidence }) {
               placeholder="Session review note…"
             />
             <div className="evidence-options">
-              <button className="button" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("review_required")}>Review required</button>
+              <button className="button" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("review_required")}>Mark reviewed</button>
               <button className="button secondary" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("dismiss")}>Dismiss</button>
               <button className="button secondary" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("request_escalation")}>Request escalation</button>
             </div>
             {decision && <p role="status">{decision}</p>}
             {!e.geometryApproved && <p>Dispatch blocked: pedestrian region needs approval.</p>}
             {!e.dispatchReviewReady && e.geometryApproved && <p>Dispatch blocked: verified fresh evidence requirements are incomplete. Review technical details.</p>}
-            <details><summary>{e.observationCount} supporting observations ? {e.decisions.length} decisions</summary>
-              {e.observations.map(o=><p key={o.observationId}>{o.interval.join(" ? ")} ? {o.manifestSha256}</p>)}
-              {e.decisions.map(d=><p key={d.id}>{label(d.action)} ? {d.at} ? {d.note}</p>)}
+            <details><summary>{e.observationCount} observations &middot; {e.decisions.length} saved decisions</summary>
+              {e.observations.map(o=><p key={o.observationId}>{o.interval.join(" to ")}</p>)}
+              {e.decisions.map(d=><p key={d.id}>{label(d.action)} &middot; {d.at} &middot; {d.note}</p>)}
             </details>
           </section>
           <section>
-            <h2>Bounded stationarity</h2>
+            <h2>Object remains in place</h2>
             {run ? (
               <>
                 <div className="measure">
@@ -324,21 +329,10 @@ function Investigation({ e: initial }: { e: Evidence }) {
                 </p>
               </div>
             )}
-            {e.hafnia.some((h) => h.repair_provenance.length > 0) && (
-              <small>
-                Response normalization was required; these responses cannot
-                authorize fresh dispatch.
-              </small>
-            )}
           </section>
         </aside>
       </div>
-      <div className="dispatch-strip">
-        <strong>Native XProtect alarm</strong>
-        <span>Approval pending</span>
-        <span>Event Server acceptance unverified</span>
-        <span>Smart Client verification outstanding</span>
-      </div>
+      <NativeAction incident={e.id} revision={e.decisions.length} replay={e.evidenceKind === "replay"} />
       <details className="panel provenance">
         <summary>
           Evidence & provenance{" "}
@@ -379,7 +373,56 @@ function Investigation({ e: initial }: { e: Evidence }) {
     </>
   );
 }
+type NativeStatus = {available:boolean; state:string; reason?:string; destination?:string};
+type Confirmation = {token:string; title:string; camera:string; interval:string[]; destination:string; action:string; consequence:string};
+function NativeAction({incident,revision,replay}:{incident:string;revision:number;replay:boolean}) {
+  const [status,setStatus] = useState<NativeStatus | null>(null);
+  const [confirmation,setConfirmation] = useState<Confirmation | null>(null);
+  const [checked,setChecked] = useState(false), [busy,setBusy] = useState(false), [error,setError] = useState('');
+  useEffect(()=>{read<NativeStatus>(`/api/incidents/${incident}/native-action`).then(setStatus).catch(()=>setStatus({available:false,state:'unavailable',reason:'Native status unavailable.'}));},[incident,revision]);
+  async function act(action:string) {
+    setBusy(true);setError('');
+    try {
+      const response = await mutate(`/api/incidents/${incident}/native-action/${action}`, action==='prepare'?{}:{token:confirmation?.token,confirmed:checked});
+      if (!response.ok) throw Error('Action unavailable or evidence changed. Reload before reviewing again.');
+      const result = await response.json();
+      if (action==='prepare') {setConfirmation(result);setChecked(false);} else {setStatus(result);setConfirmation(null);}
+    } catch(err) {setError(String(err));setConfirmation(null);} finally {setBusy(false);}
+  }
+  return <section className="panel native-action"><strong>Native XProtect action</strong>
+    <p role="status">{replay ? 'Unavailable in replay' : status?.reason || (status?.available ? `Ready for confirmation: ${status.destination}` : 'Checking availability...')}</p>
+    {status?.available && !replay && <button className="button" disabled={busy} onClick={()=>act('prepare')}>Review XProtect escalation</button>}
+    {error && <p role="alert">{error}</p>}
+    {confirmation && <div className="confirmation-backdrop"><section className="panel confirmation" role="dialog" aria-modal="true" aria-label="Confirm XProtect escalation">
+      <h2>Confirm XProtect escalation</h2><p>{confirmation.action}</p><h3>{confirmation.title}</h3>
+      <p>{label(confirmation.camera)}<br/>{confirmation.interval.join(' to ')} UTC</p><p>Destination: {confirmation.destination}</p><p>{confirmation.consequence}</p>
+      <label><input type="checkbox" checked={checked} onChange={ev=>setChecked(ev.target.checked)}/> I reviewed this incident and authorize this event.</label>
+      <div className="evidence-options"><button className="button" disabled={!checked || busy} onClick={()=>act('confirm')}>Confirm and send to XProtect</button><button className="button secondary" disabled={busy} onClick={()=>setConfirmation(null)}>Cancel</button></div>
+    </section></div>}
+  </section>;
+}
+type Replay = {session: string; mode: string; cursor: number; total: number; complete: boolean; provenance: string};
 function App() {
+  const [replay, setReplay] = useState<Replay | null>(null);
+  const [replayBusy, setReplayBusy] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => { fetch('/api/demo').then(r => r.ok ? r.json() : null).then(setReplay); }, [revision]);
+  async function replayAction(action: string) {
+    setReplayBusy(true);
+    try {
+      const response = await mutate(`/api/demo/${action}`, {cursor: replay?.cursor, demoSession: replay?.session});
+      if (!response.ok) throw Error('Replay changed. Refresh and try again.');
+      const next = await response.json(); setReplay(next); setRevision(r => r + 1);
+      if (next.complete || action === 'reset') setRunning(false);
+      if (action === 'reset') location.hash = '#/monitoring';
+    } catch (err) { setError(String(err)); setRunning(false); } finally {setReplayBusy(false);}
+  }
+  useEffect(() => {
+    if (!running || replayBusy || !replay || replay.complete) return;
+    const timer = setTimeout(() => replayAction('next'), 1800);
+    return () => clearTimeout(timer);
+  }, [running, replayBusy, replay?.cursor]);
   const [path, setPath] = useState(location.hash),
     [w, setW] = useState<Workspace | null>(null),
     [e, setE] = useState<Evidence | null>(null),
@@ -402,7 +445,7 @@ function App() {
         if (err.name !== "AbortError") setError(err.message);
       });
     return () => control.abort();
-  }, [path]);
+  }, [path, revision]);
   useEffect(() => {
     setE(null);
     setError("");
@@ -415,7 +458,7 @@ function App() {
       });
     return () => control.abort();
   }, [id]);
-  const mode = w?.records.some((r) => r.evidenceKind === "fresh_analysis")
+  const mode = replay ? "Replay mode" : w?.records.some((r) => r.evidenceKind === "fresh_analysis")
     ? "Saved evidence + fresh analysis"
     : "Saved evidence";
   return (
@@ -462,10 +505,19 @@ function App() {
               <Tag review>
                 {e.evidenceKind === "fresh_analysis"
                   ? "Fresh analysis"
-                  : "Saved retrospective evidence"}
+                  : e.evidenceKind === "replay" ? "Recorded evidence" : "Saved retrospective evidence"}
               </Tag>
             )}
           </div>
+          {replay && <section className="panel replay-controls" aria-label="Replay controls">
+            <div className="section-heading"><div>{!investigation && <h2>The motion ends. The incident doesn't.</h2>}<p>{replay.cursor} / {replay.total} candidate observations &middot; {w?.records.length || 0} incidents</p></div>
+            <div className="evidence-options">
+            <button className="button" disabled={running || replayBusy || replay.complete} onClick={() => setRunning(true)}>{replay.cursor ? "Continue replay" : "Start replay"}</button>
+            <button className="button secondary" disabled={!running} onClick={() => setRunning(false)}>Pause replay</button>
+            <button className="button secondary" disabled={running || replayBusy || replay.complete} onClick={() => replayAction('next')}>Next observation</button>
+            <button className="button secondary" disabled={running || replayBusy} onClick={() => replayAction('reset')}>New demo session</button></div></div>
+            <details><summary>Replay evidence</summary><p>{replay.provenance}</p><p>No Hafnia requests or native events are available in replay. Previous sessions retain their saved decisions.</p></details>
+          </section>}
           {error ? (
             <section className="panel">
               <h2>Evidence unavailable</h2>
@@ -476,7 +528,7 @@ function App() {
             <p role="status">Loading evidence index…</p>
           ) : investigation ? (
             e ? (
-              <Investigation key={e.id} e={e} />
+              <Investigation key={e.id} e={e} demoSession={replay?.session} />
             ) : id ? (
               <p role="status">Loading incident…</p>
             ) : (
@@ -511,7 +563,7 @@ function App() {
                         </strong>
                         <small>{r.operatorAction}</small>
                       </div>
-                      <Tag review>{r.status}</Tag>
+                      <div><Tag review>{label(r.state)}</Tag><p>{r.observationCount === 1 ? "New incident" : `Existing incident \u00b7 ${r.observationCount} observations`}</p></div>
                       <a className="button" href={`#/investigation/${r.id}`}>
                         Investigate ↗
                       </a>
@@ -520,8 +572,7 @@ function App() {
                 </div>
                 {w.records.length === 0 && (
                   <p className="empty">
-                    No incidents indexed. Import persisted evidence using the
-                    Python evidence API command.
+                    No incidents to review. Start replay to receive observations.
                   </p>
                 )}
               </section>

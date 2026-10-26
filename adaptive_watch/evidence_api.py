@@ -7,6 +7,9 @@ import mimetypes
 from pathlib import Path
 import re
 import sqlite3
+import threading
+import secrets
+from http.cookies import SimpleCookie
 from urllib.parse import urlsplit
 
 from adaptive_watch import episodes
@@ -31,7 +34,7 @@ class EvidenceStore:
     def close(self):
         self.db.close()
 
-    def register(self, joined, cv_path, manifest, evaluations, spatial=None, loop_reset=False):
+    def register(self, joined, cv_path, manifest, evaluations, spatial=None, loop_reset=False, geometry=None):
         """Import existing evidence without upgrading its historical dispatch eligibility."""
         joined, cv_path, manifest = map(lambda p: Path(p).resolve(), (joined, cv_path, manifest))
         e = json.loads(joined.read_text(encoding='utf-8-sig'))
@@ -87,7 +90,7 @@ class EvidenceStore:
                     raw['summary'].get('Request') != h['returned_request'] or parse_result(raw['summary']) != h['parsed']):
                 raise ValueError('Joined Hafnia assessment differs from original source')
             if not historical:
-                if spatial is None or json.loads(json.dumps(assemble(cv_path,manifest,raw_path,spatial))) != e:
+                if spatial is None or json.loads(json.dumps(assemble(cv_path,manifest,raw_path,spatial,geometry))) != e:
                     raise ValueError('Fresh join requires exact source revalidation and spatial configuration')
             req, returned = h['request'], h['returned_request']
             extras = set(returned)-set(req)
@@ -140,7 +143,9 @@ class EvidenceStore:
         return d
 
 
-def handler(root, frontend=None):
+def handler(root, frontend=None, demo=None, native=None):
+    sessions = set()
+    mutation_lock = threading.RLock()
     static = {}
     if frontend is not None:
         frontend = Path(frontend).resolve()
@@ -157,9 +162,25 @@ def handler(root, frontend=None):
             if self.headers.get('Sec-Fetch-Site') == 'cross-site':
                 self.send_error(403); return
             path = urlsplit(self.path).path
-            store = EvidenceStore(root)
+            session_cookie = None
+            store = EvidenceStore(demo.active() if demo else root)
             try:
-                if path == '/api/incidents':
+                if path == '/api/session':
+                    cookie = SimpleCookie(self.headers.get('Cookie', ''))
+                    session = cookie.get('aw_session')
+                    session = session.value if session else None
+                    if session not in sessions:
+                        session = secrets.token_urlsafe(32)
+                        sessions.add(session)
+                    session_cookie = 'aw_session='+session+'; HttpOnly; SameSite=Strict; Path=/'
+                    data, mime = json.dumps(dict(csrf=session, identity='local_human_session')).encode(), 'application/json'
+                elif match := re.fullmatch(r'/api/incidents/([a-f0-9]{24})/native-action',path):
+                    store.get(match[1])
+                    result = native.status(store,match[1]) if native and not demo else dict(available=False,state='unavailable',reason='Replay cannot send native events.' if demo else 'Dedicated XProtect setup and fresh evidence are required.')
+                    data, mime = json.dumps(result).encode(), 'application/json'
+                elif path == '/api/demo' and demo:
+                    data, mime = json.dumps(demo.status(store.db)).encode(), 'application/json'
+                elif path == '/api/incidents':
                     data, mime = json.dumps(store.index()).encode(), 'application/json'
                 elif match := re.fullmatch(r'/api/incidents/([a-f0-9]{24})(?:/frames/([0-9]+))?',path):
                     identifier, frame = match.groups()
@@ -176,6 +197,8 @@ def handler(root, frontend=None):
                 else:
                     self.send_error(404); return
                 self.send_response(200)
+                if session_cookie:
+                    self.send_header('Set-Cookie',session_cookie)
                 self.send_header('Content-Type',mime)
                 self.send_header('Cache-Control','no-store')
                 self.send_header('X-Content-Type-Options','nosniff')
@@ -184,28 +207,54 @@ def handler(root, frontend=None):
                 self.end_headers(); self.wfile.write(data)
             except (KeyError,IndexError,FileNotFoundError):
                 self.send_error(404)
-            except (ValueError,TypeError):
+            except (ValueError,TypeError,sqlite3.Error,OSError):
                 self.send_error(409,'Evidence validation failed')
             finally:
                 store.close()
         def do_POST(self):
             path = urlsplit(self.path).path
             match = re.fullmatch(r'/api/incidents/([a-f0-9]{24})/decisions', path)
-            if not match:
+            native_match = re.fullmatch(r'/api/incidents/([a-f0-9]{24})/native-action/(prepare|confirm)',path)
+            if not match and not native_match and not (demo and path in {'/api/demo/next','/api/demo/reset'}):
                 self.send_error(405); return
             host = self.headers.get('Host')
             if (host not in {'127.0.0.1:8765','localhost:8765','127.0.0.1:4174','localhost:4174',f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'} or
                     self.headers.get('Origin') != 'http://'+host or
                     self.headers.get('Sec-Fetch-Site') == 'cross-site'):
                 self.send_error(403); return
-            store = EvidenceStore(root)
+            cookie = SimpleCookie(self.headers.get('Cookie', ''))
+            session = cookie.get('aw_session')
+            session = session.value if session else None
+            if session not in sessions or self.headers.get('X-AW-CSRF') != session:
+                self.send_error(403); return
+            store = EvidenceStore(demo.active() if demo else root)
             try:
                 length = int(self.headers.get('Content-Length','0'))
                 if not 0 < length <= 16384 or self.headers.get('Content-Type') != 'application/json':
                     raise ValueError('Invalid body')
                 body = json.loads(self.rfile.read(length))
-                episodes.decide(store.db,match[1],body['action'],body.get('note',''),body['evidence'])
-                data = json.dumps(store.public(match[1])).encode()
+                if not isinstance(body, dict):
+                    raise ValueError("Expected object")
+                if demo and body.get("demoSession") != demo.active().name:
+                    raise ValueError("Replay session changed; reload")
+                with mutation_lock:
+                    if native_match:
+                        if demo or native is None:
+                            raise ValueError('Native action unavailable')
+                        identifier, action = native_match.groups()
+                        result = native.prepare(store,identifier,session) if action == 'prepare' else native.confirm(store,identifier,session,body)
+                    elif demo and path == '/api/demo/reset':
+                        demo.reset()
+                        store.close()
+                        store = EvidenceStore(demo.active())
+                        result = demo.status(store.db)
+                    elif demo and path == '/api/demo/next':
+                        demo.advance(store.db, body['cursor'])
+                        result = demo.status(store.db)
+                    else:
+                        episodes.decide(store.db,match[1],body['action'],body.get('note',''),body['evidence'])
+                        result = store.public(match[1])
+                data = json.dumps(result).encode()
                 self.send_response(200)
                 self.send_header('Content-Type','application/json')
                 self.send_header('Cache-Control','no-store')
@@ -213,7 +262,7 @@ def handler(root, frontend=None):
                 self.end_headers(); self.wfile.write(data)
             except KeyError:
                 self.send_error(404)
-            except (ValueError,TypeError):
+            except (ValueError,TypeError,sqlite3.Error,OSError):
                 self.send_error(409,'Decision rejected; reload evidence')
             finally:
                 store.close()
@@ -229,8 +278,12 @@ def main():
         add.add_argument('--'+name,type=Path,required=True)
     add.add_argument('--evaluations',type=Path,required=True,help='Directory containing original saved Hafnia records')
     add.add_argument('--spatial',type=Path,help='Required camera-specific spatial configuration for fresh joins')
+    add.add_argument('--geometry',type=Path,help='Recording-specific static camera-view comparison for reusable polygon approval')
     add.add_argument('--loop-reset',action='store_true',help='Known synthetic loop/reset: never independent evidence')
     serve = sub.add_parser('serve')
+    serve.add_argument('--native-config',type=Path,help='Administrator-owned private native action configuration; never enabled in replay')
+    serve.add_argument('--demo-source',type=Path,help='Read-only real evidence index; --root must be isolated replay storage')
+    serve.add_argument('--evaluations',type=Path,help='Original saved Hafnia records for replay validation')
     serve.add_argument('--port',type=int,default=8765,help='Localhost listen port')
     serve.add_argument('--frontend',type=Path,help='Optional built frontend/dist; serves only frontend asset types')
     a=p.parse_args()
@@ -239,11 +292,23 @@ def main():
         p.error('Evidence index must be under ignored runs/ or outside repository')
     if a.command == 'import':
         store=EvidenceStore(a.root)
-        try: print(store.register(a.joined,a.cv,a.manifest,a.evaluations,a.spatial,a.loop_reset))
+        try: print(store.register(a.joined,a.cv,a.manifest,a.evaluations,a.spatial,a.loop_reset,a.geometry))
         finally: store.close()
     else:
         print(f'Evidence and review API: http://127.0.0.1:{a.port}',flush=True)
-        ThreadingHTTPServer(('127.0.0.1',a.port),handler(a.root,a.frontend)).serve_forever()
+        demo = None
+        native = None
+        if a.native_config:
+            if a.demo_source:
+                p.error('Native configuration cannot be enabled in replay')
+            from adaptive_watch.native_actions import NativeActions
+            native = NativeActions(a.native_config)
+        if a.demo_source:
+            if not a.evaluations:
+                p.error('--evaluations is required with --demo-source')
+            from adaptive_watch.demo import Demo
+            demo = Demo(a.root,a.demo_source,a.evaluations)
+        ThreadingHTTPServer(('127.0.0.1',a.port),handler(a.root,a.frontend,demo,native)).serve_forever()
 
 
 if __name__ == '__main__':

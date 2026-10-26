@@ -51,7 +51,12 @@ def ingest(db, document):
     d = dict(document)
     d.setdefault('objectClass', d['camera'])  # camera registry defines a single compatible query family
     d.setdefault('location', next((f['box'] for f in d['frames'] if f.get('box')), None))
-    identity = digest([d['cameraGuid'], d['capability'], d['manifestSha256'], d['cvSha256'], d['interval']])[:24]
+    identity_parts = [d['cameraGuid'], d['capability'], d['manifestSha256'], d['cvSha256'], d['interval']]
+    if d.get('evidenceKind') == 'replay':
+        if not d.get('syntheticFixture') or d.get('dispatchReviewReady'):
+            raise ValueError('Replay must be synthetic and cannot be dispatch ready')
+        identity_parts.append(['replay', d['replayArrivalId']])
+    identity = digest(identity_parts)[:24]
     db.execute('BEGIN IMMEDIATE')
     try:
         previous = db.execute('SELECT episode FROM observations WHERE id=?', (identity,)).fetchone()
@@ -60,7 +65,7 @@ def ingest(db, document):
         else:
             matches = set()
             for eid,state in db.execute('SELECT id,state FROM episodes'):
-                if state in ('dismissed','escalated'):
+                if state in ('dismissed','escalated') and d.get('evidenceKind') != 'replay':
                     continue
                 prior = [json.loads(raw) for (raw,) in db.execute('SELECT document FROM observations WHERE episode=?',(eid,))]
                 prior.sort(key=lambda x:x['interval'][0])
@@ -73,7 +78,8 @@ def ingest(db, document):
                 replay = bool(content) and all(content) and any(content == [f.get('sha256') for f in x['frames']] and d.get('location') == x.get('location') for x in prior)
                 no_conflict = not d.get('conflict') and not any(x.get('conflict') for x in prior)
                 same_family = all(d[k] == prior[0][k] for k in ('cameraGuid','capability','objectClass'))
-                if no_conflict and same_family and (exact_repeat or replay or stable and compatible(d,supporting[-1])):
+                terminal_repeat = state not in ('dismissed','escalated') or all(x.get('evidenceKind') == 'replay' for x in prior) and (exact_repeat or replay)
+                if terminal_repeat and no_conflict and same_family and (exact_repeat or replay or stable and compatible(d,supporting[-1])):
                     matches.add(eid)
             # Ambiguous multiple matches never silently merge distinct incidents.
             episode = next(iter(matches)) if len(matches) == 1 else uuid4().hex[:24]
@@ -159,7 +165,7 @@ def record_dispatch(db, episode, joined_sha256, acceptance, xml_sha256):
         db.execute("UPDATE episodes SET state='escalated' WHERE id=?",(episode,))
 
 
-def reserve_dispatch(db, episode, joined_sha256, xml_sha256):
+def reserve_dispatch(db, episode, joined_sha256, xml_sha256, expected_revision=None):
     """Freeze operator decisions before the CLI network send; unknown outcomes stay reserved."""
     with db:
         db.execute('BEGIN IMMEDIATE')
@@ -167,6 +173,8 @@ def reserve_dispatch(db, episode, joined_sha256, xml_sha256):
         if d['state'] != 'review_required' or not d['approvalRequests'] or joined_sha256 not in [o['joinedSha256'] for o in d['observations']]:
             raise ValueError('Matching episode escalation request required')
         ids = sorted(o['observationId'] for o in d['observations'])
+        if expected_revision is not None and expected_revision != digest([ids,d['hafnia']]):
+            raise ValueError('Evidence changed since human confirmation')
         if not any(r.get('revision') == digest([ids,d['hafnia']]) and r['evidence'] == ids for r in d['approvalRequests']):
             raise ValueError('Evidence changed since escalation request; request a new review')
         db.execute('INSERT INTO native_dispatches VALUES (?,?)',(episode,json.dumps(dict(state='reserved',joined_sha256=joined_sha256,xml_sha256=xml_sha256))))

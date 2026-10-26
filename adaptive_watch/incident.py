@@ -48,7 +48,7 @@ def box_overlap(box, polygon):
     return min(1.0, area/((r-l)*(b-t)))
 
 
-def assemble(cv_path, manifest_path, record_path, spatial_path):
+def assemble(cv_path, manifest_path, record_path, spatial_path, geometry_path=None):
     cv = json.loads(Path(cv_path).read_text())
     m = json.loads(Path(manifest_path).read_text(encoding='utf-8-sig'))
     record = json.loads(Path(record_path).read_text())
@@ -91,8 +91,12 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
         raise ValueError('Hafnia assessment not complete')
     spatial = spatial_config(spatial_path, camera)
     known = {f['file']:f for f in m['frames']}
-    if spatial.get('approved') is True and spatial['reference_frame_sha256'] not in {f.get('sha256') for f in m['frames']}:
-        raise ValueError('Approved reference frame is not in this recording')
+    geometry = None
+    if geometry_path is not None:
+        from adaptive_watch.geometry import validate_registration
+        geometry = validate_registration(geometry_path, spatial, m, manifest_path)
+    if spatial.get('approved') is True and spatial['reference_frame_sha256'] not in {f.get('sha256') for f in m['frames']} and geometry is None:
+        raise ValueError('Approved reference frame is not in this recording; camera view check or reapproval required')
     last = None
     for row in cv['observations']:
         source = (Path(manifest_path).parent/row['file']).resolve()
@@ -112,12 +116,15 @@ def assemble(cv_path, manifest_path, record_path, spatial_path):
     measurements = measure(cv['observations'], **capability['temporal_policy'])
     from adaptive_watch.evaluation import parse_result
     parsed = parse_result(summary)
-    strict = parsed.get('category') == 'valid_model_decision' and not parsed.get('normalizations')
+    # A complete outer JSON fence changes presentation only. All content repairs
+    # remain review-only, including historical unquoted timing recovery.
+    strict = (parsed.get('category') == 'valid_model_decision' and
+              set(parsed.get('normalizations', [])) <= {'markdown_json_fence'})
     ready = spatial.get('approved') is True and strict and parsed.get('outcome') == 'supported' and measurements['candidate']
     return dict(schema_version=2, camera_guid=camera, capability=capability['capability'], capability_config=capability, evidence_kind='fresh_analysis', camera_name=m['camera_name'],
                 interval_utc=[scene['start'],scene['end']], manifest_sha256=sha(manifest_path),
                 cv_sha256=sha(cv_path), spatial_sha256=sha(spatial_path), spatial=spatial,
-                local_cv=cv, measurements=measurements,
+                local_cv=cv, measurements=measurements, geometry_registration=geometry,
                 hafnia=[dict(summary_id=summary['Id'], original_response=summary.get('Response'),
                              request=req, returned_request=returned, parsed=parsed,
                              source_sha256=sha(record_path), repair_provenance=parsed.get('normalizations',[]))],
@@ -137,8 +144,11 @@ def proposal(evidence, created=None):
         raise ValueError('No sampled stationary candidate')
     run = runs[0]
     row = next(r for r in evidence['local_cv']['observations'] if r['timestamp_utc'] == run['first'])
-    candidates = [o for o in row['objects'] if (o['box'][2]-o['box'][0])*(o['box'][3]-o['box'][1])>=.01]
-    obj = max(candidates, key=lambda o:(o['box'][2]-o['box'][0])*(o['box'][3]-o['box'][1]))
+    selected = next((entry['object'] for entry in evidence['measurements']['trajectory']
+                     if entry['timestamp_utc'] == run['first']), None)
+    if selected is None or not any(o['box'] == selected['box'] for o in row['objects']):
+        raise ValueError('Measured object is missing from proposal frame')
+    obj = selected
     l,t,r,b = obj['box']
     episode = evidence['camera_guid'].lower()+'|'+'|'.join(evidence['interval_utc'])
     capability = camera_config(evidence['camera_name'], evidence['camera_guid'])

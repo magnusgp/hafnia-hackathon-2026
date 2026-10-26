@@ -102,10 +102,16 @@ class EvidenceAPITests(unittest.TestCase):
             evidence=sorted(o['observationId'] for o in store.get(identifier)['observations']);store.close()
             server=ThreadingHTTPServer(('127.0.0.1',0),handler(Path(d)/'index'))
             thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+            session_connection=http.client.HTTPConnection('127.0.0.1',server.server_port)
+            session_connection.request('GET','/api/session',headers={'Host':'127.0.0.1:8765'})
+            session_response=session_connection.getresponse()
+            cookie=session_response.getheader('Set-Cookie').split(';')[0]
+            csrf=json.loads(session_response.read())['csrf']
+            session_connection.close()
             def request(origin, action='request_escalation', ids=evidence):
                 connection=http.client.HTTPConnection('127.0.0.1',server.server_port)
                 body=json.dumps(dict(action=action,note='Reviewed',evidence=ids))
-                connection.request('POST',f'/api/incidents/{identifier}/decisions',body,headers={'Host':'127.0.0.1:8765','Origin':origin,'Content-Type':'application/json'})
+                connection.request('POST',f'/api/incidents/{identifier}/decisions',body,headers={'Host':'127.0.0.1:8765','Origin':origin,'Content-Type':'application/json','Cookie':cookie,'X-AW-CSRF':csrf})
                 response=connection.getresponse();status=response.status;data=response.read();connection.close();return status,data
             try:
                 self.assertEqual(request('https://evil.example')[0],403)

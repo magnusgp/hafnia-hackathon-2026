@@ -70,11 +70,24 @@ class IncidentTests(unittest.TestCase):
             self.assertIn(b'Event created UTC 2026-10-23T11:00:00Z',payload)
             self.assertEqual(meta['xml_sha256'],hashlib.sha256(payload).hexdigest())
 
-    def test_repaired_hafnia_never_unlocks_fresh_dispatch(self):
+    def test_outer_json_fence_is_permitted_for_human_reviewed_dispatch(self):
         with tempfile.TemporaryDirectory() as d:
             e=assemble(*self.fixture(Path(d),normalized=True))
-            self.assertFalse(e['dispatch_review_ready'])
-            self.assertEqual(e['hafnia'][0]['parsed']['outcome'],'supported')
+            self.assertTrue(e['dispatch_review_ready'])
+            self.assertEqual(e['hafnia'][0]['parsed']['normalizations'],['markdown_json_fence'])
+            self.assertFalse(e['automatic_dispatch_eligible'])
+
+    def test_semantic_content_repair_and_fence_commentary_remain_blocked(self):
+        for response in ('{"outcome":"supported","evidence":"Object left.","timing":1 to 5 seconds,"limitations":"Unknown clearance."}',
+                         'Commentary\n```json\n{"outcome":"supported","evidence":"Object left.","timing":1,"limitations":"Unknown clearance."}\n```'):
+            with self.subTest(response=response), tempfile.TemporaryDirectory() as directory:
+                args=self.fixture(Path(directory))
+                record=json.loads(args[2].read_text())
+                record['summary']['Response']=response
+                args[2].write_text(json.dumps(record))
+                evidence=assemble(*args)
+                self.assertFalse(evidence['dispatch_review_ready'])
+                self.assertFalse(evidence['automatic_dispatch_eligible'])
 
     def test_join_rejects_frame_tampering_and_cpu_execution(self):
         with tempfile.TemporaryDirectory() as d:
@@ -110,6 +123,8 @@ class IncidentTests(unittest.TestCase):
             payload,meta=proposal(e,'2026-10-23T11:00:00Z')
             meta['evidence_sha256']=sha(root/'joined.json')
             (root/'proposal.xml').write_bytes(payload);command.write(root/'proposal.json',meta)
+            from scene_contracts.analytics_event import Ledger
+            Ledger(root/'ledger.sqlite3').close()
             a=SimpleNamespace(spatial=args[3],ledger=root/'ledger.sqlite3',target='127.0.0.1:9090')
             answers=['CONFIGURED','REVIEWED',meta['xml_sha256']]
             with patch.object(command,'send',return_value=dict(state='uncertain')) as sender, patch('builtins.input',side_effect=answers), patch('builtins.print'):

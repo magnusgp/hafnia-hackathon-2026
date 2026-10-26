@@ -458,6 +458,7 @@ input[type="checkbox"] {
 }
 .evidence-options {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   align-items: center;
   padding: 12px 20px;
@@ -813,3 +814,12 @@ footer {
 .interpretation > .operator {
   border-bottom: 1px solid var(--aw-border);
 }
+
+.operator .evidence-options { padding: 12px 0; gap: 8px; }
+.replay-controls { padding: 16px 20px; margin-bottom: 24px; }
+.replay-controls .section-heading { flex-wrap: wrap; gap: 12px; }
+.replay-controls .evidence-options { padding: 0; gap: 8px; }
+
+.native-action { padding: 20px; margin: 24px 0; }
+.confirmation-backdrop { position: fixed; inset: 0; background: #122b4844; z-index: 10; display: grid; place-items: center; }
+.confirmation { width: min(560px, 92vw); padding: 28px; }
