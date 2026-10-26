@@ -1,0 +1,190 @@
+{
+  "batch_id": "REL26-B-first4",
+  "actual_requests": 4,
+  "distinct_source_loop_families": 2,
+  "independent_new_events": 0,
+  "original_response_files_verified": 16,
+  "results": [
+    {
+      "experiment_id": "REL26-B-gate-v3-r01",
+      "summary_id": "30e2f6e6-8f5a-47be-9c46-e8edde88bdce",
+      "gateway_status": "Completed",
+      "created_at": "2026-10-26T22:50:33.365+00:00",
+      "completed_at": "2026-10-26T22:50:37.738+00:00",
+      "raw_decision": "not_observed",
+      "parsed_decision": "not_observed",
+      "parse_status": "valid_model_decision",
+      "formatting_deviations": [
+        "markdown_json_fence"
+      ],
+      "evidence": "The person approaches the gate, pauses, and crouches near the latch area but does not visibly grasp, pull, or manipulate the gate or its latch; the gate remains closed and stationary throughout.",
+      "timing": "0.0 - 11.6 seconds",
+      "limitations": "No camera names are used as evidence; the clip does not show the person actually handling or moving the gate, so any tool identity or intent cannot be confirmed.",
+      "prompt": "Report whether the person visibly handles or manipulates the gate area. Successful opening is not required; distinguish uncertain tool identity. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "start": "2026-10-26T22:03:51Z",
+      "end": "2026-10-26T22:04:03Z",
+      "source_sha256": "71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "raw_response_sha256": "f2429478f7246f637afa5bac39fb27398ce4b1020cb1fffd16fb646194b8428e"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v4-r01",
+      "summary_id": "94375b74-db44-40f6-8238-18fb9895ac2a",
+      "gateway_status": "Completed",
+      "created_at": "2026-10-26T22:50:39.664+00:00",
+      "completed_at": "2026-10-26T22:50:42.802+00:00",
+      "raw_decision": "not_observed",
+      "parsed_decision": "not_observed",
+      "parse_status": "valid_model_decision",
+      "formatting_deviations": [
+        "markdown_json_fence"
+      ],
+      "evidence": "The gate remains fully closed and stationary throughout the clip; no visible movement of the gate, no change in its position, and no visible manipulation of the latch or lock.",
+      "timing": "0.0 - 11.7",
+      "limitations": "The clip shows only the exterior view of the gate and does not reveal what occurs behind it or inside the gate mechanism; no camera names are used as evidence.",
+      "prompt": "Review approach, contact with the gate area, crouching and departure. Decide whether visible gate manipulation occurs, independently of whether opening occurs. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "start": "2026-10-26T22:03:51Z",
+      "end": "2026-10-26T22:04:03Z",
+      "source_sha256": "71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "raw_response_sha256": "26104f3462f089ff24945f67a45dff6a3d2c72da217dfea69aff1c2007cdb38d"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v3-r01",
+      "summary_id": "7910ad97-dc88-4034-baf8-bc828d8eded4",
+      "gateway_status": "Completed",
+      "created_at": "2026-10-26T22:50:20.75+00:00",
+      "completed_at": "2026-10-26T22:50:26.69+00:00",
+      "raw_decision": "not_observed",
+      "parsed_decision": "not_observed",
+      "parse_status": "valid_model_decision",
+      "formatting_deviations": [
+        "markdown_json_fence"
+      ],
+      "evidence": "The red-clothed person remains on the platform edge throughout the clip, crouching and then standing on the platform surface; no movement into the track bed or beyond the platform edge is visible.",
+      "timing": "0.0 - 12.5 seconds",
+      "limitations": "The clip does not show the person crossing the yellow tactile strip or stepping onto the track bed; any movement beyond the platform edge is not captured.",
+      "prompt": "Report whether the red-clothed person visibly leaves the platform and stands or moves in the track bed. Sitting on the edge alone is ambiguous. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "start": "2026-10-26T22:03:53Z",
+      "end": "2026-10-26T22:04:06Z",
+      "source_sha256": "5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "raw_response_sha256": "1bb2ed3fa19c55e3c8fd558ec1693306e4f65f9be7ded4a2eca1cb2f060826b8"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v4-r01",
+      "summary_id": "1fa7b22e-7a04-4c6f-9a7a-b0a1bfe1281b",
+      "gateway_status": "Completed",
+      "created_at": "2026-10-26T22:50:27.061+00:00",
+      "completed_at": "2026-10-26T22:50:31.787+00:00",
+      "raw_decision": "not_observed",
+      "parsed_decision": "not_observed",
+      "parse_status": "valid_model_decision",
+      "formatting_deviations": [
+        "markdown_json_fence"
+      ],
+      "evidence": "No descent or track-bed presence is visible; the platform edge is flat and unbroken with no slope, drop, or track-bed material apparent.",
+      "timing": "0.0",
+      "limitations": "The clip shows only the flat platform surface and no descent or track-bed presence, so no evidence can be established for those features.",
+      "prompt": "Review the sequence in time order: platform approach, seated edge, descent, track-bed presence. Decide only whether descent or track-bed presence is visible. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "start": "2026-10-26T22:03:53Z",
+      "end": "2026-10-26T22:04:06Z",
+      "source_sha256": "5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "raw_response_sha256": "6d5c03d9da3aec568c54d538924c001e9a4a0d68936a382a71cf72b68fb00e1f"
+    }
+  ],
+  "original_comparison": [
+    {
+      "scene": "school_gate_break_in_night",
+      "prompt_version": "v1",
+      "prompt": "Assess whether the following action is directly visible: a person manipulates a gate or its lock with a tool; do not assume successful entry or criminal intent. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "summary_id": "e6546d4b-91da-455d-8a9f-8d83d0063d61",
+      "response_sha256": "9475bddb23aa09c08ba2a4f681bd2b7debbd8abd08d56c3f65f3cd183312fff0",
+      "start": "2026-10-22T11:04:39Z",
+      "end": "2026-10-22T11:04:52Z",
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "A person in dark clothing approaches a closed metal gate at night, crouches, and manipulates a padlock with a tool; the gate remains locked and no visible change in its state occurs.",
+        "timing": 0.1,
+        "limitations": "The clip does not show the padlock being removed or the gate opening, so success of the manipulation cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      }
+    },
+    {
+      "scene": "person_on_railway_tracks",
+      "prompt_version": "v1",
+      "prompt": "Assess whether the following action is directly visible: a person descends from the platform edge onto the railway track area or remains there; distinguish people standing on a platform. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "summary_id": "5a1ab040-fc44-4156-ad7a-1eeecd8c7b60",
+      "response_sha256": "2cdca44e7480ccfd01565e3e2994156514d56ea01d9af7cd661545d94da1113f",
+      "start": "2026-10-22T11:03:39Z",
+      "end": "2026-10-22T11:03:52Z",
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The person in the red jacket remains on the platform, crouching and then standing on the yellow tactile strip; no descent onto the tracks or movement onto the railway track area is visible. Other people on the platform are stationary or seated, with no one crossing the tracks.",
+        "timing": "0.0 - 12.5 seconds",
+        "limitations": "The clip does not show the person stepping onto the railway track area or descending from the platform edge; any such action would require additional footage.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      }
+    },
+    {
+      "scene": "school_gate_break_in_night",
+      "prompt_version": "v2",
+      "prompt": "Review the visible action sequence and decide whether this event is supported: a person manipulates a gate or its lock with a tool; do not assume successful entry or criminal intent. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "summary_id": "ce40bfa7-466c-468c-b47d-8f27127b57d8",
+      "response_sha256": "925a7c7a8320474694e5df2d0cc407067bedd156800aff7d64e5dd5d7c1fb734",
+      "start": "2026-10-22T11:04:39Z",
+      "end": "2026-10-22T11:04:52Z",
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "A person in dark clothing approaches a closed metal gate at night, crouches, and manipulates a padlock with a tool; the gate remains locked and no opening or entry occurs. The person then walks away with the tool.",
+        "timing": "0.0 - 12.5 seconds",
+        "limitations": "The clip shows only the person's actions and the locked gate; no successful entry, tool insertion into the lock, or gate movement is visible, so the outcome of the manipulation cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      }
+    },
+    {
+      "scene": "person_on_railway_tracks",
+      "prompt_version": "v2",
+      "prompt": "Review the visible action sequence and decide whether this event is supported: a person descends from the platform edge onto the railway track area or remains there; distinguish people standing on a platform. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "summary_id": "4436e149-2d49-4c69-be94-6438fabd29df",
+      "response_sha256": "ed3f68495ac08ae0161c537a5cc2ab66f1efec36df107d32a9af664033e86fed",
+      "start": "2026-10-22T11:03:39Z",
+      "end": "2026-10-22T11:03:52Z",
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The person in the red jacket walks along the platform edge, pauses, and sits on the platform curb, then stands and walks away along the platform. No descent onto the railway track area or remaining there is visible.",
+        "timing": "0.1-12.5 seconds",
+        "limitations": "The clip shows only the platform edge and adjacent tracks; no descent onto the tracks or prolonged presence on the tracks is observed, so the event cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      }
+    }
+  ],
+  "limitations": [
+    "Authorized AI demo reference review, not human attestation",
+    "Gateway internal decoded/model-consumed frames unavailable",
+    "Fresh loop recordings differ from historical sources; not a paired prompt-only experiment",
+    "No eligible task-matched hard-negative events",
+    "No validated failure rate from these correlated requests"
+  ]
+}

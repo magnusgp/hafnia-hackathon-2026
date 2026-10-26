@@ -299,7 +299,7 @@ def main():
     endpoint = contract['endpoint']
     if not endpoint.startswith('/api/') or '?' in endpoint or not contract.get('verified_from'):
         raise ValueError('Verified read-only quota endpoint required')
-    availability = json.loads(a.recording_availability.read_text()) if a.recording_availability else {}
+    availability = json.loads(a.recording_availability.read_text(encoding='utf-8-sig')) if a.recording_availability else {}
     for e,_ in prepared:
         if not runner.db.execute('SELECT 1 FROM requests WHERE experiment=?',(e['experiment_id'],)).fetchone():
             verify_availability(e,availability)
