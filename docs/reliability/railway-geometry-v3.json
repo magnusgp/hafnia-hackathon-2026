@@ -1,0 +1,10 @@
+{
+  "id": "railway-track-bed-v3-calibration",
+  "polygon": [[0.25, 0.32], [1.0, 0.60], [1.0, 1.0], [0.62, 1.0]],
+  "status": "AI-reviewed demo calibration; not validated",
+  "basis": "Visible platform faces in source railway frame 19. The opposite platform lies above the upper boundary; the near platform lies left of the lower boundary.",
+  "frozen_before_rescoring": true,
+  "selection": "Image-boundary review; no threshold search. Person detector threshold remains 0.5.",
+  "rule": "Footpoint membership is a review candidate only. Seated-edge contact and occlusion require abstention; geometry alone cannot establish physical descent.",
+  "evaluation_partition": "All 26 existing frames are calibration. No held-out source event is available."
+}

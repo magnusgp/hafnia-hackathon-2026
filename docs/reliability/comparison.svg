@@ -15,8 +15,8 @@
 <text x="635" y="320" font-size="20">Not verified physical occupancy.</text>
 <text x="60" y="415" font-size="27" fill="#ffb3aa">Reject previous geometry revision</text>
 <text x="60" y="455" font-size="23">It flags 6 / 6 clear pre-entry negative samples (original: 0 / 6).</text>
-<text x="60" y="495" font-size="21">Draft labels await human confirmation. Same-clip calibration; no held-out accuracy.</text>
+<text x="60" y="495" font-size="21">AI-reviewed demo labels. Same-clip calibration; no held-out accuracy.</text>
 <text x="60" y="555" font-size="29" font-weight="bold">Provisional NO-GO as flagship</text>
-<text x="60" y="597" font-size="21">Need corrected geometry, independent events and genuine task-matched negatives.</text>
+<text x="60" y="597" font-size="21">V3 removes clear-negative flags; seated ambiguity remains. Need independent events.</text>
 <text x="60" y="640" font-size="17" fill="#b4c8cf">Source: results/reliability/saved-analysis.json • No private imagery or raw responses included</text>
 </g></svg>

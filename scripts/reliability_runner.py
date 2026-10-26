@@ -33,11 +33,15 @@ class Runner:
         self.db.commit()
 
     def reserve(self, entry, payload, remaining):
+        if type(remaining) is not int or not 0 <= remaining <= 500:
+            raise ValueError('Invalid live quota balance')
         day = datetime.now(timezone.utc).date().isoformat()
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
             if self.db.execute('SELECT 1 FROM requests WHERE state=?', ('ambiguous',)).fetchone():
                 raise ValueError('Reconcile ambiguous requests before new submissions')
+            if self.db.execute("SELECT 1 FROM requests WHERE state NOT IN ('valid_model_decision','gateway_inference_failure','empty_response','malformed_format')").fetchone():
+                raise ValueError('Existing request remains in flight; resume its summary ID first')
             used = self.db.execute('SELECT COUNT(*) FROM requests WHERE day=?', (day,)).fetchone()[0]
             if used >= self.cap or remaining <= 20:
                 raise ValueError('Daily cap or gateway headroom reached')
@@ -49,6 +53,7 @@ class Runner:
                 (entry['experiment_id'], day, entry['stage'], json.dumps(payload, sort_keys=True), 'ambiguous'))
 
     def reconcile(self, gateway, experiment, summary_id):
+        validate_summary_id(summary_id)
         row = self.db.execute('SELECT payload,summary_id FROM requests WHERE experiment=?', (experiment,)).fetchone()
         if not row or row[1] and row[1] != summary_id:
             raise ValueError('Unknown experiment or conflicting summary ID')
@@ -60,9 +65,13 @@ class Runner:
             self.db.execute('UPDATE requests SET summary_id=?,state=? WHERE experiment=?', (summary_id, 'submitted', experiment))
 
     def poll(self, gateway, experiment, summary_id):
-        if not summary_id or any(c not in '0123456789abcdefABCDEF-' for c in summary_id):
-            raise ValueError('Invalid summary ID')
+        validate_summary_id(summary_id)
+        row = self.db.execute('SELECT summary_id FROM requests WHERE experiment=?', (experiment,)).fetchone()
+        if not row or row[0] != summary_id:
+            raise ValueError('Summary ID is not bound to this experiment')
         result = gateway.request('GET', '/api/Summaries/' + summary_id)
+        if not isinstance(result, dict) or result.get('Id') != summary_id:
+            raise ValueError('Unexpected summary identity; retain pending reservation')
         parsed = parse_result(result)
         with self.db:
             self.db.execute('UPDATE requests SET state=?,result=? WHERE experiment=?',
@@ -70,9 +79,30 @@ class Runner:
         return parsed['category']
 
 
+def validate_summary_id(value):
+    if not isinstance(value, str) or not value or any(c not in '0123456789abcdefABCDEF-' for c in value):
+        raise ValueError('Invalid summary ID')
+
+
+def await_summary(runner, gateway, experiment, summary_id, timeout=60):
+    """Resume one ID to a terminal state before allowing another reservation."""
+    deadline = time.monotonic() + timeout
+    while True:
+        category = runner.poll(gateway, experiment, summary_id)
+        print(experiment, category)
+        if category in {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format'}:
+            return category
+        if time.monotonic() >= deadline:
+            raise TimeoutError('Existing summary remains pending; rerun this plan to resume its ID')
+        time.sleep(3)
+
+
 def validate(plan, review):
-    if review.get('status') != 'human_confirmed' or not review.get('reviewer') or not review.get('reviewed_at'):
-        raise ValueError('Phase A human review is required')
+    human = review.get('status') == 'human_confirmed'
+    demo = (review.get('status') == 'reviewed' and review.get('review_mode') == 'ai_demo'
+            and review.get('user_authorized_ai_review') is True)
+    if not (human or demo) or not review.get('reviewer') or not review.get('reviewed_at'):
+        raise ValueError('Phase A human review or explicitly authorized AI demo review is required')
     definitions = REPO / 'docs/reliability/label-definitions.json'
     if review.get('definitions_sha256') != hashlib.sha256(definitions.read_bytes()).hexdigest():
         raise ValueError('Review must bind frozen definitions')
@@ -84,20 +114,31 @@ def validate(plan, review):
         if e['experiment_id'] in ids or e['stage'] not in {'A','B','C'}:
             raise ValueError('Duplicate experiment or invalid stage')
         ids.add(e['experiment_id'])
-        if not e.get('event_id') or not e.get('prompt') or e.get('continuity_review') != 'human_confirmed_no_loop_boundary':
+        allowed_continuity = {'human_confirmed_no_loop_boundary'}
+        if demo:
+            allowed_continuity.add('ai_reviewed_no_loop_boundary')
+        if not e.get('event_id') or not e.get('prompt') or e.get('continuity_review') not in allowed_continuity:
             raise ValueError('Event identity, exact prompt and reviewed continuity required')
         if e.get('label_review_sha256') != review['review_artifact_sha256']:
             raise ValueError('Every experiment must bind the reviewed source artifact')
         start,end = [datetime.fromisoformat(e[k].replace('Z','+00:00')) for k in ('start','end')]
         if start.tzinfo is None or end.tzinfo is None or not 12 <= (end-start).total_seconds() <= 17:
             raise ValueError('Only existing 12–17 second interval contract supported; short intervals unverified')
+        if start.microsecond or end.microsecond:
+            raise ValueError('Gateway URIs use whole seconds; fractional boundaries cannot be silently rounded')
         manifest = Path(e['recording_manifest'])
         if hashlib.sha256(manifest.read_bytes()).hexdigest() != e['manifest_sha256']:
             raise ValueError('Manifest hash mismatch')
         m = json.loads(manifest.read_text(encoding='utf-8-sig'))
+        if not m.get('frames'):
+            raise ValueError('Hash-bound recorded frames required')
         ms,me = [datetime.fromisoformat(m[k].replace('Z','+00:00')) for k in ('requested_start_utc','requested_end_utc')]
         if m['camera_id'].lower() != e['camera_id'].lower() or not ms <= start < end <= me:
             raise ValueError('Recording provenance mismatch')
+        for frame in m['frames']:
+            source = (manifest.parent / frame['file']).resolve()
+            if not source.is_relative_to(manifest.parent.resolve()) or hashlib.sha256(source.read_bytes()).hexdigest() != frame.get('sha256'):
+                raise ValueError('Recording frame path or hash mismatch')
         yield e, dict(Prompt=e['prompt'], VideoUris=[video_uri(e['camera_id'],start,end)])
 
 
@@ -145,7 +186,7 @@ def main():
             if not old[0]:
                 raise ValueError('Ambiguous submission; reconcile exact summary ID, never resubmit')
             if old[1] not in {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format'}:
-                print(e['experiment_id'], runner.poll(g,e['experiment_id'],old[0]))
+                await_summary(runner,g,e['experiment_id'],old[0])
             continue
         quota = g.request('GET', endpoint)
         day = datetime.now(timezone.utc).date().isoformat()
@@ -158,16 +199,10 @@ def main():
         result = g.request('POST', '/api/Summaries', payload)
         if not isinstance(result,dict) or not result.get('Id'):
             raise ValueError('Ambiguous submission; reconcile, never retry')
+        validate_summary_id(result['Id'])
         with runner.db:
             runner.db.execute('UPDATE requests SET summary_id=?,state=? WHERE experiment=?', (result['Id'],'submitted',e['experiment_id']))
-        print(e['experiment_id'], runner.poll(g,e['experiment_id'],result['Id']))
-        # Do not submit another while the previous request remains in flight.
-        deadline = time.monotonic() + 60
-        while runner.db.execute('SELECT state FROM requests WHERE experiment=?',(e['experiment_id'],)).fetchone()[0] == 'pending':
-            if time.monotonic() >= deadline:
-                raise TimeoutError('Existing summary remains pending; rerun this plan to resume its ID')
-            time.sleep(3)
-            print(e['experiment_id'], runner.poll(g,e['experiment_id'],result['Id']))
+        await_summary(runner,g,e['experiment_id'],result['Id'])
 
 
 if __name__ == '__main__':
