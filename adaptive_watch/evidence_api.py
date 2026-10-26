@@ -1,4 +1,4 @@
-"""Indexed, read-only localhost evidence service. No gateway or event-server access."""
+"""Local evidence and episode decisions. No gateway or event-server access."""
 import argparse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -9,6 +9,7 @@ import re
 import sqlite3
 from urllib.parse import urlsplit
 
+from adaptive_watch import episodes
 from adaptive_watch.capabilities import camera_config, cameras
 from adaptive_watch.incident import sha, assemble
 from adaptive_watch.evaluation import parse_result
@@ -23,11 +24,14 @@ class EvidenceStore:
         self.db = sqlite3.connect(self.root/'evidence.sqlite3')
         self.db.execute('CREATE TABLE IF NOT EXISTS incidents (id TEXT PRIMARY KEY, document TEXT NOT NULL)')
         self.db.commit()
+        episodes.initialize(self.db)
+        for (raw,) in self.db.execute("SELECT document FROM incidents").fetchall():
+            episodes.ingest(self.db, json.loads(raw))
 
     def close(self):
         self.db.close()
 
-    def register(self, joined, cv_path, manifest, evaluations, spatial=None):
+    def register(self, joined, cv_path, manifest, evaluations, spatial=None, loop_reset=False):
         """Import existing evidence without upgrading its historical dispatch eligibility."""
         joined, cv_path, manifest = map(lambda p: Path(p).resolve(), (joined, cv_path, manifest))
         e = json.loads(joined.read_text(encoding='utf-8-sig'))
@@ -99,7 +103,7 @@ class EvidenceStore:
             selected = measurements['trajectory'][i]['object']
             qualifies = any(seconds(r['first']) <= seconds(frame['timestamp']) <= seconds(r['last']) for r in runs)
             frame['box'] = selected['box'] if selected and qualifies else None
-        document = dict(id=identifier, title='Potential sidewalk obstruction', capability=c['capability'],
+        document = dict(loopReset=loop_reset, conflict=any(h['parsed'].get('outcome') != 'supported' for h in e['hafnia']), id=identifier, title='Potential sidewalk obstruction', capability=c['capability'],
             camera=c['name'], cameraGuid=c['camera_guid'], interval=e['interval_utc'],
             evidenceKind='saved_retrospective' if historical else 'fresh_analysis',
             status='Geometry review required' if not e.get('spatial',{}).get('approved') else 'Incident review required',
@@ -107,30 +111,29 @@ class EvidenceStore:
             alarmStatus='unverified', frames=frames, runs=runs, hafnia=e['hafnia'],
             polygon=local['scene']['walkway'], geometryApproved=e.get('spatial',{}).get('approved') is True,
             manifestSha256=e['manifest_sha256'], cvSha256=e['cv_sha256'], joinedSha256=sha(joined),
-            limitations=e['limitations'], annotations=None, dispatchReviewReady=False,
+            limitations=e['limitations'], annotations=None, dispatchReviewReady=not historical and e.get('dispatch_review_ready') is True,
+            recording=m,
             provenance=dict(joined=str(joined),cv=str(cv_path),manifest=str(manifest)))
-        with self.db:
-            self.db.execute('INSERT OR REPLACE INTO incidents VALUES (?,?)',(identifier,json.dumps(document)))
-        return identifier
+        return episodes.ingest(self.db, document)
 
     def get(self, identifier):
         if not re.fullmatch('[a-f0-9]{24}', identifier):
             raise KeyError(identifier)
-        row = self.db.execute('SELECT document FROM incidents WHERE id=?',(identifier,)).fetchone()
-        if not row:
-            raise KeyError(identifier)
-        return json.loads(row[0])
+        return episodes.view(self.db, identifier)
 
     def index(self):
         records = []
-        for (value,) in self.db.execute('SELECT document FROM incidents ORDER BY id'):
-            d = json.loads(value)
-            records.append({k:d[k] for k in ('id','title','camera','interval','evidenceKind','status','operatorAction','alarmStatus','runs')})
-        return dict(records=records,cameras=[dict(id=c['camera_guid'],name=c['name'],configured=True,role=c['capability']) for c in cameras()],sources=['Persisted evidence index','Camera capability registry'])
+        for (identifier,) in self.db.execute('SELECT id FROM episodes ORDER BY id'):
+            d = self.get(identifier)
+            records.append({k:d[k] for k in ('id','title','camera','interval','evidenceKind','status','state','observationCount','operatorAction','alarmStatus','runs')})
+        return dict(records=records,cameras=[dict(id=c['camera_guid'],name=c['name'],configured=True,role=c['capability']) for c in cameras()],sources=['Persisted episode index','Camera capability registry'])
 
     def public(self, identifier):
         d = self.get(identifier)
         d.pop('provenance')
+        for o in d['observations']:
+            o.pop('provenance', None)
+            o.pop('frames', None)
         for i, frame in enumerate(d['frames']):
             frame.pop('path'); frame.pop('sha256')
             frame['file'] = f'/api/incidents/{identifier}/frames/{i}'
@@ -148,8 +151,8 @@ def handler(root, frontend=None):
             static['/'] = static['/index.html']
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            # Reject DNS rebinding/cross-origin embedding; no CORS, cookies or writes.
-            if self.headers.get('Host') not in {'127.0.0.1:8765','localhost:8765','127.0.0.1:4174','localhost:4174'}:
+            # Reject DNS rebinding/cross-origin embedding; no CORS or cookies.
+            if self.headers.get('Host') not in {'127.0.0.1:8765','localhost:8765','127.0.0.1:4174','localhost:4174',f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'}:
                 self.send_error(403); return
             if self.headers.get('Sec-Fetch-Site') == 'cross-site':
                 self.send_error(403); return
@@ -186,7 +189,34 @@ def handler(root, frontend=None):
             finally:
                 store.close()
         def do_POST(self):
-            self.send_error(405,'Read-only evidence API')
+            path = urlsplit(self.path).path
+            match = re.fullmatch(r'/api/incidents/([a-f0-9]{24})/decisions', path)
+            if not match:
+                self.send_error(405); return
+            host = self.headers.get('Host')
+            if (host not in {'127.0.0.1:8765','localhost:8765','127.0.0.1:4174','localhost:4174',f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'} or
+                    self.headers.get('Origin') != 'http://'+host or
+                    self.headers.get('Sec-Fetch-Site') == 'cross-site'):
+                self.send_error(403); return
+            store = EvidenceStore(root)
+            try:
+                length = int(self.headers.get('Content-Length','0'))
+                if not 0 < length <= 16384 or self.headers.get('Content-Type') != 'application/json':
+                    raise ValueError('Invalid body')
+                body = json.loads(self.rfile.read(length))
+                episodes.decide(store.db,match[1],body['action'],body.get('note',''),body['evidence'])
+                data = json.dumps(store.public(match[1])).encode()
+                self.send_response(200)
+                self.send_header('Content-Type','application/json')
+                self.send_header('Cache-Control','no-store')
+                self.send_header('Content-Length',str(len(data)))
+                self.end_headers(); self.wfile.write(data)
+            except KeyError:
+                self.send_error(404)
+            except (ValueError,TypeError):
+                self.send_error(409,'Decision rejected; reload evidence')
+            finally:
+                store.close()
     return Handler
 
 
@@ -199,7 +229,9 @@ def main():
         add.add_argument('--'+name,type=Path,required=True)
     add.add_argument('--evaluations',type=Path,required=True,help='Directory containing original saved Hafnia records')
     add.add_argument('--spatial',type=Path,help='Required camera-specific spatial configuration for fresh joins')
+    add.add_argument('--loop-reset',action='store_true',help='Known synthetic loop/reset: never independent evidence')
     serve = sub.add_parser('serve')
+    serve.add_argument('--port',type=int,default=8765,help='Localhost listen port')
     serve.add_argument('--frontend',type=Path,help='Optional built frontend/dist; serves only frontend asset types')
     a=p.parse_args()
     repo=Path(__file__).resolve().parents[1]
@@ -207,11 +239,11 @@ def main():
         p.error('Evidence index must be under ignored runs/ or outside repository')
     if a.command == 'import':
         store=EvidenceStore(a.root)
-        try: print(store.register(a.joined,a.cv,a.manifest,a.evaluations,a.spatial))
+        try: print(store.register(a.joined,a.cv,a.manifest,a.evaluations,a.spatial,a.loop_reset))
         finally: store.close()
     else:
-        print('Read-only evidence API: http://127.0.0.1:8765',flush=True)
-        ThreadingHTTPServer(('127.0.0.1',8765),handler(a.root,a.frontend)).serve_forever()
+        print(f'Evidence and review API: http://127.0.0.1:{a.port}',flush=True)
+        ThreadingHTTPServer(('127.0.0.1',a.port),handler(a.root,a.frontend)).serve_forever()
 
 
 if __name__ == '__main__':

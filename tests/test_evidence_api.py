@@ -26,14 +26,14 @@ class EvidenceAPITests(unittest.TestCase):
     def test_same_import_and_lookup_for_both_cameras(self):
         for camera in ('escooter_left_across_sidewalk','bin_pushed_over_onto_sidewalk'):
             with self.subTest(camera=camera),tempfile.TemporaryDirectory() as d:
-                store,identifier,_=self.register(d,camera)
+                store,identifier,args=self.register(d,camera)
                 try:
                     self.assertEqual(store.index()['records'][0]['id'],identifier)
                     record=store.public(identifier)
                     self.assertEqual(record['camera'],camera)
                     self.assertEqual(record['id'],identifier)
                     self.assertEqual(record['evidenceKind'],'fresh_analysis')
-                    self.assertFalse(record['dispatchReviewReady'])
+                    self.assertEqual(record['dispatchReviewReady'],assemble(*args)['dispatch_review_ready'])
                     self.assertEqual(record['alarmStatus'],'unverified')
                     self.assertNotIn('path',record['frames'][0])
                     self.assertNotIn('provenance',record)
@@ -94,4 +94,26 @@ class EvidenceAPITests(unittest.TestCase):
                 (Path(d)/'0.jpg').write_bytes(b'changed')
                 self.assertEqual(request(f'/api/incidents/{identifier}/frames/0')[0],409)
                 self.assertEqual(request(f'/api/incidents/{identifier}/frames/999')[0],404)
+            finally:server.shutdown();server.server_close();thread.join()
+
+    def test_http_decisions_persist_and_reject_cross_origin(self):
+        with tempfile.TemporaryDirectory() as d:
+            store,identifier,_=self.register(d)
+            evidence=sorted(o['observationId'] for o in store.get(identifier)['observations']);store.close()
+            server=ThreadingHTTPServer(('127.0.0.1',0),handler(Path(d)/'index'))
+            thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+            def request(origin, action='request_escalation', ids=evidence):
+                connection=http.client.HTTPConnection('127.0.0.1',server.server_port)
+                body=json.dumps(dict(action=action,note='Reviewed',evidence=ids))
+                connection.request('POST',f'/api/incidents/{identifier}/decisions',body,headers={'Host':'127.0.0.1:8765','Origin':origin,'Content-Type':'application/json'})
+                response=connection.getresponse();status=response.status;data=response.read();connection.close();return status,data
+            try:
+                self.assertEqual(request('https://evil.example')[0],403)
+                self.assertEqual(request('http://127.0.0.1:8765',ids=[])[0],409)
+                status,data=request('http://127.0.0.1:8765');self.assertEqual(status,200)
+                result=json.loads(data);self.assertEqual(result['state'],'review_required');self.assertEqual(len(result['approvalRequests']),1)
+                self.assertEqual(result['alarmStatus'],'unverified')
+                store=EvidenceStore(Path(d)/'index')
+                try:self.assertEqual(len(store.get(identifier)['decisions']),1)
+                finally:store.close()
             finally:server.shutdown();server.server_close();thread.join()

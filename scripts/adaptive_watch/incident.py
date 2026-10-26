@@ -72,8 +72,8 @@ def analyze(a, root):
         raise ValueError('Linux Python must be an absolute simple path')
     remote = '/tmp/adaptive-watch-'+hashlib.sha256(str(root).encode()).hexdigest()[:20]
     host = a.ssh_user+'@p022-linux'
-    ssh = ['ssh','-o','BatchMode=yes','-o','ConnectTimeout=10']
-    scp = ['scp','-o','BatchMode=yes','-o','ConnectTimeout=10']
+    ssh = ['ssh','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','ConnectTimeout=10']
+    scp = ['scp','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','ConnectTimeout=10']
     if a.identity:
         ssh += ['-i',a.identity]; scp += ['-i',a.identity]
     # Gateway video URIs have second precision. Select a whole-second subset
@@ -180,6 +180,19 @@ def dispatch(a, root):
     approval = input('Explicit dispatch approval: paste the complete XML SHA-256: ').strip().lower()
     if approval != meta['xml_sha256']:
         raise ValueError('Exact dispatch digest approval missing')
+    a.episode_root = getattr(a,'episode_root',None)
+    a.episode_id = getattr(a,'episode_id',None)
+    if bool(a.episode_root) != bool(a.episode_id):
+        raise ValueError('Provide both episode root and ID')
+    if a.episode_root:
+        from adaptive_watch.evidence_api import EvidenceStore
+        store = EvidenceStore(a.episode_root)
+        try:
+            episode = store.get(a.episode_id)
+            if episode['state'] != 'review_required' or not episode['approvalRequests'] or sha(root/'joined.json') not in [o['joinedSha256'] for o in episode['observations']]:
+                raise ValueError('Matching episode escalation request required')
+        finally:
+            store.close()
     ledger = Ledger(a.ledger)
     try:
         # Transactional reservation rejects overlapping windows across prompt variants
@@ -203,9 +216,23 @@ def dispatch(a, root):
                     if fs<end and ls>start:
                         raise ValueError('Overlapping dispatch already exists; review persistent ledger')
             ledger.db.execute('INSERT INTO sidewalk_episodes VALUES (?,?,?,?)',(meta['dispatch_key'],capability['camera_guid'],start,end))
+        if a.episode_root:
+            from adaptive_watch.episodes import reserve_dispatch
+            store = EvidenceStore(a.episode_root)
+            try:
+                reserve_dispatch(store.db,a.episode_id,sha(root/'joined.json'),approval)
+            finally:
+                store.close()
         result = send(ledger,meta['dispatch_key'],payload,a.target,approval)
         write(root/'acceptance.json',result)
         print('Event Server result:',result['state'],'; verify native alarm separately.')
+        if result['state']=='accepted' and a.episode_root:
+            from adaptive_watch.episodes import record_dispatch
+            store = EvidenceStore(a.episode_root)
+            try:
+                record_dispatch(store.db,a.episode_id,sha(root/'joined.json'),result,approval)
+            finally:
+                store.close()
         if result['state']=='accepted':
             alarm_id=input('After Smart Client verification, enter new sidewalk alarm ID (blank if unverified): ').strip()
             if alarm_id:
@@ -228,6 +255,8 @@ def main():
     p.add_argument('--identity',type=Path)
     p.add_argument('--linux-python',default='/home/ubuntu/hafnia-hackathon-2026/.venv/bin/python')
     p.add_argument('--ledger',type=Path,help='Existing persistent native dispatch SQLite ledger (required for send)')
+    p.add_argument('--episode-root',type=Path)
+    p.add_argument('--episode-id')
     p.add_argument('--target',default='127.0.0.1:9090')
     a=p.parse_args()
     root=a.root.resolve()

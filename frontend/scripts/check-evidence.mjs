@@ -71,9 +71,14 @@ try {
         data.frames[0].box ? 1 : 0,
       );
       await page
-        .getByRole("button", { name: "Hold for geometry review" })
+        .getByRole("button", { name: "Review required" })
         .click();
       await page.getByRole("status").waitFor();
+      const persisted = await (await page.request.get(`${base}/api/incidents/${record.id}`)).json();
+      assert.equal(persisted.state, "review_required");
+      assert.ok(persisted.decisions.some(d => d.action === "review_required"));
+      await page.reload({waitUntil:"networkidle"});
+      await page.locator(".frame img").waitFor();
       await page.locator(".provenance>summary").click();
       await page.locator(".provenance dl").waitFor();
       assert.equal(

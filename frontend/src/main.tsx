@@ -24,8 +24,12 @@ type RecordSummary = {
   operatorAction: string;
   alarmStatus: string;
   runs: Run[];
+  state: string;
+  observationCount: number;
 };
 type Evidence = RecordSummary & {
+  observations: { observationId: string; interval: string[]; manifestSha256: string }[];
+  decisions: { id: string; action: string; at: string; note: string }[];
   frames: { file: string; timestamp: string; box: number[] | null }[];
   cameraGuid: string;
   manifestSha256: string;
@@ -40,6 +44,7 @@ type Evidence = RecordSummary & {
   limitations: string[];
   polygon: number[][];
   geometryApproved: boolean;
+  dispatchReviewReady: boolean;
 };
 type Workspace = {
   cameras: { id: string; name: string; configured: boolean; role: string }[];
@@ -65,7 +70,18 @@ function Tag({
 }) {
   return <span className={`tag ${review ? "review" : ""}`}>{children}</span>;
 }
-function Investigation({ e }: { e: Evidence }) {
+function Investigation({ e: initial }: { e: Evidence }) {
+  const [e, setEvidence] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  async function decide(action: string) {
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/incidents/${e.id}/decisions`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action,note,evidence:e.observations.map(o=>o.observationId).sort()})});
+      if (!r.ok) throw Error("Decision rejected. Reload evidence and retry.");
+      setEvidence(await r.json());
+      setDecision(action === "request_escalation" ? "Escalation requested. Separate CLI approval is required." : "Decision saved.");
+    } catch (err) {setDecision(String(err));} finally {setSaving(false);}
+  }
   const [semantic, setSemantic] = useState(0);
   const [index, setIndex] = useState(
     Math.max(
@@ -246,25 +262,18 @@ function Investigation({ e }: { e: Evidence }) {
               onChange={(ev) => setNote(ev.target.value)}
               placeholder="Session review note…"
             />
-            <button
-              className="button"
-              onClick={() =>
-                setDecision(
-                  "Held in this session for geometry review. No approval or native event recorded.",
-                )
-              }
-            >
-              Hold for geometry review
-            </button>
-            {decision && (
-              <p role="status" className="decision">
-                {decision}
-              </p>
-            )}
-            <small>
-              Notes and hold are session-only. Polygon approval remains a
-              separate operator gate.
-            </small>
+            <div className="evidence-options">
+              <button className="button" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("review_required")}>Review required</button>
+              <button className="button secondary" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("dismiss")}>Dismiss</button>
+              <button className="button secondary" disabled={saving || ["dismissed","escalated"].includes(e.state)} onClick={() => decide("request_escalation")}>Request escalation</button>
+            </div>
+            {decision && <p role="status">{decision}</p>}
+            {!e.geometryApproved && <p>Dispatch blocked: pedestrian region needs approval.</p>}
+            {!e.dispatchReviewReady && e.geometryApproved && <p>Dispatch blocked: verified fresh evidence requirements are incomplete. Review technical details.</p>}
+            <details><summary>{e.observationCount} supporting observations ? {e.decisions.length} decisions</summary>
+              {e.observations.map(o=><p key={o.observationId}>{o.interval.join(" ? ")} ? {o.manifestSha256}</p>)}
+              {e.decisions.map(d=><p key={d.id}>{label(d.action)} ? {d.at} ? {d.note}</p>)}
+            </details>
           </section>
           <section>
             <h2>Bounded stationarity</h2>
@@ -393,7 +402,7 @@ function App() {
         if (err.name !== "AbortError") setError(err.message);
       });
     return () => control.abort();
-  }, []);
+  }, [path]);
   useEffect(() => {
     setE(null);
     setError("");
@@ -492,7 +501,7 @@ function App() {
                       <div>
                         <h3>{r.title}</h3>
                         <small>{label(r.camera)}</small>
-                        <time>{r.interval[0]}</time>
+                        <time>First: {r.interval[0]}<br />Latest: {r.interval[1]}</time>
                       </div>
                       <div className="record-measure">
                         <strong>
