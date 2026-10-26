@@ -1,4 +1,6 @@
-# First controlled batch: four requests, not yet submitted
+# Historical first-batch plan: superseded for execution
+
+The October 22 intervals below are expired and must not be submitted. The [fresh preflight report](fresh-preflight.md) records the replacement sources, unchanged four prompts/IDs, successful authenticated preflight and current execution instructions. Original historical evidence remains unchanged.
 
 Password fix: **completed, reported by the operator**. Authentication validation is reserved for the operator's separate PowerShell session. The agent has not retried login and will not submit summaries. Linux SSH access and the A10G are already verified; the earlier remote Python quoting error was separate from authentication.
 

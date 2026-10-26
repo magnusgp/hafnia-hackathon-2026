@@ -36,3 +36,5 @@ AI demo review is frozen in private `reviewed-ai-demo.json` and `review-signoff.
 For authorized AI demo plans, continuity_review may be `ai_reviewed_no_loop_boundary`; retain uncertainty rather than claiming human confirmation. A gate interval crossing the reset candidate is ineligible. Fractional URI bounds and missing or changed frame hashes now block submission.
 
 The exact first-four-request matrix and operator gates are in [operator-runbook.md](operator-runbook.md) and [first-batch-matrix.json](first-batch-matrix.json). Availability proof for the exact original recording interval is required before any new POST; pending IDs can still be resumed without resubmission.
+
+The fresh source-bound execution update is authoritative for the next batch: [fresh-preflight.md](fresh-preflight.md). Original October 22 execution intervals are now explicitly rejected by the 24-hour gate. Preserve experimental IDs and prompts when refreshing an unsubmitted source binding; never rebind IDs with existing submission claims.

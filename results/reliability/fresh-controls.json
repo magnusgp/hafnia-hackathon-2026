@@ -1,0 +1,78 @@
+{
+  "proposed_additional_requests": 0,
+  "experiments": [],
+  "distinct_negative_events": 0,
+  "inspected_camera_catalog": 11,
+  "eligible_same_domain_cameras": [
+    "person_on_railway_tracks",
+    "school_gate_break_in_night"
+  ],
+  "candidates": [
+    {
+      "source_recording_id": "acquisition-sha256:5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "event_id": "railway-loop-001",
+      "negative_samples": [
+        {
+          "index": 0,
+          "timestamp_utc": "2026-10-26T22:03:53.013Z"
+        },
+        {
+          "index": 1,
+          "timestamp_utc": "2026-10-26T22:03:53.513Z"
+        },
+        {
+          "index": 2,
+          "timestamp_utc": "2026-10-26T22:03:54.013Z"
+        },
+        {
+          "index": 3,
+          "timestamp_utc": "2026-10-26T22:03:54.513Z"
+        },
+        {
+          "index": 4,
+          "timestamp_utc": "2026-10-26T22:03:55.013Z"
+        },
+        {
+          "index": 5,
+          "timestamp_utc": "2026-10-26T22:03:55.513Z"
+        },
+        {
+          "index": 6,
+          "timestamp_utc": "2026-10-26T22:03:56.013Z"
+        },
+        {
+          "index": 7,
+          "timestamp_utc": "2026-10-26T22:03:56.513Z"
+        }
+      ],
+      "eligible_for_inference": false,
+      "reason": "Negative period shorter than 12 seconds; adjacent seated contact is ambiguous or gate manipulation is positive. Loop extension prohibited."
+    },
+    {
+      "source_recording_id": "acquisition-sha256:71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "event_id": "gate-loop-001",
+      "negative_samples": [
+        {
+          "index": 0,
+          "timestamp_utc": "2026-10-26T22:03:51.465Z"
+        },
+        {
+          "index": 1,
+          "timestamp_utc": "2026-10-26T22:03:51.965Z"
+        },
+        {
+          "index": 2,
+          "timestamp_utc": "2026-10-26T22:03:52.465Z"
+        }
+      ],
+      "eligible_for_inference": false,
+      "reason": "Negative period shorter than 12 seconds; adjacent seated contact is ambiguous or gate manipulation is positive. Loop extension prohibited."
+    }
+  ],
+  "excluded": [
+    "Busy street is domain-mismatched and already assessed.",
+    "Other catalog cameras do not provide platform-only or gate-without-manipulation evidence.",
+    "Repeated loops remain the same event family."
+  ],
+  "decision": "Hold Stage C at zero until coherent task-matched negative footage is acquired"
+}

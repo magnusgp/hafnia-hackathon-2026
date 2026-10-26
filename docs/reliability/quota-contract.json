@@ -1,0 +1,11 @@
+{
+  "kind": "gateway_system_information",
+  "endpoint": "/api/System/Information",
+  "verified_from": "Installed gateway generated client getSystemInformationAsync GET and System UI QuotaInformation rendering in wwwroot/assets/index-8iUIgJou.js; installed wwwroot/site/search.json documents daily/monthly quota on System page.",
+  "container": "QuotaInformation",
+  "limit_field": "DailySummaryQuota",
+  "used_field": "DailySummaryCount",
+  "reset_field": "DailySummaryReset",
+  "validation": "Require daily limit 500, integer used count in 0..500 and future timezone-qualified reset within 24 hours. Preserve at least 20 requests of headroom. Unknown live shapes block submission.",
+  "limitation": "Installed UI states that usage values apply to this gateway; complete account usage is available in the Hafnia portal. Other-gateway usage is not measured here."
+}

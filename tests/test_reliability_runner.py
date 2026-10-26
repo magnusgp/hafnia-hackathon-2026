@@ -149,9 +149,11 @@ class RunnerTests(unittest.TestCase):
         frame = root/'frame.jpg'; frame.write_bytes(b'private structural fixture')
         manifest = root/'manifest.json'
         camera = '11111111-1111-1111-1111-111111111111'
-        timestamp = '2026-10-22T11:03:40Z'
-        manifest.write_text(json.dumps(dict(camera_id=camera,requested_start_utc='2026-10-22T11:03:39Z',
-            requested_end_utc='2026-10-22T11:03:52Z',frames=[dict(file='frame.jpg',timestamp_utc=timestamp)])))
+        start = (datetime.now(timezone.utc)-timedelta(hours=1)).replace(microsecond=0)
+        end = start+timedelta(seconds=13)
+        timestamp = (start+timedelta(seconds=1)).isoformat()
+        manifest.write_text(json.dumps(dict(camera_id=camera,requested_start_utc=start.isoformat(),
+            requested_end_utc=end.isoformat(),frames=[dict(file='frame.jpg',timestamp_utc=timestamp)])))
         artifact = root/'review.json'
         artifact.write_text(json.dumps(dict(sources=[dict(event_id='gate-loop-001',
             manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
@@ -161,11 +163,64 @@ class RunnerTests(unittest.TestCase):
             review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
             definitions_sha256=hashlib.sha256((module.REPO/'docs/reliability/label-definitions.json').read_bytes()).hexdigest())
         entry = dict(experiment_id='REL26-B-gate-v3-r01',stage='B',event_id='gate-loop-001',
-            prompt='Visible gate manipulation',camera_id=camera,start='2026-10-22T11:03:39Z',
-            end='2026-10-22T11:03:52Z',recording_manifest=str(manifest),
+            prompt='Visible gate manipulation',camera_id=camera,start=start.isoformat(),
+            end=end.isoformat(),recording_manifest=str(manifest),
             manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),
             label_review_sha256=review['review_artifact_sha256'],continuity_review='ai_reviewed_no_loop_boundary')
         self.assertEqual(len(list(module.validate([entry],review))),1)
         frame.write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'hash mismatch'):
             list(module.validate([entry],review))
+
+    def test_recording_age_boundary_and_future_are_rejected(self):
+        now=datetime(2026,10,26,22,tzinfo=timezone.utc)
+        for start,end in [(now-timedelta(hours=24),now-timedelta(hours=24)+timedelta(seconds=13)),
+                          (now-timedelta(days=4),now-timedelta(days=4)+timedelta(seconds=13)),
+                          (now,now+timedelta(seconds=13))]:
+            with self.assertRaisesRegex(ValueError,'24 hours'):
+                module.validate_age(dict(start=start.isoformat(),end=end.isoformat()),now)
+        module.validate_age(dict(start=(now-timedelta(hours=1)).isoformat(),
+                                 end=(now-timedelta(hours=1)+timedelta(seconds=13)).isoformat()),now)
+
+    def test_authenticated_preflight_never_submits_a_summary(self):
+        root=Path(self.temp.name)
+        plan=root/'input-plan.json';plan.write_text('[]')
+        artifact=root/'review-artifact.json';artifact.write_text('{"sources":[]}')
+        review=root/'review.json';review.write_text(json.dumps(dict(status='reviewed',review_mode='ai_demo',
+            user_authorized_ai_review=True,reviewer='AI',reviewed_at='2026-10-26T22:00:00Z',
+            review_artifact=str(artifact),review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            definitions_sha256=hashlib.sha256((module.REPO/'docs/reliability/label-definitions.json').read_bytes()).hexdigest())))
+        calls=[]
+        class ReadOnlyGateway:
+            def request(self,method,path):
+                calls.append((method,path))
+                return []
+        args=['runner','--root',str(root/'preflight'),'--plan',str(plan),'--review',str(review),
+              '--authenticated-preflight','--operator-auth-confirmed']
+        with patch.object(module.sys,'argv',args),patch.object(module,'Gateway',ReadOnlyGateway), \
+             patch.object(module,'operator_authenticate') as login:
+            module.main()
+        login.assert_called_once()
+        self.assertEqual(calls,[('GET','/api/Summaries?Limit=1'),('GET','/api/System/Information')])
+        proof=json.loads((root/'preflight/authenticated-preflight.json').read_text())
+        self.assertTrue(proof['success'])
+        self.assertEqual(proof['new_summaries'],0)
+        with module.sqlite3.connect(root/'preflight/reliability-ledger.sqlite3') as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM requests').fetchone()[0],0)
+        db.close()
+
+    def test_preflight_and_apply_cannot_be_combined(self):
+        with patch.object(module.sys,'argv',['runner','--root',self.temp.name,'--apply','--authenticated-preflight']), \
+             patch.object(module,'Gateway') as gateway:
+            with self.assertRaises(SystemExit):module.main()
+        gateway.assert_not_called()
+
+    def test_installed_quota_schema_enforces_cap_count_and_reset(self):
+        now=datetime(2026,10,26,22,tzinfo=timezone.utc)
+        contract=dict(kind='gateway_system_information',endpoint='/api/System/Information')
+        q=dict(DailySummaryQuota=500,DailySummaryCount=16,DailySummaryReset='2026-10-27T00:00:00Z')
+        self.assertEqual(module.quota_balance(dict(QuotaInformation=q),contract,now),484)
+        for key,value in [('DailySummaryCount',True),('DailySummaryQuota',1000),
+                          ('DailySummaryReset','2026-10-26T00:00:00Z')]:
+            bad=dict(q);bad[key]=value
+            with self.assertRaises(ValueError):module.quota_balance(dict(QuotaInformation=bad),contract,now)

@@ -1,0 +1,351 @@
+{
+  "source_sha256": "47769c58e0d2b8169fba9ce3e9d8592e613563f40b0c225e9ba5bc3d86f8c65e",
+  "original_predictions_unchanged": true,
+  "threshold_changed": false,
+  "calibration_only": true,
+  "reviewed_entry_bracket_utc": [
+    "2026-10-22T11:03:48.013Z",
+    "2026-10-22T11:03:48.513Z"
+  ],
+  "first_geometric_candidate_utc": "2026-10-22T11:03:44.513Z",
+  "candidate_early_seconds": [
+    3.5,
+    4.0
+  ],
+  "boundary_crossing": {
+    "before": {
+      "track_id": 7,
+      "box": [
+        0.40015341685368466,
+        0.3807547887166341,
+        0.6038340055025541,
+        0.8168706893920898
+      ],
+      "footpoint": [
+        0.5019937111781194,
+        0.8168706893920898
+      ],
+      "footpoint_px": [
+        417.65876770019537,
+        392.0979309082031
+      ],
+      "near_edge_horizontal_margin_px": -15.277516156364925,
+      "original_candidate": false,
+      "v3_candidate": false
+    },
+    "after": {
+      "track_id": 7,
+      "box": [
+        0.4054401104266827,
+        0.3810043970743815,
+        0.6010317435631385,
+        0.7850233713785807
+      ],
+      "footpoint": [
+        0.5032359269949106,
+        0.7850233713785807
+      ],
+      "footpoint_px": [
+        418.6922912597656,
+        376.81121826171875
+      ],
+      "near_edge_horizontal_margin_px": 0.17347560508584792,
+      "original_candidate": true,
+      "v3_candidate": true
+    },
+    "footpoint_dx_px": 1.0335235595702557,
+    "footpoint_dy_px": -15.286712646484375
+  },
+  "cause": "Box bottom moves upward while actor remains seated. Bottom-center crosses the perspective near-edge line by only 0.17 horizontal pixels. It is not an anatomical foot/contact estimate.",
+  "geometry": "Original and v3 share near-platform vertices (0.25,0.32) and (0.62,1.0). Changing the far-platform boundary cannot repair this early crossing.",
+  "tracking": "Approach uses track 1; frame 5 contains overlapping hypotheses 1,7,8; seated/crossing uses track 7. All hypotheses retained, no synthetic identity merge.",
+  "interpretation": "Proximity warning and manual-confirmed entry are separate. No automatic posture/contact classifier or independently validated entry rule is claimed.",
+  "frames": [
+    {
+      "index": 0,
+      "timestamp_utc": "2026-10-22T11:03:39.013Z",
+      "phase": "platform_approach",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 1,
+      "timestamp_utc": "2026-10-22T11:03:39.513Z",
+      "phase": "platform_approach",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 2,
+      "timestamp_utc": "2026-10-22T11:03:40.013Z",
+      "phase": "platform_approach",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 3,
+      "timestamp_utc": "2026-10-22T11:03:40.513Z",
+      "phase": "platform_approach",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 4,
+      "timestamp_utc": "2026-10-22T11:03:41.013Z",
+      "phase": "edge_proximity",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 5,
+      "timestamp_utc": "2026-10-22T11:03:41.513Z",
+      "phase": "edge_proximity",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7,
+        8,
+        1
+      ],
+      "review_interpretation": "platform_proximity_only"
+    },
+    {
+      "index": 6,
+      "timestamp_utc": "2026-10-22T11:03:42.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        1
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 7,
+      "timestamp_utc": "2026-10-22T11:03:42.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 8,
+      "timestamp_utc": "2026-10-22T11:03:43.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 9,
+      "timestamp_utc": "2026-10-22T11:03:43.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 10,
+      "timestamp_utc": "2026-10-22T11:03:44.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 11,
+      "timestamp_utc": "2026-10-22T11:03:44.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 12,
+      "timestamp_utc": "2026-10-22T11:03:45.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 13,
+      "timestamp_utc": "2026-10-22T11:03:45.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 14,
+      "timestamp_utc": "2026-10-22T11:03:46.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 15,
+      "timestamp_utc": "2026-10-22T11:03:46.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 16,
+      "timestamp_utc": "2026-10-22T11:03:47.013Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 17,
+      "timestamp_utc": "2026-10-22T11:03:47.513Z",
+      "phase": "seated_edge_proximity",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "seated_proximity_contact_ambiguous"
+    },
+    {
+      "index": 18,
+      "timestamp_utc": "2026-10-22T11:03:48.013Z",
+      "phase": "visible_descent",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "descent_visible_contact_ambiguous"
+    },
+    {
+      "index": 19,
+      "timestamp_utc": "2026-10-22T11:03:48.513Z",
+      "phase": "confirmed_entry",
+      "reviewed_label": "positive",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "entry_visually_confirmed"
+    },
+    {
+      "index": 20,
+      "timestamp_utc": "2026-10-22T11:03:49.013Z",
+      "phase": "track_occupancy",
+      "reviewed_label": "positive",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "track_presence_visually_confirmed"
+    },
+    {
+      "index": 21,
+      "timestamp_utc": "2026-10-22T11:03:49.513Z",
+      "phase": "track_occupancy",
+      "reviewed_label": "positive",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "track_presence_visually_confirmed"
+    },
+    {
+      "index": 22,
+      "timestamp_utc": "2026-10-22T11:03:50.013Z",
+      "phase": "track_occupancy",
+      "reviewed_label": "positive",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "track_presence_visually_confirmed"
+    },
+    {
+      "index": 23,
+      "timestamp_utc": "2026-10-22T11:03:50.513Z",
+      "phase": "track_occupancy",
+      "reviewed_label": "positive",
+      "v3_candidates": 1,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "track_presence_visually_confirmed"
+    },
+    {
+      "index": 24,
+      "timestamp_utc": "2026-10-22T11:03:51.013Z",
+      "phase": "far_platform_exit",
+      "reviewed_label": "ambiguous",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "exit_transition_or_platform"
+    },
+    {
+      "index": 25,
+      "timestamp_utc": "2026-10-22T11:03:51.513Z",
+      "phase": "far_platform_exit",
+      "reviewed_label": "negative",
+      "v3_candidates": 0,
+      "track_hypotheses": [
+        7
+      ],
+      "review_interpretation": "exit_transition_or_platform"
+    }
+  ]
+}

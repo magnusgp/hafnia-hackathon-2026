@@ -4,7 +4,7 @@ Quota contract must be verified from the installed gateway documentation first.
 No PromptId, event, alarm or dispatch endpoints are used.
 """
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import getpass
 import json
@@ -98,6 +98,13 @@ def await_summary(runner, gateway, experiment, summary_id, timeout=60):
         time.sleep(3)
 
 
+def validate_age(entry, now=None):
+    now = now or datetime.now(timezone.utc)
+    start,end = [datetime.fromisoformat(entry[k].replace('Z','+00:00')) for k in ('start','end')]
+    if start.tzinfo is None or end.tzinfo is None or not now-timedelta(hours=24) < start < end <= now:
+        raise ValueError('Recording must be in the past and less than 24 hours old')
+
+
 def validate(plan, review):
     human = review.get('status') == 'human_confirmed'
     demo = (review.get('status') == 'reviewed' and review.get('review_mode') == 'ai_demo'
@@ -124,6 +131,7 @@ def validate(plan, review):
         if e.get('label_review_sha256') != review['review_artifact_sha256']:
             raise ValueError('Every experiment must bind the reviewed source artifact')
         start,end = [datetime.fromisoformat(e[k].replace('Z','+00:00')) for k in ('start','end')]
+        validate_age(e)
         if start.tzinfo is None or end.tzinfo is None or not 12 <= (end-start).total_seconds() <= 17:
             raise ValueError('Only existing 12–17 second interval contract supported; short intervals unverified')
         if start.microsecond or end.microsecond:
@@ -142,6 +150,17 @@ def validate(plan, review):
         ms,me = [datetime.fromisoformat(m[k].replace('Z','+00:00')) for k in ('requested_start_utc','requested_end_utc')]
         if m['camera_id'].lower() != e['camera_id'].lower() or not ms <= start < end <= me:
             raise ValueError('Recording provenance mismatch')
+        export = m.get('mkv_export')
+        if export:
+            video = (manifest.parent/export['file']).resolve()
+            if (not video.is_relative_to(manifest.parent.resolve())
+                    or hashlib.sha256(video.read_bytes()).hexdigest() != export['sha256']
+                    or reviewed.get('video_sha256',export['sha256']) != export['sha256']):
+                raise ValueError('Original video export path or hash mismatch')
+        sequences = m.get('recording_sequences')
+        if sequences and not any(datetime.fromisoformat(s['start_utc'].replace('Z','+00:00')) <= start < end
+                <= datetime.fromisoformat(s['end_utc'].replace('Z','+00:00')) for s in sequences):
+            raise ValueError('Recording sequence does not cover request')
         for frame in m['frames']:
             source = (manifest.parent / frame['file']).resolve()
             annotation = reviewed_frames.get(frame['timestamp_utc'], {})
@@ -184,6 +203,26 @@ def verify_availability(entry, evidence, now=None):
         raise ValueError('Recording availability evidence hash mismatch')
 
 
+def quota_balance(raw, contract, now=None):
+    now=now or datetime.now(timezone.utc)
+    if contract.get('kind')=='gateway_system_information':
+        if contract.get('endpoint')!='/api/System/Information':
+            raise ValueError('Unexpected installed quota endpoint')
+        q=raw['QuotaInformation']
+        limit,used=q['DailySummaryQuota'],q['DailySummaryCount']
+        if type(limit) is not int or limit!=500 or type(used) is not int or not 0<=used<=limit:
+            raise ValueError('Quota schema/cap mismatch')
+        reset=datetime.fromisoformat(q['DailySummaryReset'].replace('Z','+00:00'))
+        if reset.tzinfo is None or not now<reset<=now+timedelta(days=1):
+            raise ValueError('Quota reset is stale or unverified')
+        return limit-used
+    remaining=raw[contract['remaining_field']]
+    if (raw[contract['day_field']]!=now.date().isoformat() or raw[contract['limit_field']]!=500
+            or type(remaining) is not int or not 0<=remaining<=500):
+        raise ValueError('Quota schema/date/cap mismatch')
+    return remaining
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--root', type=Path, required=True, help='One durable private root for all days and stages')
@@ -192,10 +231,13 @@ def main():
     p.add_argument('--quota-contract', type=Path, help='Verified read-only endpoint and remaining/limit/day field names')
     p.add_argument('--daily-cap', type=int, default=480)
     p.add_argument('--apply', action='store_true')
+    p.add_argument('--authenticated-preflight', action='store_true', help='Validate plan, log in once and perform read-only history query; never submit summaries')
     p.add_argument('--operator-auth-confirmed', action='store_true', help='Operator has independently confirmed authentication; required for any login')
     p.add_argument('--recording-availability', type=Path, help='Recent hash-bound operator check of exact original recording coverage')
     p.add_argument('--reconcile', nargs=2, metavar=('EXPERIMENT','SUMMARY_ID'))
     a = p.parse_args()
+    if a.apply and a.authenticated_preflight:
+        p.error('Authenticated preflight and submission are separate modes')
     if a.root.resolve().is_relative_to(REPO) and not a.root.resolve().is_relative_to(REPO / 'runs'):
         p.error('Raw outputs must be outside Git or under ignored runs/')
     runner = Runner(a.root, a.daily_cap)
@@ -213,12 +255,44 @@ def main():
     value = digest(plan)
     if frozen.exists() and frozen.read_text() != value:
         raise ValueError('Plan differs from frozen plan; do not replace ledger root to retry')
+    archived = a.root/'plan.private.json'
+    if archived.exists() and digest(json.loads(archived.read_text())) != value:
+        raise ValueError('Archived source/ground-truth plan changed')
+    if not archived.exists():
+        archived.write_text(json.dumps(plan,indent=2))
     frozen.write_text(value)
     print('Validated', len(prepared), 'experiments; concurrency=1')
-    if not a.apply:
+    if not a.apply and not a.authenticated_preflight:
+        runner.db.close()
         return
     if not a.operator_auth_confirmed:
         p.error('Confirm authentication in the operator terminal first; no login attempted')
+    if a.authenticated_preflight:
+        g = Gateway(); operator_authenticate(g)
+        history = g.request('GET','/api/Summaries?Limit=1')
+        if not isinstance(history,(dict,list)):
+            raise ValueError('Authenticated history query returned an unexpected shape')
+        proof = dict(success=True,checked_at=datetime.now(timezone.utc).isoformat(),
+                     plan_sha256=value,authenticated_read='GET /api/Summaries?Limit=1',new_summaries=0)
+        (a.root/'authenticated-preflight.json').write_text(json.dumps(proof,indent=2))
+        print('Authenticated preflight passed; zero summary submissions')
+        # Installed gateway client documents this GET; retain quota fields only.
+        try:
+            info=g.request('GET','/api/System/Information')
+            q=info['QuotaInformation']
+            (a.root/'quota-preflight.private.json').write_text(json.dumps(dict(
+                checked_at=datetime.now(timezone.utc).isoformat(),plan_sha256=value,QuotaInformation=q),indent=2))
+            print('Read-only quota snapshot saved privately')
+        except Exception as exc:
+            print('Quota snapshot unavailable:',type(exc).__name__)
+        runner.db.close()
+        return
+    proof_path = a.root/'authenticated-preflight.json'
+    if not proof_path.exists():
+        p.error('Successful authenticated preflight required before submission')
+    proof = json.loads(proof_path.read_text())
+    if proof.get('success') is not True or proof.get('plan_sha256') != value:
+        p.error('Authenticated preflight does not bind this plan')
     if not a.quota_contract:
         p.error('Verified live quota contract required; no guessed endpoint or quota')
     contract = json.loads(a.quota_contract.read_text())
@@ -241,11 +315,9 @@ def main():
                 await_summary(runner,g,e['experiment_id'],old[0])
             continue
         quota = g.request('GET', endpoint)
+        validate_age(e)
         verify_availability(e,availability)
-        day = datetime.now(timezone.utc).date().isoformat()
-        remaining = quota[contract['remaining_field']]
-        if quota[contract['day_field']] != day or quota[contract['limit_field']] != 500 or type(remaining) is not int or not 0 <= remaining <= 500:
-            raise ValueError('Quota schema/date/cap mismatch; submission blocked')
+        remaining = quota_balance(quota,contract)
         (a.root / 'quota-latest.private.json').write_text(json.dumps(quota))
         runner.reserve(e,payload,remaining)
         # Claim committed before POST. Any exception leaves an ambiguous reservation.

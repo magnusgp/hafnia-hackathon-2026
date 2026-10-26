@@ -1,0 +1,88 @@
+{
+  "new_requests": 4,
+  "offline_preflight": "passed",
+  "new_inference_submissions": 0,
+  "source_recordings": 2,
+  "independent_new_events": 0,
+  "plan_sha256": "2c795997f6e598177cb31f0b42bb9cd554907e6095ef6f9c93037ac03efa72d2",
+  "experiments": [
+    {
+      "experiment_id": "REL26-B-railway-v3-r01",
+      "start": "2026-10-26T22:03:53Z",
+      "end": "2026-10-26T22:04:06Z",
+      "source_recording_id": "acquisition-sha256:5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "request_sha256": "3af77835bb67457bbeb0ec4cf741b218a460359bcd34ea6324d6d1333bf65570",
+      "ground_truth": {
+        "outcome": "supported",
+        "scope": "Visible descent/track presence",
+        "cannot_establish": "Intent, authorization, successful opening or forced entry"
+      },
+      "parse_status": "not_submitted"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v4-r01",
+      "start": "2026-10-26T22:03:53Z",
+      "end": "2026-10-26T22:04:06Z",
+      "source_recording_id": "acquisition-sha256:5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "request_sha256": "c157fa5afa9ba563d2887a6010d95290a73c246c06baa5bf1fa78a27a4fb709b",
+      "ground_truth": {
+        "outcome": "supported",
+        "scope": "Visible descent/track presence",
+        "cannot_establish": "Intent, authorization, successful opening or forced entry"
+      },
+      "parse_status": "not_submitted"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v3-r01",
+      "start": "2026-10-26T22:03:51Z",
+      "end": "2026-10-26T22:04:03Z",
+      "source_recording_id": "acquisition-sha256:71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "request_sha256": "ece9093b282f8e712f5a6e42ef3306a289db7b34682739ea433107bdb0a0b23b",
+      "ground_truth": {
+        "outcome": "supported",
+        "scope": "Visible gate handling/manipulation",
+        "cannot_establish": "Intent, authorization, successful opening or forced entry"
+      },
+      "parse_status": "not_submitted"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v4-r01",
+      "start": "2026-10-26T22:03:51Z",
+      "end": "2026-10-26T22:04:03Z",
+      "source_recording_id": "acquisition-sha256:71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "request_sha256": "63ef48c0d035d425825aff73f7270042b04047ba6109916aa7cab8215191b077",
+      "ground_truth": {
+        "outcome": "supported",
+        "scope": "Visible gate handling/manipulation",
+        "cannot_establish": "Intent, authorization, successful opening or forced entry"
+      },
+      "parse_status": "not_submitted"
+    }
+  ],
+  "authenticated_preflight": "passed",
+  "quota_contract": "verified installed schema and successful authenticated live read",
+  "controls": {
+    "additional_requests": 0,
+    "reason": "No coherent 12-17-second task-matched negative event found in the acquired loops"
+  },
+  "authenticated_checked_at": "2026-10-26T22:26:20.691701+00:00",
+  "authenticated_proof_sha256": "903e985926b7ebf34816c72f3bb0be6bfa6e561801d7e484dffe8951f2e47f26",
+  "daily_limit": 500,
+  "daily_used": 0,
+  "remaining_daily_quota": 500,
+  "next_daily_reset": "2026-10-27T00:00:00Z",
+  "quota_usage_scope": "This gateway only; other-client account usage unmeasured",
+  "source_coverage": "passed; must be rechecked if proof is older than 15 minutes at submission",
+  "checked_at": "2026-10-26T22:27:21.039857+00:00",
+  "submission_recommendation": "GO for four diagnostic requests; stop before submission",
+  "flagship_recommendation": "NO-GO; independent accuracy and hard negatives remain unestablished",
+  "first_submission_age_deadline_utc": "2026-10-27T22:03:51Z",
+  "original_ids_and_prompts": "verified unchanged",
+  "historical_plan_status": "Superseded for execution; retained unchanged; rejected by age check",
+  "decoded_exports": {
+    "railway_frames": 130,
+    "gate_frames": 130,
+    "visible_resets_in_selected_exports": 0,
+    "gate_pts_origin": "unverified; decoded span differs from request duration"
+  }
+}
