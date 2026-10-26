@@ -79,6 +79,8 @@ function Investigation({ e: initial, demoSession, onSaved }: { e: Evidence; demo
   const [e, setEvidence] = useState(initial);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
+    setIndex(i=>Math.min(i, initial.frames.length - 1));
+    setSemantic(i=>Math.min(i, Math.max(0, initial.hafnia.length - 1)));
     setEvidence(previous => {
       if (previous.observations.map(o=>o.observationId).sort().join() !== initial.observations.map(o=>o.observationId).sort().join()) {
         setDecision("Evidence changed: another observation joined this incident. Review the updated evidence before saving.");

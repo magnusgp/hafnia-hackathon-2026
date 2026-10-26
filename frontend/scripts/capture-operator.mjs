@@ -14,6 +14,10 @@ for(const [width,height] of [[1440,900],[1920,1080]]) {
  await page.getByRole('link',{name:'Demo mode',exact:true}).click();
  await page.getByRole('button',{name:'New demo session',exact:true}).click();
  await page.getByRole('button',{name:'Start replay',exact:true}).click();
+ await page.locator('.incident-list .button').first().waitFor();
+ await page.getByRole('button',{name:'Pause replay',exact:true}).click();
+ await page.getByRole('button',{name:'Next observation',exact:true}).click();
+ await page.getByRole('button',{name:'Continue replay',exact:true}).click();
  await page.locator('.incident-list .button').first().click();
  await page.locator('.frame img').evaluate(i=>i.decode());
  await page.getByRole('status').filter({hasText:'Evidence changed: another observation'}).waitFor();

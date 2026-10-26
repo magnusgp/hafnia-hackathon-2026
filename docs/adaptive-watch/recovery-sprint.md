@@ -44,3 +44,16 @@ git diff 8833c744910bd73dff06d498d361b435558339a5...feat/adaptive-watch
 ```
 
 The exact patch is exported privately to `runs/adaptive-watch-release.patch`. Merge/release approval remains outstanding; no automatic merge. Existing unrelated working changes to evaluation/gateway scripts, the operator checkpoint, presentation files, evidence export helper and geometry review helper are preserved and excluded from the recovery commit. Private footage, identities, credentials, SQLite files and operator configuration are excluded from Git.
+## Recorded validation
+
+The exported committed source installed all 92 frontend packages with `bun install --frozen-lockfile` and produced a production build. Its Python suite ran **122 tests: 105 passed, 17 optional ML checks skipped**. Both browser sizes passed against that clean-source server, including actual 409 recovery, 403 authorization rejection and persisted dismissal. The clean-source workflow used the original private seed by explicit path; no private files were added to the export or Git.
+
+The clean recordings are approximately 25 seconds each, with zero page errors and zero failed HTTP responses. Private artifacts:
+
+- `runs/recovery-capture/operator-clean-1440.webm`
+- `runs/recovery-capture/operator-clean-1920.webm`
+- `runs/recovery-capture/interaction-1440.webm` and `interaction-1920.webm` (regression footage includes intentional rejected requests)
+- `runs/recovery-capture/browser-report.json`, `clean-recording-report.json`, `original-failure.json`
+- `runs/recovery-committed-tests.log`, `recovery-committed-browser.log`, `recovery-privacy-audit.json`
+
+The Git audit found no tracked footage, private key files, local configuration, SQLite databases or recognized credential patterns. This is a scoped source audit, not a claim that every possible secret format can be detected. All unrelated working files remain untouched. No force-push, native event, VMS service change or Windows tailscale invocation occurred.
