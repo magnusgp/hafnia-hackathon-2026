@@ -1,0 +1,39 @@
+{
+  "version": "reliability-20261026-v1",
+  "frozen_before_new_inference": true,
+  "review_status": "human_confirmation_pending",
+  "reviewer": "AI-assisted draft; not a human attestation",
+  "unit": "source event loop, not recording or request",
+  "definitions": {
+    "positive": "Directly visible task action in a timestamped source frame.",
+    "negative": "Reviewed sampled frame visibly lacks the task action; does not label unsampled time.",
+    "ambiguous": "Occlusion, seated edge contact, transition or insufficient resolution prevents deciding.",
+    "loop_boundary": "Discontinuous reset brackets; exclude crossing intervals from inference."
+  },
+  "railway": {
+    "task": "Visible descent and established presence in track bed; platform presence alone is negative.",
+    "negative_sample_indices": [0, 1, 2, 3, 4, 5],
+    "ambiguous_sample_indices": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    "positive_sample_indices": [19, 20, 21, 22, 23],
+    "remaining_sample_indices": "24 and 25 require full-resolution review of far-platform exit",
+    "entry_bracket_utc": ["2026-10-22T11:03:48.013Z", "2026-10-22T11:03:48.513Z"],
+    "loop_boundary": "No visible reset in 26 sampled frames; unsampled continuity unverified."
+  },
+  "gate": {
+    "task": "Person visibly handles or manipulates gate area; opening, forced entry, authorization and criminal intent are separate unknowns.",
+    "positive_sample_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "negative_sample_indices": [11, 12, 13, 14],
+    "ambiguous_sample_indices": [15],
+    "loop_reset_candidate_bracket_indices": [14, 15],
+    "remaining_sample_indices": "Repeated cycles retained under one event identity; require per-frame human confirmation.",
+    "tool_identity": "Uncertain at contact-sheet resolution",
+    "opening_or_entry": "Not established"
+  },
+  "evaluation_policy": {
+    "human_signoff_required_before_new_inference": true,
+    "geometry": "Previously revised polygon is calibration-only. No held-out accuracy claim.",
+    "uncertainty": "Never count ambiguous samples as negatives.",
+    "intent": "Never infer criminal intent or unauthorized activity from visible manipulation.",
+    "independence": "Repeated loops, prompt variants and repeated inference are correlated."
+  }
+}

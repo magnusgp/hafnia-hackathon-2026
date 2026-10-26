@@ -1,0 +1,177 @@
+{
+  "saved_requests": 16,
+  "new_requests": 0,
+  "distributions": [
+    {
+      "task": "bin_pushed_over_onto_sidewalk",
+      "camera": "bin_pushed_over_onto_sidewalk",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "bin_pushed_over_onto_sidewalk",
+      "camera": "bin_pushed_over_onto_sidewalk",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "escooter_left_across_sidewalk",
+      "camera": "escooter_left_across_sidewalk",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "escooter_left_across_sidewalk",
+      "camera": "escooter_left_across_sidewalk",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "graffiti_on_standing_train",
+      "camera": "busy_street",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "graffiti_on_standing_train",
+      "camera": "graffiti_on_standing_train",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "graffiti_on_standing_train",
+      "camera": "graffiti_on_standing_train",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "person_on_railway_tracks",
+      "camera": "busy_street",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "person_on_railway_tracks",
+      "camera": "person_on_railway_tracks",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "person_on_railway_tracks",
+      "camera": "person_on_railway_tracks",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "school_gate_break_in_night",
+      "camera": "busy_street",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "school_gate_break_in_night",
+      "camera": "school_gate_break_in_night",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "school_gate_break_in_night",
+      "camera": "school_gate_break_in_night",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "vehicle_breakdown_traffic_queue",
+      "camera": "busy_street",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:not_observed": 1
+      }
+    },
+    {
+      "task": "vehicle_breakdown_traffic_queue",
+      "camera": "vehicle_breakdown_traffic_queue",
+      "prompt": "v1",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    },
+    {
+      "task": "vehicle_breakdown_traffic_queue",
+      "camera": "vehicle_breakdown_traffic_queue",
+      "prompt": "v2",
+      "counts": {
+        "valid_model_decision:supported": 1
+      }
+    }
+  ],
+  "cv": {
+    "original": {
+      "negative": {
+        "total": 6,
+        "flagged": 0
+      },
+      "ambiguous": {
+        "total": 13,
+        "flagged": 8
+      },
+      "positive": {
+        "total": 5,
+        "flagged": 5
+      },
+      "unreviewed": {
+        "total": 2,
+        "flagged": 0
+      }
+    },
+    "revised_calibration_only": {
+      "negative": {
+        "total": 6,
+        "flagged": 6
+      },
+      "ambiguous": {
+        "total": 13,
+        "flagged": 13
+      },
+      "positive": {
+        "total": 5,
+        "flagged": 5
+      },
+      "unreviewed": {
+        "total": 2,
+        "flagged": 2
+      }
+    }
+  },
+  "definitions_sha256": "5f8cac6bf86eaa6bfbe523d2bb87d9ae441468db16861e156a57938abd305576",
+  "cv_source_sha256": "47769c58e0d2b8169fba9ce3e9d8592e613563f40b0c225e9ba5bc3d86f8c65e",
+  "independent_events": "At most one source loop per scene; no independent failure-rate estimate",
+  "human_review": "pending",
+  "hard_negatives": "No human-confirmed task-matched negative events evaluated"
+}

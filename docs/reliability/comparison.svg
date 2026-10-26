@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+<rect width="1200" height="675" fill="#101820"/>
+<g font-family="Arial, sans-serif" fill="#eef4f5">
+<text x="60" y="72" font-size="34" font-weight="bold">Railway: disagreement found; reliability unproven</text>
+<text x="60" y="115" font-size="21">Saved evidence • 26 October 2026 • No new inference requests</text>
+<rect x="60" y="155" width="520" height="205" rx="12" fill="#21313d"/>
+<text x="85" y="195" font-size="25" font-weight="bold">Hafnia: 2 matched assessments</text>
+<text x="85" y="241" font-size="29" fill="#ffb3aa">Both: not_observed</text>
+<text x="85" y="285" font-size="20">Source samples show track-bed entry.</text>
+<text x="85" y="320" font-size="20">Entry bracket: 11:03:48.013–48.513 UTC</text>
+<rect x="610" y="155" width="530" height="205" rx="12" fill="#21313d"/>
+<text x="635" y="195" font-size="25" font-weight="bold">CV: frame-level diagnostic</text>
+<text x="635" y="241" font-size="27" fill="#ffd28a">Original: 5 / 5 post-entry flags</text>
+<text x="635" y="285" font-size="20">But 8 ambiguous seated frames also flag.</text>
+<text x="635" y="320" font-size="20">Not verified physical occupancy.</text>
+<text x="60" y="415" font-size="27" fill="#ffb3aa">Reject previous geometry revision</text>
+<text x="60" y="455" font-size="23">It flags 6 / 6 clear pre-entry negative samples (original: 0 / 6).</text>
+<text x="60" y="495" font-size="21">Draft labels await human confirmation. Same-clip calibration; no held-out accuracy.</text>
+<text x="60" y="555" font-size="29" font-weight="bold">Provisional NO-GO as flagship</text>
+<text x="60" y="597" font-size="21">Need corrected geometry, independent events and genuine task-matched negatives.</text>
+<text x="60" y="640" font-size="17" fill="#b4c8cf">Source: results/reliability/saved-analysis.json • No private imagery or raw responses included</text>
+</g></svg>

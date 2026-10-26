@@ -1,0 +1,174 @@
+"""Private, fail-closed controlled evaluation; sequential concurrency = one.
+
+Quota contract must be verified from the installed gateway documentation first.
+No PromptId, event, alarm or dispatch endpoints are used.
+"""
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import sqlite3
+import sys
+import time
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+from adaptive_watch.evaluation import parse_result
+from scene_contracts.gateway import Gateway, video_uri
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+class Runner:
+    def __init__(self, root, cap=480):
+        if not 1 <= cap <= 480:
+            raise ValueError('Daily cap must be 1..480; preserve gateway headroom')
+        self.root, self.cap = Path(root), cap
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.db = sqlite3.connect(self.root / 'reliability-ledger.sqlite3')
+        self.db.execute('CREATE TABLE IF NOT EXISTS requests (experiment TEXT PRIMARY KEY, day TEXT, stage TEXT, payload TEXT, state TEXT, summary_id TEXT, result TEXT)')
+        self.db.commit()
+
+    def reserve(self, entry, payload, remaining):
+        day = datetime.now(timezone.utc).date().isoformat()
+        with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
+            if self.db.execute('SELECT 1 FROM requests WHERE state=?', ('ambiguous',)).fetchone():
+                raise ValueError('Reconcile ambiguous requests before new submissions')
+            used = self.db.execute('SELECT COUNT(*) FROM requests WHERE day=?', (day,)).fetchone()[0]
+            if used >= self.cap or remaining <= 20:
+                raise ValueError('Daily cap or gateway headroom reached')
+            limit = {'A':128, 'B':192, 'C':144}[entry['stage']]
+            count = self.db.execute('SELECT COUNT(*) FROM requests WHERE stage=?', (entry['stage'],)).fetchone()[0]
+            if count >= limit:
+                raise ValueError('Stage cap reached')
+            self.db.execute('INSERT INTO requests VALUES (?,?,?,?,?,NULL,NULL)',
+                (entry['experiment_id'], day, entry['stage'], json.dumps(payload, sort_keys=True), 'ambiguous'))
+
+    def reconcile(self, gateway, experiment, summary_id):
+        row = self.db.execute('SELECT payload,summary_id FROM requests WHERE experiment=?', (experiment,)).fetchone()
+        if not row or row[1] and row[1] != summary_id:
+            raise ValueError('Unknown experiment or conflicting summary ID')
+        result = gateway.request('GET', '/api/Summaries/' + summary_id)
+        expected = json.loads(row[0])
+        if not isinstance(result, dict) or result.get('Id') != summary_id or any(result.get(k) != v for k,v in expected.items()):
+            raise ValueError('Reconciliation requires exact returned prompt and video URI; retain ambiguity otherwise')
+        with self.db:
+            self.db.execute('UPDATE requests SET summary_id=?,state=? WHERE experiment=?', (summary_id, 'submitted', experiment))
+
+    def poll(self, gateway, experiment, summary_id):
+        if not summary_id or any(c not in '0123456789abcdefABCDEF-' for c in summary_id):
+            raise ValueError('Invalid summary ID')
+        result = gateway.request('GET', '/api/Summaries/' + summary_id)
+        parsed = parse_result(result)
+        with self.db:
+            self.db.execute('UPDATE requests SET state=?,result=? WHERE experiment=?',
+                (parsed['category'], json.dumps(dict(raw=result, parsed=parsed)), experiment))
+        return parsed['category']
+
+
+def validate(plan, review):
+    if review.get('status') != 'human_confirmed' or not review.get('reviewer') or not review.get('reviewed_at'):
+        raise ValueError('Phase A human review is required')
+    definitions = REPO / 'docs/reliability/label-definitions.json'
+    if review.get('definitions_sha256') != hashlib.sha256(definitions.read_bytes()).hexdigest():
+        raise ValueError('Review must bind frozen definitions')
+    draft = Path(review['review_artifact'])
+    if review.get('review_artifact_sha256') != hashlib.sha256(draft.read_bytes()).hexdigest():
+        raise ValueError('Human review must bind the timestamped source labels')
+    ids = set()
+    for e in plan:
+        if e['experiment_id'] in ids or e['stage'] not in {'A','B','C'}:
+            raise ValueError('Duplicate experiment or invalid stage')
+        ids.add(e['experiment_id'])
+        if not e.get('event_id') or not e.get('prompt') or e.get('continuity_review') != 'human_confirmed_no_loop_boundary':
+            raise ValueError('Event identity, exact prompt and reviewed continuity required')
+        if e.get('label_review_sha256') != review['review_artifact_sha256']:
+            raise ValueError('Every experiment must bind the reviewed source artifact')
+        start,end = [datetime.fromisoformat(e[k].replace('Z','+00:00')) for k in ('start','end')]
+        if start.tzinfo is None or end.tzinfo is None or not 12 <= (end-start).total_seconds() <= 17:
+            raise ValueError('Only existing 12–17 second interval contract supported; short intervals unverified')
+        manifest = Path(e['recording_manifest'])
+        if hashlib.sha256(manifest.read_bytes()).hexdigest() != e['manifest_sha256']:
+            raise ValueError('Manifest hash mismatch')
+        m = json.loads(manifest.read_text(encoding='utf-8-sig'))
+        ms,me = [datetime.fromisoformat(m[k].replace('Z','+00:00')) for k in ('requested_start_utc','requested_end_utc')]
+        if m['camera_id'].lower() != e['camera_id'].lower() or not ms <= start < end <= me:
+            raise ValueError('Recording provenance mismatch')
+        yield e, dict(Prompt=e['prompt'], VideoUris=[video_uri(e['camera_id'],start,end)])
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--root', type=Path, required=True, help='One durable private root for all days and stages')
+    p.add_argument('--plan', type=Path)
+    p.add_argument('--review', type=Path)
+    p.add_argument('--quota-contract', type=Path, help='Verified read-only endpoint and remaining/limit/day field names')
+    p.add_argument('--daily-cap', type=int, default=480)
+    p.add_argument('--apply', action='store_true')
+    p.add_argument('--reconcile', nargs=2, metavar=('EXPERIMENT','SUMMARY_ID'))
+    a = p.parse_args()
+    if a.root.resolve().is_relative_to(REPO) and not a.root.resolve().is_relative_to(REPO / 'runs'):
+        p.error('Raw outputs must be outside Git or under ignored runs/')
+    runner = Runner(a.root, a.daily_cap)
+    if a.reconcile:
+        g = Gateway(); g.authenticate()
+        runner.reconcile(g, *a.reconcile)
+        return
+    if not a.plan or not a.review:
+        p.error('--plan and --review required')
+    plan = json.loads(a.plan.read_text())
+    prepared = list(validate(plan, json.loads(a.review.read_text())))
+    frozen = a.root / 'plan.sha256'
+    value = digest(plan)
+    if frozen.exists() and frozen.read_text() != value:
+        raise ValueError('Plan differs from frozen plan; do not replace ledger root to retry')
+    frozen.write_text(value)
+    print('Validated', len(prepared), 'experiments; concurrency=1')
+    if not a.apply:
+        return
+    if not a.quota_contract:
+        p.error('Verified live quota contract required; no guessed endpoint or quota')
+    contract = json.loads(a.quota_contract.read_text())
+    endpoint = contract['endpoint']
+    if not endpoint.startswith('/api/') or '?' in endpoint or not contract.get('verified_from'):
+        raise ValueError('Verified read-only quota endpoint required')
+    g = Gateway(); g.authenticate()
+    for e,payload in prepared:
+        old = runner.db.execute('SELECT summary_id,state,payload FROM requests WHERE experiment=?', (e['experiment_id'],)).fetchone()
+        if old:
+            if json.loads(old[2]) != payload:
+                raise ValueError('Experiment payload changed')
+            if not old[0]:
+                raise ValueError('Ambiguous submission; reconcile exact summary ID, never resubmit')
+            if old[1] not in {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format'}:
+                print(e['experiment_id'], runner.poll(g,e['experiment_id'],old[0]))
+            continue
+        quota = g.request('GET', endpoint)
+        day = datetime.now(timezone.utc).date().isoformat()
+        remaining = quota[contract['remaining_field']]
+        if quota[contract['day_field']] != day or quota[contract['limit_field']] != 500 or type(remaining) is not int or not 0 <= remaining <= 500:
+            raise ValueError('Quota schema/date/cap mismatch; submission blocked')
+        (a.root / 'quota-latest.private.json').write_text(json.dumps(quota))
+        runner.reserve(e,payload,remaining)
+        # Claim committed before POST. Any exception leaves an ambiguous reservation.
+        result = g.request('POST', '/api/Summaries', payload)
+        if not isinstance(result,dict) or not result.get('Id'):
+            raise ValueError('Ambiguous submission; reconcile, never retry')
+        with runner.db:
+            runner.db.execute('UPDATE requests SET summary_id=?,state=? WHERE experiment=?', (result['Id'],'submitted',e['experiment_id']))
+        print(e['experiment_id'], runner.poll(g,e['experiment_id'],result['Id']))
+        # Do not submit another while the previous request remains in flight.
+        deadline = time.monotonic() + 60
+        while runner.db.execute('SELECT state FROM requests WHERE experiment=?',(e['experiment_id'],)).fetchone()[0] == 'pending':
+            if time.monotonic() >= deadline:
+                raise TimeoutError('Existing summary remains pending; rerun this plan to resume its ID')
+            time.sleep(3)
+            print(e['experiment_id'], runner.poll(g,e['experiment_id'],result['Id']))
+
+
+if __name__ == '__main__':
+    main()
