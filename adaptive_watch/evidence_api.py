@@ -11,7 +11,7 @@ import sqlite3
 import threading
 import secrets
 from http.cookies import SimpleCookie
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from adaptive_watch import episodes
 from adaptive_watch.capabilities import camera_config, cameras
@@ -140,7 +140,7 @@ class EvidenceStore:
             o.pop('frames', None)
         for i, frame in enumerate(d['frames']):
             frame.pop('path'); frame.pop('sha256')
-            frame['file'] = f'/api/incidents/{identifier}/frames/{i}'
+            frame['file'] = f'/api/incidents/{identifier}/frames/{i}?observation={d["observationId"]}'
         return d
 
 
@@ -188,7 +188,16 @@ def handler(root, frontend=None, demo=None, native=None):
                     if frame is None:
                         data, mime = json.dumps(store.public(identifier)).encode(), 'application/json'
                     else:
-                        item = store.get(identifier)['frames'][int(frame)]
+                        document = store.get(identifier)
+                        observation = parse_qs(urlsplit(self.path).query).get('observation')
+                        if observation is not None:
+                            if len(observation) != 1 or not re.fullmatch('[a-f0-9]{24}', observation[0]):
+                                raise ValueError('Invalid frame observation identity')
+                            matches = [o for o in document['observations'] if o['observationId'] == observation[0]]
+                            if not matches:
+                                raise KeyError(observation[0])
+                            document = matches[0]
+                        item = document['frames'][int(frame)]
                         if sha(item['path']) != item['sha256']:
                             raise ValueError('Frame changed since indexing')
                         data, mime = Path(item['path']).read_bytes(), 'image/jpeg'

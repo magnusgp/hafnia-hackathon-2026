@@ -1,4 +1,5 @@
 ﻿"""Evidence API isolation and source validation; uses generated non-sensitive fixtures."""
+from copy import deepcopy
 import http.client
 import json
 from pathlib import Path
@@ -95,6 +96,43 @@ class EvidenceAPITests(unittest.TestCase):
                 self.assertEqual(request(f'/api/incidents/{identifier}/frames/0')[0],409)
                 self.assertEqual(request(f'/api/incidents/{identifier}/frames/999')[0],404)
             finally:server.shutdown();server.server_close();thread.join()
+
+    def test_frame_url_remains_bound_to_observation_after_arrival(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store, identifier, _ = self.register(directory)
+            original_url = store.public(identifier)['frames'][0]['file']
+            original = store.get(identifier)['frames'][0]
+            latest = deepcopy(store.get(identifier)['observations'][0])
+            latest['manifestSha256'] = 'f' * 64
+            latest['cvSha256'] = 'c' * 64
+            latest['interval'] = ['2026-10-23T10:00:00.001Z', '2026-10-23T10:00:15.001Z']
+            changed = Path(directory) / 'later.jpg'
+            changed.write_bytes(b'later observation')
+            from adaptive_watch import episodes
+            from adaptive_watch.incident import sha
+            latest['frames'][0].update(path=str(changed), sha256=sha(changed))
+            self.assertEqual(episodes.ingest(store.db, latest), identifier)
+            current_url = store.public(identifier)['frames'][0]['file']
+            self.assertNotEqual(original_url, current_url)
+            store.close()
+            server = ThreadingHTTPServer(('127.0.0.1', 0), handler(Path(directory) / 'index'))
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            def fetch(url):
+                connection = http.client.HTTPConnection('127.0.0.1', server.server_port)
+                connection.request('GET', url)
+                response = connection.getresponse()
+                result = response.status, response.read()
+                connection.close()
+                return result
+            try:
+                self.assertEqual(fetch(original_url), (200, Path(original['path']).read_bytes()))
+                self.assertEqual(fetch(current_url), (200, b'later observation'))
+                self.assertEqual(fetch(current_url.split('?')[0] + '?observation=' + '0' * 24)[0], 404)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join()
 
     def test_http_decisions_persist_and_reject_cross_origin(self):
         with tempfile.TemporaryDirectory() as d:
