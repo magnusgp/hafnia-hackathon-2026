@@ -13,3 +13,8 @@ runs/
 *.avi
 *.mkv
 .DS_Store
+
+# Private operator captures and SSH material
+*.webm
+*.mov
+*.ppk

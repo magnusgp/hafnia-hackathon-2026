@@ -100,6 +100,30 @@ class DemoTests(unittest.TestCase):
             self.assertEqual(saved['observationCount'], 3)
             store.close()
 
+    def test_open_investigation_stale_evidence_never_saves(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            demo = Demo(root / 'demo', root / 'real', self.seed(root))
+            store = EvidenceStore(demo.active())
+            try:
+                demo.advance(store.db, 0)
+                incident = store.get(store.index()['records'][0]['id'])
+                old_ids = sorted(o['observationId'] for o in incident['observations'])
+                demo.advance(store.db, 1)
+                for action in ('review_required', 'dismiss', 'request_escalation'):
+                    with self.assertRaisesRegex(ValueError, 'Evidence changed'):
+                        episodes.decide(store.db, incident['id'], action, 'Preserve note', old_ids)
+                updated = store.get(incident['id'])
+                self.assertEqual(updated['decisions'], [])
+                self.assertEqual(updated['approvalRequests'], [])
+                self.assertEqual(updated['state'], 'candidate')
+                self.assertEqual(updated['observationCount'], 2)
+                ids = sorted(o['observationId'] for o in updated['observations'])
+                episodes.decide(store.db, incident['id'], 'review_required', 'Preserve note', ids)
+                self.assertEqual(store.get(incident['id'])['decisions'][0]['evidence'], ids)
+            finally:
+                store.close()
+
     def test_native_proposal_uses_measured_object(self):
         with tempfile.TemporaryDirectory() as directory:
             evidence = assemble(*test_sidewalk_incident.IncidentTests().fixture(Path(directory)))

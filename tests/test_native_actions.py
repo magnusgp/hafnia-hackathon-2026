@@ -51,7 +51,7 @@ class NativeActionTests(unittest.TestCase):
             store, identifier, native = self.fixture(Path(directory))
             try:
                 with patch('adaptive_watch.dispatch.send', return_value=dict(state='accepted')) as send:
-                    preview = native.prepare(store, identifier, 'human-session')
+                    preview = native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
                     send.assert_not_called()
                     self.assertNotIn('xml', preview)
                     self.assertNotIn('target', preview)
@@ -69,18 +69,47 @@ class NativeActionTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_prepare_rejects_stale_browser_evidence_without_creating_intent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store, identifier, native = self.fixture(Path(directory))
+            try:
+                before = len(store.get(identifier)['approvalRequests'])
+                with patch('adaptive_watch.dispatch.send') as send:
+                    with self.assertRaisesRegex(ValueError, 'Evidence changed'):
+                        native.prepare(store, identifier, 'human-session', [])
+                    self.assertEqual(len(store.get(identifier)['approvalRequests']), before)
+                    send.assert_not_called()
+            finally:
+                store.close()
+
+    def test_save_review_then_prepare_records_request_without_sending(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store, identifier, native = self.fixture(Path(directory))
+            try:
+                # Remove only the fixture setup request to model the operator's Save review path.
+                store.db.execute('DELETE FROM approval_requests')
+                store.db.commit()
+                self.assertTrue(native.status(store, identifier)['available'])
+                with patch('adaptive_watch.dispatch.send') as send:
+                    preview = native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
+                    self.assertTrue(preview['token'])
+                    self.assertEqual(len(store.get(identifier)['approvalRequests']), 1)
+                    send.assert_not_called()
+            finally:
+                store.close()
+
     def test_changed_destination_or_expiry_cannot_send(self):
         with tempfile.TemporaryDirectory() as directory:
             store, identifier, native = self.fixture(Path(directory))
             try:
-                preview = native.prepare(store, identifier, 'human-session')
+                preview = native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
                 config = json.loads(native.config.read_text())
                 config['target'] = '127.0.0.1:9999'
                 native.config.write_text(json.dumps(config))
                 with patch('adaptive_watch.dispatch.send') as send:
                     with self.assertRaisesRegex(ValueError, 'changed'):
                         native.confirm(store, identifier, 'human-session', dict(token=preview['token'], confirmed=True))
-                    preview = native.prepare(store, identifier, 'human-session')
+                    preview = native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
                     row = store.db.execute('SELECT token,document FROM native_confirmations WHERE token=?', (episodes.digest(preview['token']),)).fetchone()
                     expired = json.loads(row[1]); expired['expires'] = '2000-01-01T00:00:00+00:00'
                     with store.db:
@@ -95,12 +124,12 @@ class NativeActionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store, identifier, native = self.fixture(Path(directory))
             try:
-                preview = native.prepare(store, identifier, 'human-session')
+                preview = native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
                 with patch('adaptive_watch.dispatch.send', return_value=dict(state='uncertain')) as send:
                     result = native.confirm(store, identifier, 'human-session', dict(token=preview['token'], confirmed=True))
                     self.assertEqual(result['state'], 'uncertain')
                     with self.assertRaises(ValueError):
-                        native.prepare(store, identifier, 'human-session')
+                        native.prepare(store, identifier, 'human-session', sorted(o['observationId'] for o in store.get(identifier)['observations']))
                     ids = sorted(o['observationId'] for o in store.get(identifier)['observations'])
                     with self.assertRaisesRegex(ValueError, 'reserved'):
                         episodes.decide(store.db, identifier, 'dismiss', evidence=ids)

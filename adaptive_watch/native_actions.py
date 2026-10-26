@@ -14,7 +14,7 @@ class NativeActions:
     def __init__(self, config):
         self.config = Path(config).resolve()
 
-    def context(self, store, identifier):
+    def context(self, store, identifier, require_request=True):
         config = json.loads(self.config.read_text(encoding='utf-8-sig'))
         d = store.get(identifier)
         if (config.get('configured') is not True or not config.get('configuration_verified_by') or
@@ -23,7 +23,7 @@ class NativeActions:
             raise ValueError('Dedicated XProtect configuration has not been verified')
         if d['evidenceKind'] != 'fresh_analysis' or any(o.get('syntheticFixture') or o.get('loopReset') for o in d['observations']):
             raise ValueError('Native action requires fresh, coherent evidence')
-        if d['state'] != 'review_required' or not d['approvalRequests']:
+        if d['state'] != 'review_required':
             raise ValueError('Review and request escalation first')
         if store.db.execute('SELECT 1 FROM native_dispatches WHERE episode=?', (identifier,)).fetchone():
             raise ValueError('Native action already reserved; administrator reconciliation required')
@@ -39,7 +39,10 @@ class NativeActions:
             raise ValueError('Configured source differs from reviewed incident')
         ids = sorted(o['observationId'] for o in d['observations'])
         revision = episodes.digest([ids, d['hafnia']])
-        if not any(r.get('revision') == revision and r['evidence'] == ids for r in d['approvalRequests']):
+        if (not d['decisions'] or d['decisions'][-1]['evidence'] != ids or
+                d['decisions'][-1]['assessments'] != d['hafnia']):
+            raise ValueError('Evidence changed since review; save a new review')
+        if require_request and not any(r.get('revision') == revision and r['evidence'] == ids for r in d['approvalRequests']):
             raise ValueError('Evidence changed; review and request escalation again')
         binding = dict(incident=identifier, revision=revision, config=sha(self.config),
                        payload=meta['xml_sha256'], evidence=sha(root / 'joined.json'),
@@ -55,12 +58,16 @@ class NativeActions:
                         reason='Transport accepted; verify alarm, camera, playback and overlay in Smart Client separately.' if state == 'accepted'
                         else 'Dispatch reserved or uncertain. Administrator reconciliation required; do not retry.')
         try:
-            d, args, root, binding, config = self.context(store, identifier)
+            d, args, root, binding, config = self.context(store, identifier, require_request=False)
             return dict(available=True, state='confirmation_required', destination=config['destination_label'])
         except (ValueError, KeyError, OSError, TypeError):
             return dict(available=False, state='unavailable', reason='Native prerequisites incomplete: review, approved geometry, fresh evidence and verified XProtect setup are required.')
 
-    def prepare(self, store, identifier, session):
+    def prepare(self, store, identifier, session, evidence):
+        d, args, root, binding, config = self.context(store, identifier, require_request=False)
+        # Preparing records intent only; sending still requires the bound human confirmation.
+        episodes.decide(store.db, identifier, 'request_escalation', '',
+                        evidence)
         d, args, root, binding, config = self.context(store, identifier)
         token = secrets.token_urlsafe(32)
         expiry = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()

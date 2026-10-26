@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import logging
 import mimetypes
 from pathlib import Path
 import re
@@ -208,6 +209,7 @@ def handler(root, frontend=None, demo=None, native=None):
             except (KeyError,IndexError,FileNotFoundError):
                 self.send_error(404)
             except (ValueError,TypeError,sqlite3.Error,OSError):
+                logging.getLogger(__name__).exception("Evidence request rejected: %s %s", self.command, path)
                 self.send_error(409,'Evidence validation failed')
             finally:
                 store.close()
@@ -227,22 +229,23 @@ def handler(root, frontend=None, demo=None, native=None):
             session = session.value if session else None
             if session not in sessions or self.headers.get('X-AW-CSRF') != session:
                 self.send_error(403); return
-            store = EvidenceStore(demo.active() if demo else root)
-            try:
-                length = int(self.headers.get('Content-Length','0'))
-                if not 0 < length <= 16384 or self.headers.get('Content-Type') != 'application/json':
-                    raise ValueError('Invalid body')
-                body = json.loads(self.rfile.read(length))
-                if not isinstance(body, dict):
-                    raise ValueError("Expected object")
-                if demo and body.get("demoSession") != demo.active().name:
-                    raise ValueError("Replay session changed; reload")
-                with mutation_lock:
+            # Bind the active replay store and session check to the same mutation lock.
+            with mutation_lock:
+                store = EvidenceStore(demo.active() if demo else root)
+                try:
+                    length = int(self.headers.get('Content-Length','0'))
+                    if not 0 < length <= 16384 or self.headers.get('Content-Type') != 'application/json':
+                        raise ValueError('Invalid body')
+                    body = json.loads(self.rfile.read(length))
+                    if not isinstance(body, dict):
+                        raise ValueError("Expected object")
+                    if demo and body.get("demoSession") != demo.active().name:
+                        raise ValueError("Replay session changed; reload")
                     if native_match:
                         if demo or native is None:
                             raise ValueError('Native action unavailable')
                         identifier, action = native_match.groups()
-                        result = native.prepare(store,identifier,session) if action == 'prepare' else native.confirm(store,identifier,session,body)
+                        result = native.prepare(store,identifier,session,body['evidence']) if action == 'prepare' else native.confirm(store,identifier,session,body)
                     elif demo and path == '/api/demo/reset':
                         demo.reset()
                         store.close()
@@ -254,18 +257,19 @@ def handler(root, frontend=None, demo=None, native=None):
                     else:
                         episodes.decide(store.db,match[1],body['action'],body.get('note',''),body['evidence'])
                         result = store.public(match[1])
-                data = json.dumps(result).encode()
-                self.send_response(200)
-                self.send_header('Content-Type','application/json')
-                self.send_header('Cache-Control','no-store')
-                self.send_header('Content-Length',str(len(data)))
-                self.end_headers(); self.wfile.write(data)
-            except KeyError:
-                self.send_error(404)
-            except (ValueError,TypeError,sqlite3.Error,OSError):
-                self.send_error(409,'Decision rejected; reload evidence')
-            finally:
-                store.close()
+                    data = json.dumps(result).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type','application/json')
+                    self.send_header('Cache-Control','no-store')
+                    self.send_header('Content-Length',str(len(data)))
+                    self.end_headers(); self.wfile.write(data)
+                except KeyError:
+                    self.send_error(404)
+                except (ValueError,TypeError,sqlite3.Error,OSError):
+                    logging.getLogger(__name__).exception("Evidence request rejected: %s %s", self.command, path)
+                    self.send_error(409,'Decision rejected; reload evidence')
+                finally:
+                    store.close()
     return Handler
 
 

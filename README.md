@@ -1,82 +1,65 @@
-# Hafnia Hackathon 2026 — Scene Contracts
+# Adaptive Watch
 
-**Adaptive Watch: evidence-grounded qualification of persistent sidewalk objects.**
-The current product combines Linux CUDA object localization and bounded sampled
-stationarity with Hafnia interpretation of the same XProtect recording. Operators
-review private frame playback, camera-specific pedestrian zones, actual model
-responses and an exact native-event preview before any dispatch.
+Adaptive Watch helps XProtect security operators investigate persistent objects on pedestrian routes. Repeated observations join an incident so the operator can review source frames, localized stationarity and Hafnia interpretation, save a finding, or dismiss it. Native escalation requires separately validated evidence and explicit human authorization.
 
-Start with the [setup and architecture guide](docs/adaptive-watch/setup.md) and
-[polygon checkpoint, exact XProtect configuration and demo script](docs/adaptive-watch/final-integration.md).
-The saved scooter/bin evidence is retrospective. Geometry approval, the dedicated
-alarm configuration and a fresh native sidewalk alarm remain live acceptance gates.
-No independent accuracy improvement has been established. Earlier experiments and
-the Scene Contracts console below are historical; the fog improvement gate failed.
+## Architecture
 
-> **Adaptive Watch (branch `feat/adaptive-watch`):** camera-specific visual novelty as a pre-filter for Hafnia. Checkpoint A (ML feasibility) — [report](docs/adaptive-watch/checkpoint-a.md), [pre-registration](docs/adaptive-watch/preregistration.md). **ML recovery sprint (2026-10-21):** [handoff](docs/sprint-handoff.md) — T4/XProtect runbook, visibility task ([results](docs/visibility/results.md)), native analytics XML events. The ML code is opt-in: `uv sync --group ml`, then `uv run --group ml python aw.py --help`.
+- **Windows / p022:** XProtect recorded snapshots and acquisition manifests; the existing Hafnia gateway supplies recorded-interval semantic assessments. Gateway credentials remain in the terminal/private configuration.
+- **Linux / p022-linux:** the existing SSH identity runs pinned OWL-ViT on the NVIDIA A10G. Camera-specific geometry and temporal measurements qualify a candidate; they do not measure pedestrian clearance.
+- **Evidence and lifecycle:** Python validates source hashes, frame timestamps, camera/interval identity and original Hafnia responses. SQLite retains observations, decisions, escalation intent and dispatch reservations. Decisions reject stale evidence with HTTP 409.
+- **Operator UI:** React/TypeScript and Polar styling, served locally by the Python evidence API. Incidents is the default; Demo mode isolates replay controls. Dismissed incidents remain in history. Evidence changes refresh an open investigation and require another decision after a conflict.
+- **Native action:** backend-owned, expiring confirmation binds exact immutable payload, evidence revision, destination, configuration and human session. Persistent reservations prevent duplicate/uncertain sends. Transport acceptance is separate from verified Smart Client alarm creation.
 
-Give every security camera an operational responsibility. The local browser console provides fixed-template contracts, exact request previews, single recorded-interval inferences, persistent evidence cases and operator reviews. It works with saved Hafnia results while the gateway is unavailable.
+## Developer setup
 
-**Start here:** [operator MVP setup, current limits, rebuild steps, real-data acceptance checklist and demonstration script](docs/operator-mvp.md). Run `.\scripts\start_scene_contracts.ps1` on p022, then open `http://127.0.0.1:8086` in the VM browser. Export the camera catalog first as described in the guide.
-
-New Scene Contracts evaluations send inline prompts **without the legacy PromptId**. The unchanged v0.1 route below remains a separate regression demonstration; its gateway keyword rule acts before Python validation. REST event writes and a second real roadway analysis remain VM acceptance gates. The [v0.2 architecture document](docs/scene-contracts-v02.md) is retained as historical context.
+Python 3.11, uv, Bun and installed Microsoft Edge are required for the full local workflow. The backend uses Python's standard library. From a clean checkout:
 
 ```powershell
 uv sync --frozen
-uv run --frozen python -m unittest discover -s tests -v
-uv run --frozen python scene26.py contracts
-uv run --frozen python scene26.py cases
+uv run --frozen python -m unittest discover -s tests
+cd frontend
+bun install --frozen-lockfile
+bun run build
+cd ..
 ```
 
-Python is pinned to 3.11 with uv. No third-party Python dependencies. Existing v0.1 commands below are preserved.
+For an empty local workspace (no private evidence required):
 
-## Validated v0.1 integration
+```powershell
+uv run --frozen python -m adaptive_watch.evidence_api --root runs/local serve --frontend frontend/dist --port 8770
+```
 
-This is a small Python *gateway integration proof*, not a product commitment. Its purpose is to verify `XProtect video → Hafnia VLM → decision token → gateway rule → XProtect analytics event → Smart Client Alarm Manager`.
+Open http://127.0.0.1:8770. No footage or inference results are invented when private inputs are absent.
 
-## Boundaries
+For the prepared, validated replay on **p022**, open a browser **inside p022** at http://127.0.0.1:8770. Choose **Demo mode**, **New demo session**, then start or step replay. It uses saved XProtect/CV/Hafnia evidence; repeated arrivals are synthetic and add no independent evidence. Six arrivals form two incidents. Replay never makes inference requests or sends native events. The localhost application is not exposed publicly; judges need the existing authorized p022 desktop access.
 
-- Run on the Windows VM, because `https://localhost:15443` is only reachable there.
-- Requires Python 3.11+, no third-party Python dependencies. The VM does not come with Python installed.
-- The gateway's **local self-signed** TLS certificate is not verified by this sample. The client only accepts the localhost hostname. Never copy that TLS setting into a remote production client.
-- Authentication prompts for the gateway password; no credentials are written to disk. Do **not** share it, and do not check it into Git.
-- Installing a prompt/rule and spending a VLM request are opt-in via `--apply`. No automatic retries or scheduled requests.
-- `runs/` is ignored by Git; review video-related data before publishing anything.
-- **Do not** reset the gateway, change advanced connection settings, stop Tailscale, change the firewall, or restart services.
-- **Do not** route motion events, or the output analytics event, back into the Hafnia webhook: this could make an expensive loop.
+To start that prepared replay from this repository on p022:
 
-## First run
+```powershell
+uv run --frozen python -m adaptive_watch.evidence_api --root runs/recovery-demo serve --demo-source runs/product-evidence --evaluations C:/Users/Administrator/adaptive-watch-private/hafnia-16 --frontend frontend/dist --port 8770
+```
 
-1. Install Python 3.11+ on the VM and open **Windows PowerShell** in the unzipped project folder.
-2. Verify `py --version`, then `py -m unittest discover -s tests -v`.
-3. Check quota and gateway: `py hack26.py inspect --system-only`. Inspect supported models/actions: `py hack26.py inspect`.
-4. Find a camera ID: `powershell -ExecutionPolicy Bypass -File .\scripts\list_cameras.ps1`. Find the row named `vandalism`. Save the ID locally, not in code or the repo.
-5. Preview new prompt: `py hack26.py install-prompt`; install: `py hack26.py install-prompt --apply`.
-6. Preview a request: `py hack26.py run --camera-id YOUR-CAMERA-GUID`.
-7. Execute exactly one request: `py hack26.py run --camera-id YOUR-CAMERA-GUID --apply`.
-8. Inspect History and `runs/<summary_id>.json`; it should report a decision, evidence, and a gateway summary ID.
+Those private inputs are deliberately excluded from Git. To rebuild the seed from authorized originals, follow the import commands in [frontend setup](frontend/README.md). Replay validates originals and fails closed if they are missing or changed.
 
-The default clip is 15 seconds ending 2 minutes before the current UTC time. Override with `--start 2026-10-19T12:04:09Z --end 2026-10-19T12:04:24Z` to inspect a **known recorded interval**, and with `--title` for a different saved prompt. Do not substitute invented timestamps or run a long interval without a reason.
+```powershell
+# With the replay server running:
+bun frontend/scripts/check-recovery.mjs
+# Clean recording, without injected failures:
+bun frontend/scripts/capture-operator.mjs
+```
 
-## Wire a native XProtect alarm (manual bootstrap)
+`REVIEW_URL` selects the server; `PLAYWRIGHT_BROWSERS_PATH` can select an existing browser tooling directory. Results and footage remain under ignored `runs/`.
 
-This stage is deliberately **not** automated until the UI behavior is verified.
+## Verified results and remaining limits
 
-1. In **Management Client** → **Rules and Events** → **Analytics Events**, create an event named `H26 Visually Observed Damage` (or use another distinctive name and pass `--event-name`). Consult `C:\HackathonKit\hafnia-vlm\references\worked-example.md` and `gateway-rules.md` for exact UI procedures. Enable analytics events/allowed address settings only as prescribed in those instructions; avoid changing network/firewall settings.
-2. In **Alarms** → **Alarm Definitions**, define an alarm triggered by that analytics event. Set its source/related camera to `vandalism` where available, give the operator neutral instructions, e.g. *Review the source footage and verify the observed physical damage*. Save.
-3. In the gateway, run `py hack26.py inspect` and confirm the new analytics event appears in available `TriggerAnalyticsEvent` options. Do not proceed if absent.
-4. Preview the rule: `py hack26.py install-rule`; create once: `py hack26.py install-rule --apply`. It matches `H26_DAMAGE_EVENT` for requests using the saved prompt.
-5. Execute a new **known positive** camera interval with `py hack26.py run --camera-id YOUR-CAMERA-GUID --start ... --end ... --apply`; verify `Completed`, the model's decision, and the XProtect Alarm Manager. Note that the gateway rule does keyword matching, not structured parsing: manually review each test.
-6. Repeat on a **known negative or uncertain** interval to verify that the positive alarm is not triggered. This costs another completed VLM request.
+See [recovery evidence and release review](docs/adaptive-watch/recovery-sprint.md) for actual before/after HTTP results, browser recordings, checks and the native blocker. The existing dedicated Adaptive Watch analytics event and scooter-only alarm definition are configured; do not recreate them. No Adaptive Watch event has been sent in this sprint. Geometry approval, coherent recording validation, strict same-interval Hafnia qualification, explicit dispatch approval and Smart Client verification remain gates.
 
-Avoid using motion detection as a webhook input. A later iteration may use a manually triggered XProtect user-defined event or deliberately configured non-recursive webhook to drive the same flow.
+Stationarity uses sampled image-space measurements, with unknown behavior between samples. Largest-box association can switch targets; polygon overlap is not accessible width. No independently measured accuracy improvement or continuous camera-health monitoring is claimed. Local cookie/CSRF protection is not authenticated operator identity or production access control.
 
-## What isn't implemented yet
+## Third-party and pre-existing work
 
-- Reading cameras by name directly from the XProtect REST API: use MilestonePSTools to resolve GUIDs in this first iteration.
-- Controlled native alarm acknowledgements, continuous monitoring, learned CV models, or webhook origin automation. Cases, a fixed policy template and the local operator UI are implemented.
-- Enforcing format semantics inside gateway rules: the gateway checks a whole-word keyword anywhere in the response. Python also checks a strict decision line, but the gateway does not use Python's validation; **never auto-close alarms on this basis**.
+This repository predates Adaptive Watch: the Scene Contracts application, gateway client, recorded assessment tooling and native analytics transport remain as prior work. Historical experiments include a failed fog improvement gate; their results are not Adaptive Watch accuracy claims. See [historical Scene Contracts documentation](docs/operator-mvp.md) and [ML report](docs/adaptive-watch/checkpoint-a.md).
 
-## Reproducibility
+The UI uses React, TypeScript, Vite, Tailwind, Playwright and locally bundled Google Fonts (Space Grotesk, DM Sans, IBM Plex Mono); exact versions are in `frontend/bun.lock`. Optional ML dependencies and pinned versions are in `pyproject.toml` / `uv.lock`: PyTorch, Transformers/OWL-ViT, NumPy, Pillow, SciPy, scikit-learn and PyAV. XProtect, MilestonePSTools and the Hafnia gateway/model are existing external infrastructure, not authored here. Linux uses its existing compatible CUDA environment. Original evidence, models and platform components remain subject to their own licenses and access permissions.
 
-Store source code and test fixtures in Git (NOT secrets), and later script XProtect alarm/event configuration once manually verified. Do not depend on the VM's disk surviving a rebuild.
+The submission video must be **under 3 minutes**. Keep the existing Polar slide deck as the narrative and use short, explicitly labeled replay clips as evidence. Release changes require review; this branch must not be merged automatically.
