@@ -1,14 +1,19 @@
 # Read-only recording coverage refresh. No inference or VMS configuration changes.
+param([string]$EvaluationRoot, [string]$PlanPath)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$evaluationRoot = Join-Path $repo 'runs/reliability-fresh'
-$plan = Get-Content (Join-Path $evaluationRoot 'execution-plan.private.json') -Raw | ConvertFrom-Json
+if (-not $EvaluationRoot) { $EvaluationRoot = Join-Path $repo 'runs/reliability-fresh' }
+if (-not $PlanPath) { $PlanPath = Join-Path $EvaluationRoot 'execution-plan.private.json' }
+$plan = Get-Content -LiteralPath $PlanPath -Raw | ConvertFrom-Json
 Import-Module MilestonePSTools
 Connect-Vms -ServerAddress 'http://localhost' -AcceptEula | Out-Null
 $checked = [DateTime]::UtcNow
 $records = @()
 foreach ($entry in ($plan | Group-Object source_recording_id | ForEach-Object { $_.Group[0] })) {
-    $cams = @(Get-VmsCamera -Name $entry.scene | Where-Object { $_.Name -ceq $entry.scene -and $_.Id.ToString() -ieq $entry.camera_id })
+    $cameraName = if ($entry.camera_name) { $entry.camera_name } elseif ($entry.recording_manifest) {
+        (Get-Content -LiteralPath $entry.recording_manifest -Raw | ConvertFrom-Json).camera_name
+    } else { $entry.scene }
+    $cams = @(Get-VmsCamera -Name $cameraName | Where-Object { $_.Name -ceq $cameraName -and $_.Id.ToString() -ieq $entry.camera_id })
     if ($cams.Count -ne 1) { throw 'Exact source camera is unavailable' }
     $start = [DateTime]::Parse($entry.start).ToUniversalTime()
     $end = [DateTime]::Parse($entry.end).ToUniversalTime()

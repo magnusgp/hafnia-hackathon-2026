@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-10-27T12:07:35.821121+00:00",
+  "offline_preflight": "passed_source_and_prompt_validation",
+  "expected_requests": 24,
+  "submitted": 0,
+  "plan_sha256": "a68e14c4472b779fcb9eb1a9bbd4d04685ae9bd96f3fe34075acf6a2557594a9",
+  "matrix_sha256": "a389daef90236ca511cc6dae06ef113fc802ef88960443a29e3e0b7a4d7d562d",
+  "sources": [
+    {
+      "scene": "railway",
+      "start": "2026-10-27T11:55:38Z",
+      "end": "2026-10-27T11:55:51Z",
+      "duration_s": 13,
+      "manifest_sha256": "302edafa557c41fd9f0330d1a0882cadd46b2e1ad0338514a5febd2b085c502a",
+      "video_sha256": "c3ed451cb493627515685f699fb59ad60d08a2de64aa08f6bc9fcbae1c24e23b",
+      "snapshot_count": 26,
+      "decoded_frames": 130,
+      "first_pts": 0.1,
+      "last_pts": 13.0,
+      "continuity": "ai_reviewed_no_loop_boundary",
+      "independent_new_events": 0
+    },
+    {
+      "scene": "gate",
+      "start": "2026-10-27T11:55:49Z",
+      "end": "2026-10-27T11:56:02Z",
+      "duration_s": 13,
+      "manifest_sha256": "017cc808a818883e54232eb13622bf5d732fb6357144608efcde2ff132dee3cf",
+      "video_sha256": "78e95d857ec8454ab8e4e964a753b68cfc908471b027b9277f895a545bf9d0e3",
+      "snapshot_count": 26,
+      "decoded_frames": 140,
+      "first_pts": 0.0,
+      "last_pts": 13.9,
+      "continuity": "ai_reviewed_no_loop_boundary",
+      "independent_new_events": 0
+    }
+  ],
+  "recording_coverage": "passed_all_24",
+  "coverage_sha256": "02a5558f9c0dd88daf5b2a1fd1614aea840a9ab311f6bb463a106a276f7d21e2",
+  "submission_ready": false,
+  "blockers": [
+    "New batch not authorized",
+    "Live authenticated available-model list not obtained",
+    "Legacy incident parser must not interpret diagnostic prose as an incident-format error; response-mode adaptation required before execution",
+    "Refresh authenticated quota and exact coverage within 15 minutes before submission; enforce under-24h at each POST"
+  ],
+  "controls": {
+    "distinct_known_positive_families": 2,
+    "additional_distinct_positives": 0,
+    "eligible_distinct_task_matched_negatives": 0
+  },
+  "expires_before": "2026-10-28T11:55:38Z"
+}

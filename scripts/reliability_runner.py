@@ -60,7 +60,9 @@ class Runner:
             raise ValueError('Unknown experiment or conflicting summary ID')
         result = gateway.request('GET', '/api/Summaries/' + summary_id)
         expected = json.loads(row[0])
-        if not isinstance(result, dict) or result.get('Id') != summary_id or any(result.get(k) != v for k,v in expected.items()):
+        returned = result.get('Request') if isinstance(result, dict) else None
+        if (not isinstance(returned, dict) or result.get('Id') != summary_id
+                or any(returned.get(k) != v for k,v in expected.items())):
             raise ValueError('Reconciliation requires exact returned prompt and video URI; retain ambiguity otherwise')
         with self.db:
             self.db.execute('UPDATE requests SET summary_id=?,state=? WHERE experiment=?', (summary_id, 'submitted', experiment))

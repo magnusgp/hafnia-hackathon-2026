@@ -1,0 +1,520 @@
+{
+  "evaluations": [
+    {
+      "experiment_id": "school_gate_break_in_night-v1",
+      "summary_id": "e6546d4b-91da-455d-8a9f-8d83d0063d61",
+      "prompt": "Assess whether the following action is directly visible: a person manipulates a gate or its lock with a tool; do not assume successful entry or criminal intent. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "3a795d040afd4ace5d8f7116a3b5c24a04bef6e47bcdbfe1ce89e0865d2e1e7f",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-22T13:30:52.461+00:00",
+      "updated": "2026-10-22T13:30:56.607+00:00",
+      "response_sha256": "2e145ca1bd1adf4d554fb505a92c0cb1747630f5cc0c3604d709370416e4a80f",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "feeef8b8e4255364c50b39e6d05f94dd72778ef05f403fbae5be80efa44bbcb1",
+          "start": [
+            "2026-10-22T11:04:39Z"
+          ],
+          "end": [
+            "2026-10-22T11:04:52Z"
+          ],
+          "uri_sha256": "9849f1ed4f75a0fe90354ca164d90e446d1906a043fb938ac56a43edfd265cd0"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "A person in dark clothing approaches a closed metal gate at night, crouches, and manipulates a padlock with a tool; the gate remains locked and no visible change in its state occurs.",
+        "timing": 0.1,
+        "limitations": "The clip does not show the padlock being removed or the gate opening, so success of the manipulation cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "594f848bfbd18a9141aefd75fc99c278d45bac6f9666750394256bd92e180dc1",
+      "local_source_video_sha256": null
+    },
+    {
+      "experiment_id": "person_on_railway_tracks-v1",
+      "summary_id": "5a1ab040-fc44-4156-ad7a-1eeecd8c7b60",
+      "prompt": "Assess whether the following action is directly visible: a person descends from the platform edge onto the railway track area or remains there; distinguish people standing on a platform. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "46b7cab7070701d4518d3897e7f958f708e4ef0d2ded68d4ec4e7f97930ec752",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-22T13:31:04.892+00:00",
+      "updated": "2026-10-22T13:31:09.78+00:00",
+      "response_sha256": "1643097759facfb2ffb6130f3da94ff9d3f6be971b6f228b4a054c546c8d5a47",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "1d209ed3a7bb0d706282f321be27671b487daf017bcc0b1f6a5935fe126379a8",
+          "start": [
+            "2026-10-22T11:03:39Z"
+          ],
+          "end": [
+            "2026-10-22T11:03:52Z"
+          ],
+          "uri_sha256": "9dfb223432d1268b98e756b21471447f95256419aaf0138fea367cf8dd6fc826"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The person in the red jacket remains on the platform, crouching and then standing on the yellow tactile strip; no descent onto the tracks or movement onto the railway track area is visible. Other people on the platform are stationary or seated, with no one crossing the tracks.",
+        "timing": "0.0 - 12.5 seconds",
+        "limitations": "The clip does not show the person stepping onto the railway track area or descending from the platform edge; any such action would require additional footage.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "cdfdbe4cea85694162181689e770a35090df810c7f580e262edc2de33b9e85db",
+      "local_source_video_sha256": "9caa3138f6eed2c3ca69c30dd1634d1067d44f495deb284a933b77a3e63c511f"
+    },
+    {
+      "experiment_id": "school_gate_break_in_night-v2",
+      "summary_id": "ce40bfa7-466c-468c-b47d-8f27127b57d8",
+      "prompt": "Review the visible action sequence and decide whether this event is supported: a person manipulates a gate or its lock with a tool; do not assume successful entry or criminal intent. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "9af7840a113e75068cb2e397bd4575b84f340c9dd13daf728376ededc184df17",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-22T13:30:58.756+00:00",
+      "updated": "2026-10-22T13:31:03.418+00:00",
+      "response_sha256": "da9c072aa4b2b017780d0c5c807faba4d94d0b71ec34b3c38d021384b17b31ba",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "feeef8b8e4255364c50b39e6d05f94dd72778ef05f403fbae5be80efa44bbcb1",
+          "start": [
+            "2026-10-22T11:04:39Z"
+          ],
+          "end": [
+            "2026-10-22T11:04:52Z"
+          ],
+          "uri_sha256": "9849f1ed4f75a0fe90354ca164d90e446d1906a043fb938ac56a43edfd265cd0"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "A person in dark clothing approaches a closed metal gate at night, crouches, and manipulates a padlock with a tool; the gate remains locked and no opening or entry occurs. The person then walks away with the tool.",
+        "timing": "0.0 - 12.5 seconds",
+        "limitations": "The clip shows only the person's actions and the locked gate; no successful entry, tool insertion into the lock, or gate movement is visible, so the outcome of the manipulation cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "594f848bfbd18a9141aefd75fc99c278d45bac6f9666750394256bd92e180dc1",
+      "local_source_video_sha256": null
+    },
+    {
+      "experiment_id": "person_on_railway_tracks-v2",
+      "summary_id": "4436e149-2d49-4c69-be94-6438fabd29df",
+      "prompt": "Review the visible action sequence and decide whether this event is supported: a person descends from the platform edge onto the railway track area or remains there; distinguish people standing on a platform. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "d2e0cc3cd1d9cc37ac4ba7d2a3046b6fe55d8be47411816411dc6a788cacb7f5",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-22T13:31:11.028+00:00",
+      "updated": "2026-10-22T13:31:14.132+00:00",
+      "response_sha256": "92d085022155ca0d02aaac21310e57f8e331340b75d8294d07cf85e4a5f7653c",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "1d209ed3a7bb0d706282f321be27671b487daf017bcc0b1f6a5935fe126379a8",
+          "start": [
+            "2026-10-22T11:03:39Z"
+          ],
+          "end": [
+            "2026-10-22T11:03:52Z"
+          ],
+          "uri_sha256": "9dfb223432d1268b98e756b21471447f95256419aaf0138fea367cf8dd6fc826"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The person in the red jacket walks along the platform edge, pauses, and sits on the platform curb, then stands and walks away along the platform. No descent onto the railway track area or remaining there is visible.",
+        "timing": "0.1-12.5 seconds",
+        "limitations": "The clip shows only the platform edge and adjacent tracks; no descent onto the tracks or prolonged presence on the tracks is observed, so the event cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "cdfdbe4cea85694162181689e770a35090df810c7f580e262edc2de33b9e85db",
+      "local_source_video_sha256": "9caa3138f6eed2c3ca69c30dd1634d1067d44f495deb284a933b77a3e63c511f"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v3-r01",
+      "summary_id": "30e2f6e6-8f5a-47be-9c46-e8edde88bdce",
+      "prompt": "Report whether the person visibly handles or manipulates the gate area. Successful opening is not required; distinguish uncertain tool identity. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "ece9093b282f8e712f5a6e42ef3306a289db7b34682739ea433107bdb0a0b23b",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-26T22:50:33.365+00:00",
+      "updated": "2026-10-26T22:50:37.738+00:00",
+      "response_sha256": "f2429478f7246f637afa5bac39fb27398ce4b1020cb1fffd16fb646194b8428e",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "feeef8b8e4255364c50b39e6d05f94dd72778ef05f403fbae5be80efa44bbcb1",
+          "start": [
+            "2026-10-26T22:03:51Z"
+          ],
+          "end": [
+            "2026-10-26T22:04:03Z"
+          ],
+          "uri_sha256": "1d6f29ae37b4a8f0f12ba97ba63e018ebf37428e8139a1e261485c130abb8429"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The person approaches the gate, pauses, and crouches near the latch area but does not visibly grasp, pull, or manipulate the gate or its latch; the gate remains closed and stationary throughout.",
+        "timing": "0.0 - 11.6 seconds",
+        "limitations": "No camera names are used as evidence; the clip does not show the person actually handling or moving the gate, so any tool identity or intent cannot be confirmed.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "local_source_video_sha256": "2f1db63bf7ed471c530390ab124be271deeb6a4bce386d711914511a9297b3f8"
+    },
+    {
+      "experiment_id": "REL26-B-gate-v4-r01",
+      "summary_id": "94375b74-db44-40f6-8238-18fb9895ac2a",
+      "prompt": "Review approach, contact with the gate area, crouching and departure. Decide whether visible gate manipulation occurs, independently of whether opening occurs. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "63ef48c0d035d425825aff73f7270042b04047ba6109916aa7cab8215191b077",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-26T22:50:39.664+00:00",
+      "updated": "2026-10-26T22:50:42.802+00:00",
+      "response_sha256": "26104f3462f089ff24945f67a45dff6a3d2c72da217dfea69aff1c2007cdb38d",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "feeef8b8e4255364c50b39e6d05f94dd72778ef05f403fbae5be80efa44bbcb1",
+          "start": [
+            "2026-10-26T22:03:51Z"
+          ],
+          "end": [
+            "2026-10-26T22:04:03Z"
+          ],
+          "uri_sha256": "1d6f29ae37b4a8f0f12ba97ba63e018ebf37428e8139a1e261485c130abb8429"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The gate remains fully closed and stationary throughout the clip; no visible movement of the gate, no change in its position, and no visible manipulation of the latch or lock.",
+        "timing": "0.0 - 11.7",
+        "limitations": "The clip shows only the exterior view of the gate and does not reveal what occurs behind it or inside the gate mechanism; no camera names are used as evidence.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "71847f70e954f3bd73f99675c93b0f66366158b2f05dd1d4b601f987a237c1f7",
+      "local_source_video_sha256": "2f1db63bf7ed471c530390ab124be271deeb6a4bce386d711914511a9297b3f8"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v3-r01",
+      "summary_id": "7910ad97-dc88-4034-baf8-bc828d8eded4",
+      "prompt": "Report whether the red-clothed person visibly leaves the platform and stands or moves in the track bed. Sitting on the edge alone is ambiguous. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "3af77835bb67457bbeb0ec4cf741b218a460359bcd34ea6324d6d1333bf65570",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-26T22:50:20.75+00:00",
+      "updated": "2026-10-26T22:50:26.69+00:00",
+      "response_sha256": "1bb2ed3fa19c55e3c8fd558ec1693306e4f65f9be7ded4a2eca1cb2f060826b8",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "1d209ed3a7bb0d706282f321be27671b487daf017bcc0b1f6a5935fe126379a8",
+          "start": [
+            "2026-10-26T22:03:53Z"
+          ],
+          "end": [
+            "2026-10-26T22:04:06Z"
+          ],
+          "uri_sha256": "303c15922afb3e8ca85f223582c4d42bf9abbed1948187bd63152df4b044006b"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "The red-clothed person remains on the platform edge throughout the clip, crouching and then standing on the platform surface; no movement into the track bed or beyond the platform edge is visible.",
+        "timing": "0.0 - 12.5 seconds",
+        "limitations": "The clip does not show the person crossing the yellow tactile strip or stepping onto the track bed; any movement beyond the platform edge is not captured.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "local_source_video_sha256": "c3ed451cb493627515685f699fb59ad60d08a2de64aa08f6bc9fcbae1c24e23b"
+    },
+    {
+      "experiment_id": "REL26-B-railway-v4-r01",
+      "summary_id": "1fa7b22e-7a04-4c6f-9a7a-b0a1bfe1281b",
+      "prompt": "Review the sequence in time order: platform approach, seated edge, descent, track-bed presence. Decide only whether descent or track-bed presence is visible. Do not use camera names as evidence. Return only a JSON object with exactly these keys: \"outcome\" (\"supported\", \"not_observed\", or \"uncertain\"), \"evidence\" (short visible facts), \"timing\" (approximate seconds relative to clip start, or unknown), \"limitations\" (what this clip cannot establish). Do not infer intent or facts outside the clip.",
+      "payload_keys": [
+        "Prompt",
+        "VideoUris"
+      ],
+      "payload_sha256": "c157fa5afa9ba563d2887a6010d95290a73c246c06baa5bf1fa78a27a4fb709b",
+      "returned_request_keys": [
+        "Prompt",
+        "VideoUris",
+        "AiModelId"
+      ],
+      "returned_model": "traffic-general",
+      "explicit_requested_model": null,
+      "source": {
+        "Trigger": "Manual"
+      },
+      "progress": "Completed",
+      "created": "2026-10-26T22:50:27.061+00:00",
+      "updated": "2026-10-26T22:50:31.787+00:00",
+      "response_sha256": "6d5c03d9da3aec568c54d538924c001e9a4a0d68936a382a71cf72b68fb00e1f",
+      "returned_top_level_keys": [
+        "Id",
+        "CreationTimeUtc",
+        "LastUpdatedTimeUtc",
+        "Request",
+        "Source",
+        "Progress",
+        "Response"
+      ],
+      "uris": [
+        {
+          "scheme": "xprotect",
+          "host": "localhost",
+          "camera_sha256": "1d209ed3a7bb0d706282f321be27671b487daf017bcc0b1f6a5935fe126379a8",
+          "start": [
+            "2026-10-26T22:03:53Z"
+          ],
+          "end": [
+            "2026-10-26T22:04:06Z"
+          ],
+          "uri_sha256": "303c15922afb3e8ca85f223582c4d42bf9abbed1948187bd63152df4b044006b"
+        }
+      ],
+      "parsed": {
+        "outcome": "not_observed",
+        "evidence": "No descent or track-bed presence is visible; the platform edge is flat and unbroken with no slope, drop, or track-bed material apparent.",
+        "timing": "0.0",
+        "limitations": "The clip shows only the flat platform surface and no descent or track-bed presence, so no evidence can be established for those features.",
+        "analysis_success": true,
+        "parser_version": "2",
+        "category": "valid_model_decision",
+        "normalizations": [
+          "markdown_json_fence"
+        ],
+        "reason": "Model assessment only; operator verification required"
+      },
+      "source_information": "Request URI echoed; no returned frame list, decoded video digest, sampling schedule or backend model version",
+      "source_manifest_sha256": "5bf98d4079516852557947f87d7ec8dc270e352d368e72ace81336036d838a8e",
+      "local_source_video_sha256": "c3ed451cb493627515685f699fb59ad60d08a2de64aa08f6bc9fcbae1c24e23b"
+    }
+  ],
+  "original_files_hash_verified": 16,
+  "models": [
+    "traffic-general"
+  ],
+  "model_discovery": {
+    "live_alternatives_verified": false,
+    "installed_xml_sha256": "001de702f47e34d7f436de4de8190ee145111fe002c3f67c224dbbce9f6aa635",
+    "installed_help_sha256": "3f2ee0eec041617cfcdd0a3ae234565bd67a18bf4a778205cfc6c897c325a4ed",
+    "anonymous_read_checked_at": "2026-10-27T12:01:27.061076+00:00",
+    "anonymous_read_status": "GET /api/Models failed (HTTP 401)",
+    "discovery_sha256": "efa56d088ec686b3c79f44b5b020c47b1a7f5e252af0b96930b1b1747cf22576"
+  }
+}

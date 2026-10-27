@@ -49,9 +49,18 @@ class RunnerTests(unittest.TestCase):
             self.runner.reconcile(WrongGateway(),'A-001','abc')
         class CorrectGateway:
             def request(inner,*args):
-                return dict(Id='abc',**self.payload)
+                return dict(Id='abc',Request=dict(**self.payload,AiModelId='traffic-general'))
         self.runner.reconcile(CorrectGateway(),'A-001','abc')
         self.assertEqual(self.runner.db.execute('SELECT summary_id FROM requests').fetchone()[0],'abc')
+
+    def test_reconciliation_rejects_top_level_echo_with_wrong_returned_request(self):
+        self.runner.reserve(self.entry,self.payload,500)
+        class Gateway:
+            def request(inner,*args):
+                return dict(Id='abc',Request=dict(Prompt='wrong',VideoUris=['private-reference']),**self.payload)
+        with self.assertRaisesRegex(ValueError,'exact'):
+            self.runner.reconcile(Gateway(),'A-001','abc')
+        self.assertIsNone(self.runner.db.execute('SELECT summary_id FROM requests').fetchone()[0])
 
     def test_human_review_gate(self):
         with self.assertRaisesRegex(ValueError,'human review'):
