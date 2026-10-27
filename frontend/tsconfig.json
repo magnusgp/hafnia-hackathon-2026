@@ -17,6 +17,7 @@
   },
   "include": [
     "src/main.tsx",
+    "src/negative-review.tsx",
     "src/components/**/*.tsx",
     "vite.config.ts"
   ]

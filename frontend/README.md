@@ -1,5 +1,9 @@
 # Adaptive Watch frontend
 
+The current default entry is the single railway negative-result review in `src/negative-review.tsx`. Build as below, then serve with `python -m adaptive_watch.negative_review_api --root runs/negative-result-review --frontend frontend/dist --port 8776`. See the [current setup](../README.md) and [acceptance notes](../docs/adaptive-watch/negative-result-review.md).
+
+The instructions below describe the preserved earlier incident workflow in `src/main.tsx`; that entry is not the current default build.
+
 Polar styling is retained. React loads private evidence only from the Python API; `publicDir: false` prevents private assets from entering the build.
 
 ## Build and serve
