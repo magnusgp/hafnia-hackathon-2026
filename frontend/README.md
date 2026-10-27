@@ -1,35 +1,34 @@
 # Adaptive Watch frontend
 
-The current default entry is the single railway negative-result review in `src/negative-review.tsx`. Build as below, then serve with `python -m adaptive_watch.negative_review_api --root runs/negative-result-review --frontend frontend/dist --port 8776`. See the [current setup](../README.md) and [acceptance notes](../docs/adaptive-watch/negative-result-review.md).
+The default entry is the single railway negative-result review in `src/negative-review.tsx`. Polar styling is retained. React loads private evidence only from the Python API; `publicDir: false` prevents private assets from entering the build.
 
-The instructions below describe the preserved earlier incident workflow in `src/main.tsx`; that entry is not the current default build.
+## Build and serve on p022
 
-Polar styling is retained. React loads private evidence only from the Python API; `publicDir: false` prevents private assets from entering the build.
-
-## Build and serve
+From the repository root, use the existing tools:
 
 ```powershell
 cd frontend
-bun install --frozen-lockfile
-bun run build
+..\runs\tooling\bun-windows-x64\bun.exe install --frozen-lockfile
+..\runs\tooling\bun-windows-x64\bun.exe run build
 cd ..
-uv run --frozen python -m adaptive_watch.evidence_api --root runs/product-evidence serve --frontend frontend/dist
+.\.venv\Scripts\python.exe -m adaptive_watch.negative_review_api --root runs/negative-result-review --frontend frontend/dist --port 8776
 ```
 
-Open http://127.0.0.1:8765. The default view is Incidents. Decisions persist on the server; dismissals leave the open queue and remain in history. Native availability comes from the backend, with a separate explicit confirmation before sending.
+Open http://127.0.0.1:8776 in a browser inside p022 using existing authorized desktop access. Keep the launch terminal open. The server binds to loopback; a localhost URL on a judge's own computer cannot reach p022.
 
-For development, run `bun run dev` in `frontend`; its localhost:4174 proxy requires the evidence server on localhost:8765.
+Choose **Review footage**, inspect the footage and acknowledge review, then **Dismiss** or **Save review request**. Decisions persist locally across reloads. The saved state explicitly says **no native event has been sent**. This API cannot configure XProtect or send native events. Local cookie/CSRF sessions are not production operator authentication.
 
-## Import authorized saved originals
+See the [root setup and private-evidence preparation](../README.md) and [acceptance notes](../docs/adaptive-watch/negative-result-review.md). Original recordings, source frames, responses, database files, credentials and generated captures stay outside Git.
+
+## Browser verification
+
+From the repository root:
 
 ```powershell
-$evaluations = 'C:/Users/Administrator/adaptive-watch-private/hafnia-16'
-uv run --frozen python -m adaptive_watch.evidence_api --root runs/product-evidence import --joined runs/hybrid/sidewalk-v2/scooter-joined.json --cv runs/hybrid/sidewalk-v2/escooter_left_across_sidewalk.json --manifest runs/xprotect/escooter_left_across_sidewalk_20261022T110435Z/manifest.json --evaluations $evaluations
-uv run --frozen python -m adaptive_watch.evidence_api --root runs/product-evidence import --joined runs/hybrid/sidewalk-v2/bin-joined.json --cv runs/hybrid/sidewalk-v2/bin_pushed_over_onto_sidewalk.json --manifest runs/xprotect/bin_pushed_over_onto_sidewalk_20261022T110430Z/manifest.json --evaluations $evaluations
+$env:PLAYWRIGHT_BROWSERS_PATH=(Resolve-Path runs/tooling/playwright).Path
+.\runs\tooling\bun-windows-x64\bun.exe frontend/scripts/check-negative-review.mjs
 ```
 
-Fresh schema-v2 imports additionally require their own spatial and geometry inputs. Never promote retrospective evidence to fresh dispatch eligibility.
+The checks use isolated real-case copies at 1440×900 and 1920×1080. Reports and captures go to ignored `runs/negative-review-release-checks/`, preserving the existing 78-second evidence video, diagnostic comparison image and their sources in `runs/negative-review-checks/`. Those historical assets are not the final narrated submission.
 
-The [root README](../README.md) gives isolated replay and browser validation commands. `scripts/check-recovery.mjs` tests in-progress replay, real stale-evidence HTTP 409 recovery, persistent review/dismissal, history, playback, disabled controls and unavailable native calls at both target resolutions. `scripts/reproduce-stale.mjs` targets the original frontend built into an isolated baseline server on port 8771; it proves the old failure rather than expecting the fixed UI to fail.
-
-All recordings, source frames, responses, database files, credentials and identities stay outside Git. Local cookie/CSRF sessions are not production operator authentication.
+The earlier incident/replay implementation remains in `src/main.tsx`; its historical setup is preserved in [prior-workflow.md](../docs/adaptive-watch/prior-workflow.md).

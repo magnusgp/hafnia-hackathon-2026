@@ -5,7 +5,8 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
 const repo=fileURLToPath(new URL('../../',import.meta.url));
-const out=new URL('../../runs/negative-review-checks/',import.meta.url);
+// Keep release verification separate from the preserved evidence-video sources.
+const out=new URL('../../runs/negative-review-release-checks/',import.meta.url);
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({channel:'msedge',headless:true});
 const reports=[];
@@ -76,13 +77,16 @@ for(const [width,height,port] of [[1440,900,8874],[1920,1080,8875]]){
   await page.getByRole('button',{name:'Review footage',exact:true}).click();
   await page.waitForTimeout(width===1920?13200:800);
   await page.locator('video').evaluate(v=>v.pause());
-  assert.ok(await page.getByRole('button',{name:'Request XProtect review',exact:true}).isDisabled());
+  assert.ok(await page.getByRole('button',{name:'Save review request',exact:true}).isDisabled());
   await page.getByLabel('Review note',{exact:true}).fill('Workflow check only; entry remains unverified.');
   await page.getByRole('checkbox',{name:'I have reviewed the relevant footage'}).check();
-  await page.getByRole('button',{name:'Request XProtect review',exact:true}).click();
+  await page.getByRole('button',{name:'Save review request',exact:true}).click();
   await page.getByRole('heading',{name:'Review request saved',exact:true}).waitFor();
+  assert.ok(await page.getByRole('status').filter({hasText:'Review request saved locally'}).isVisible());
+  assert.ok(await page.getByText('Your decision is saved locally with the source camera and observed interval. No native event has been sent.',{exact:true}).isVisible());
   await page.reload({waitUntil:'networkidle'});
-  assert.ok(await page.getByText('No native event has been sent.',{exact:false}).isVisible());
+  assert.ok(await page.getByRole('status').filter({hasText:'Review request saved locally'}).isVisible());
+  assert.ok(await page.getByText('Your decision is saved locally with the source camera and observed interval. No native event has been sent.',{exact:true}).isVisible());
   let saved=(await (await page.request.get(base+'/api/review')).json()).review;
   assert.equal(saved.state.status,'xprotect_review_requested');assert.equal(saved.state.humanAnnotation.value,'not_verified');
   assert.equal(saved.native.dispatchAvailable,false);
@@ -93,6 +97,7 @@ for(const [width,height,port] of [[1440,900,8874],[1920,1080,8875]]){
   await page.getByRole('heading',{name:'Review dismissed',exact:true}).waitFor();
   await page.reload({waitUntil:'networkidle'});
   assert.ok(await page.getByRole('heading',{name:'Review dismissed',exact:true}).isVisible());
+  assert.ok(await page.getByText('Your decision is saved locally with the original evidence. No native event has been sent.',{exact:true}).isVisible());
   // A real stale revision from a second operator window must be rejected.
   const stale=await page.request.get(base+'/api/review');const session=await stale.json();
   const action={method:'POST',headers:{'Content-Type':'application/json','X-Review-CSRF':session.csrf},data:{action:'review',revision:session.review.revision}};
@@ -100,7 +105,7 @@ for(const [width,height,port] of [[1440,900,8874],[1920,1080,8875]]){
   assert.equal((await page.request.fetch(base+'/api/review/action',action)).status(),409);
   await page.getByRole('button',{name:'Review footage again',exact:true}).click();
   await page.getByRole('alert').filter({hasText:'Evidence or review changed'}).waitFor();
-  assert.ok(await page.getByRole('button',{name:'Request XProtect review',exact:true}).isDisabled());
+  assert.ok(await page.getByRole('button',{name:'Save review request',exact:true}).isDisabled());
   assert.equal((await page.request.post(base+'/api/review/native/confirm',{data:{confirmed:true}})).status(),403);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
   assert.deepEqual(errors,[]);

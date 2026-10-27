@@ -10,11 +10,15 @@ The original Hafnia evidence, Linux CV implementation, XProtect integration and 
 .\.venv\Scripts\python.exe -m adaptive_watch.negative_review_api --root runs/negative-result-review --frontend frontend/dist --port 8776
 ```
 
-Open http://127.0.0.1:8776. Choose **Review footage**, inspect the relevant moments, and confirm you reviewed the footage. Then **Dismiss** or **Request XProtect review**. Requests are saved locally; the server cannot configure XProtect or dispatch events. Evidence details contain the original response, summary ID, frame links, region editor, diagnostic context and original hashes.
+Run the command from the repository root on Windows machine **p022**, using its existing prepared evidence and production build. Open http://127.0.0.1:8776 in a browser **inside p022**. Judges need existing authorized desktop access to p022; a localhost URL on their own computer will not reach it. The server accepts loopback access only.
+
+Choose **Review footage**, inspect the relevant moments, and confirm you reviewed the footage. Then **Dismiss** or **Save review request**. The resulting state says the decision is saved locally and **no native event has been sent**. The server cannot configure XProtect or dispatch events. Evidence details contain the original response, summary ID, frame links, region editor, diagnostic context and original hashes.
+
+The launch command runs in the foreground. Keep that PowerShell terminal open for the judging session; closing it stops that launch. If the application is unavailable, open PowerShell on p022, run `cd C:\Users\Administrator\dev\hafnia-hackathon-2026`, and run the launch command above. No Windows service is installed.
 
 ## Reproduce from authorized originals
 
-Private footage and responses are deliberately excluded from Git. Preparation fails if any required original is missing or changed. No inference, Linux ML job or network call is made.
+**Original footage is private**, as are the saved responses and generated captures; they are deliberately excluded from Git. A Git clone alone does not include the prepared evidence. Preparation fails if any required original is missing or changed. No inference, Linux ML job or network call is made.
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/adaptive_watch/prepare_negative_review.py --root runs/negative-result-review --response C:/Users/Administrator/adaptive-watch-private/hafnia-16/46b7cab7070701d4518d3897e7f958f708e4ef0d2ded68d4ec4e7f97930ec752.json --decode-deps runs/reliability-fresh/decode-deps
@@ -32,10 +36,10 @@ Use the existing pinned PyAV/Pillow environment, or pass its package directory w
 .\.venv\Scripts\python.exe -m unittest discover -s tests
 $env:PLAYWRIGHT_BROWSERS_PATH=(Resolve-Path runs/tooling/playwright).Path
 .\runs\tooling\bun-windows-x64\bun.exe frontend/scripts/check-negative-review.mjs
-.\runs\tooling\bun-windows-x64\bun.exe frontend/scripts/capture-negative-comparison.mjs
-.\.venv\Scripts\python.exe scripts/adaptive_watch/package_negative_review_video.py --decode-deps runs/reliability-fresh/decode-deps
 ```
 
-Browser checks use isolated copies of the real case at 1440×900 and 1920×1080. Captures, the diagnostic comparison PNG, operator WebMs, the final MP4 and validation reports are kept under ignored `runs/negative-review-checks/`. The final MP4 includes the original XProtect export, saved CV overlay and operator flow, with a hard limit below three minutes. No complete presentation is generated.
+Browser checks use isolated copies of the real case at 1440×900 and 1920×1080. Release captures and browser reports are kept under ignored `runs/negative-review-release-checks/` so the existing submission assets stay intact.
+
+The preserved **78-second evidence video** (`adaptive-watch-negative-review.mp4`), diagnostic comparison PNG and their original sources remain under ignored `runs/negative-review-checks/`. The video includes the original XProtect export, saved CV overlay and automated operator flow. These are historical evidence assets and can show the earlier action wording; they are **not the final narrated submission video**. Do not overwrite them when preparing the submission. The outstanding submission work is to combine the existing Polar slides, narration, limitations and current UI evidence into a final video under three minutes, verify its claims and playback, and submit it with the repository link and judge-access instructions. Human entry verification remains outstanding; the automated walkthrough is not human attestation. Native XProtect configuration and dispatch require separate authorization and are outside this release.
 
 See [implementation and acceptance notes](docs/adaptive-watch/negative-result-review.md) for exact provenance, behavior and remaining authorization gates.
