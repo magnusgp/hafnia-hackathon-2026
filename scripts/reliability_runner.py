@@ -18,16 +18,31 @@ sys.path.insert(0, str(REPO))
 from adaptive_watch.evaluation import parse_result
 from scene_contracts.gateway import Gateway, video_uri
 
+TERMINAL = {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format','valid_descriptive_response'}
+
+
+def parse_descriptive(item):
+    """Keep literal diagnostic prose; semantic review is a separate operation."""
+    if item.get('Progress') != 'Completed':
+        return dict(category='gateway_inference_failure' if item.get('Progress') == 'Failed' else 'pending',
+                    analysis_success=False, parser_version='diagnostic-text-1')
+    text = item.get('Response')
+    category = ('empty_response' if text is None or isinstance(text,str) and not text.strip()
+                else 'valid_descriptive_response' if isinstance(text,str) else 'malformed_format')
+    return dict(category=category, analysis_success=True, parser_version='diagnostic-text-1',
+                literal_response=text, semantic_review='pending', outcome=None)
+
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
 class Runner:
-    def __init__(self, root, cap=480):
+    def __init__(self, root, cap=480, descriptive=False):
         if not 1 <= cap <= 480:
             raise ValueError('Daily cap must be 1..480; preserve gateway headroom')
         self.root, self.cap = Path(root), cap
+        self.descriptive = descriptive
         self.root.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.root / 'reliability-ledger.sqlite3')
         self.db.execute('CREATE TABLE IF NOT EXISTS requests (experiment TEXT PRIMARY KEY, day TEXT, stage TEXT, payload TEXT, state TEXT, summary_id TEXT, result TEXT)')
@@ -41,7 +56,7 @@ class Runner:
             self.db.execute('BEGIN IMMEDIATE')
             if self.db.execute('SELECT 1 FROM requests WHERE state=?', ('ambiguous',)).fetchone():
                 raise ValueError('Reconcile ambiguous requests before new submissions')
-            if self.db.execute("SELECT 1 FROM requests WHERE state NOT IN ('valid_model_decision','gateway_inference_failure','empty_response','malformed_format')").fetchone():
+            if any(row[0] not in TERMINAL for row in self.db.execute('SELECT state FROM requests')):
                 raise ValueError('Existing request remains in flight; resume its summary ID first')
             used = self.db.execute('SELECT COUNT(*) FROM requests WHERE day=?', (day,)).fetchone()[0]
             if used >= self.cap or remaining <= 20:
@@ -75,7 +90,7 @@ class Runner:
         result = gateway.request('GET', '/api/Summaries/' + summary_id)
         if not isinstance(result, dict) or result.get('Id') != summary_id:
             raise ValueError('Unexpected summary identity; retain pending reservation')
-        parsed = parse_result(result)
+        parsed = parse_descriptive(result) if self.descriptive else parse_result(result)
         with self.db:
             self.db.execute('UPDATE requests SET state=?,result=? WHERE experiment=?',
                 (parsed['category'], json.dumps(dict(raw=result, parsed=parsed)), experiment))
@@ -93,7 +108,7 @@ def await_summary(runner, gateway, experiment, summary_id, timeout=60):
     while True:
         category = runner.poll(gateway, experiment, summary_id)
         print(experiment, category)
-        if category in {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format'}:
+        if category in TERMINAL:
             return category
         if time.monotonic() >= deadline:
             raise TimeoutError('Existing summary remains pending; rerun this plan to resume its ID')
@@ -313,7 +328,7 @@ def main():
                 raise ValueError('Experiment payload changed')
             if not old[0]:
                 raise ValueError('Ambiguous submission; reconcile exact summary ID, never resubmit')
-            if old[1] not in {'valid_model_decision','gateway_inference_failure','empty_response','malformed_format'}:
+            if old[1] not in TERMINAL:
                 await_summary(runner,g,e['experiment_id'],old[0])
             continue
         quota = g.request('GET', endpoint)

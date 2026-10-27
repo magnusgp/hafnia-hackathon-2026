@@ -14,6 +14,31 @@ spec.loader.exec_module(module)
 
 
 class RunnerTests(unittest.TestCase):
+    def test_diagnostic_prose_preserved_without_incident_json_requirement(self):
+        text = 'A person walks to the platform edge, then sits down.'
+        parsed = module.parse_descriptive(dict(Progress='Completed',Response=text))
+        self.assertEqual(parsed['category'],'valid_descriptive_response')
+        self.assertEqual(parsed['literal_response'],text)
+        self.assertIsNone(parsed['outcome'])
+        self.assertEqual(parsed['semantic_review'],'pending')
+        for state,category in [('Processing','pending'),('Failed','gateway_inference_failure')]:
+            self.assertEqual(module.parse_descriptive(dict(Progress=state))['category'],category)
+        self.assertEqual(module.parse_descriptive(dict(Progress='Completed',Response=' '))['category'],'empty_response')
+
+    def test_descriptive_completion_allows_next_claim_and_preserves_raw(self):
+        self.runner.descriptive = True
+        self.runner.reserve(self.entry,self.payload,500)
+        class Gateway:
+            def request(inner,*args):
+                return dict(Id='abc',Progress='Completed',Response='Visible person near a gate.',
+                            Request=dict(**self.payload,AiModelId='traffic-general'))
+        self.runner.reconcile(Gateway(),'A-001','abc')
+        self.assertEqual(self.runner.poll(Gateway(),'A-001','abc'),'valid_descriptive_response')
+        stored=json.loads(self.runner.db.execute('SELECT result FROM requests').fetchone()[0])
+        self.assertEqual(stored['raw']['Request']['AiModelId'],'traffic-general')
+        self.runner.cap=480
+        self.runner.reserve(dict(experiment_id='A-002',stage='A'),self.payload,499)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.runner = module.Runner(self.temp.name, cap=1)
