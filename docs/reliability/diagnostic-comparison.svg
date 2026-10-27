@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#f4f6fa"/>
+  <g font-family="Arial, sans-serif" fill="#182437">
+    <text x="48" y="55" font-size="30" font-weight="700">REL26 · Evidence before incident labels</text>
+    <text x="48" y="88" font-size="18" fill="#4d5c70">24 completed diagnostics · traffic-general · 2 existing loop families · 0 independent new events</text>
+    <rect x="40" y="119" width="590" height="385" rx="14" fill="white"/>
+    <rect x="650" y="119" width="590" height="385" rx="14" fill="white"/>
+    <text x="65" y="157" font-size="24" font-weight="700">Railway: spatial sequence still unreliable</text>
+    <text x="65" y="197" font-size="18" font-weight="700">Accepted AI demo reference</text>
+    <text x="65" y="225" font-size="18">Visible descent ~10s; track presence ~10.5s.</text>
+    <text x="65" y="264" font-size="18" font-weight="700">Direct question · both repeats</text>
+    <text x="65" y="292" font-size="18" fill="#9e303c">“No movement … into the railway track area”</text>
+    <text x="65" y="332" font-size="18" font-weight="700">Separate stages · both repeats</text>
+    <text x="65" y="360" font-size="18">Entry / occupancy claimed, citing crouching at 3–9s.</text>
+    <text x="65" y="400" font-size="18" font-weight="700">3/12 assert entry or occupancy</text>
+    <text x="65" y="428" font-size="18">Positive wording contains spatial / timing errors.</text>
+    <text x="65" y="468" font-size="17" fill="#4d5c70">Partial recovery; no robust faithful transition recovery.</text>
+    <text x="675" y="157" font-size="24" font-weight="700">Gate: handling can be separated from opening</text>
+    <text x="675" y="197" font-size="18" font-weight="700">Accepted AI demo reference</text>
+    <text x="675" y="225" font-size="18">Handling visible; successful opening unestablished.</text>
+    <text x="675" y="264" font-size="18" font-weight="700">Earlier v1/v2</text>
+    <text x="675" y="292" font-size="18" fill="#9e303c">Manipulation described → not_observed.</text>
+    <text x="675" y="332" font-size="18" font-weight="700">New direct questions · both repeats</text>
+    <text x="675" y="360" font-size="18" fill="#166657">“Yes.” Contact / manipulation described.</text>
+    <text x="675" y="400" font-size="18" font-weight="700">9/12 explicit + 2/12 tentative handling descriptions</text>
+    <text x="675" y="428" font-size="18">1/12 omits contact; omission is not a denial.</text>
+    <text x="675" y="468" font-size="17" fill="#4d5c70">Tool identity, opening and intent remain unestablished.</text>
+    <rect x="40" y="524" width="1200" height="139" rx="14" fill="#182437"/>
+    <g fill="white">
+      <text x="65" y="562" font-size="23" font-weight="700">NO-GO: validated independent verification · GO: qualified disagreement demo</text>
+      <text x="65" y="594" font-size="18">CV proximity fires 3.5–4s early on the calibration clip; it is not confirmed track entry.</text>
+      <text x="65" y="624" font-size="18">No distinct task-matched negatives. No known internal sampling trace. No failure-rate or accuracy claim.</text>
+    </g>
+    <text x="48" y="696" font-size="15" fill="#4d5c70">Source: completed-diagnostic-24.json · response excerpts; private recordings and raw responses retained privately · no further inference</text>
+  </g>
+</svg>
