@@ -107,7 +107,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hafnia-scene-contracts"
+name = "adaptive-watch"
 version = "0.2.0"
 source = { virtual = "." }
 

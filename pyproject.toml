@@ -1,7 +1,7 @@
 [project]
-name = "hafnia-scene-contracts"
+name = "adaptive-watch"
 version = "0.2.0"
-description = "Recorded scene assessment and operator evidence cases"
+description = "Adaptive Watch: an independent second signal for XProtect review (Hafnia Hackathon 2026)"
 requires-python = ">=3.11,<3.12"
 dependencies = []
 

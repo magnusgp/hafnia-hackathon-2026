@@ -5,140 +5,159 @@ deserves a look. Adaptive Watch runs independent computer vision on the same rec
 When Hafnia says no and the detector sees the condition, it builds a **review exception** (camera, recording, moment,
 both signals) and sends it into XProtect, where the operator already works.
 
-It is not a second summarizer, an incident manager or a model comparison. Hafnia's answer stays on record. The new
-thing is a way to stop a negative answer from being the last word.
+It is not a second summarizer, an incident manager or a model comparison. Hafnia's answer stays on record. What is new is
+a way to stop a negative answer from being the last word.
 
-## What happens in the flagship case
+Built for Hafnia Hackathon 2026. Submission deadline: Monday, 2 November 2026 at 11:00 CET.
+
+## The flagship case
 
 A person in a red jacket sits on a station platform edge, climbs down onto the tracks and walks away (22 Oct 2026,
 11:03:39 to 11:03:52 UTC, camera `person_on_railway_tracks`).
 
 1. XProtect recorded the scene.
 2. Hafnia answered `not_observed` for entry onto the tracks.
-3. A person detector on the Linux A10G placed the person at the platform edge from 11:03:44.5, about 3.8 s before the
+3. A person detector on a Linux A10G GPU placed the person at the platform edge from 11:03:44.5, about 3.8 s before the
    climb. This is a proximity trigger. It does not claim entry.
-4. Adaptive Watch built the review exception. A separate footage review (by an AI, labelled as such) found the person
-   reaching the track bed at 11:03:48.3.
-5. The operator inspects the footage and requests the XProtect review. Adaptive Watch sends the
-   `Adaptive Watch Review Required` analytics event for that camera. XProtect raises its own alarm.
+4. Adaptive Watch built the review exception. A separate footage review (by an AI, labelled as such) found the person on
+   the track bed at 11:03:48.3.
+5. The operator inspects the footage and requests the review. Adaptive Watch sends the analytics event
+   `Adaptive Watch Review Required` for that camera, and XProtect raises its own alarm.
 
-## Open it on the judge machine (p022)
+## Why independent vision matters
 
-The application runs on the hackathon Windows machine and is opened **inside p022** (over Remote Desktop).
-`localhost` on any other computer does not reach it.
+A detector that looks only for a person near a platform edge is a different kind of observer from a language model
+summarizing a clip. Where the two disagree, there is something worth a human look. The application shows both signals
+on one timeline with the original footage; it does not decide which one is right.
 
-```powershell
-cd C:\Users\Administrator\dev\hafnia-hackathon-2026
-powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -Demo
-```
-
-`-Demo` opens an isolated copy of the flagship case in its pending state, so a judge can walk the whole flow without
-touching the operator's own saved decision. Without `-Demo` the launcher opens the real saved state (review request
-saved, alarm 4 sent). Edge opens `http://127.0.0.1:8780/#/railway`. Close the window to stop it. If `frontend\dist` is
-missing the launcher builds it first.
-
-1. The **Station platform** exception is already selected and the footage is paused on the trigger sample.
-2. Press **Play from the trigger**. The person climbs down about four seconds later.
-3. Click a signal on the right (Hafnia, Local vision, Footage review) to jump to its moment. The three lanes under the
-   footage show what each source said and when.
-4. **Send to XProtect review** saves your review request. The next step, **Send to XProtect**, shows the exact event and
-   its fingerprint and needs a second confirmation (add `-NativeSend` to the launch command to enable it). The duplicate
-   ledger refuses a second send of an event that was already sent.
-5. Open Smart Client, Alarm Manager, to see the alarm.
-
-The other tabs are secondary evidence: the school gate (Hafnia prompts disagree, saved snapshots only, no local vision),
-and the scooter and bin (local vision measured how long each stayed still; Hafnia agreed). They are not railway
-false-negative validations.
-
-Optional: `scripts\launch.ps1 -AssessmentLogin` asks once in that window for the Hafnia gateway password (kept in memory,
-never sent to the browser) and enables **New assessment**, which acquires the latest 15 s of the camera from XProtect,
-runs the A10G detector, asks Hafnia once and compares them. See [docs/adaptive-watch/new-assessment.md](docs/adaptive-watch/new-assessment.md).
-
-## How XProtect, Hafnia and the GPU each contribute
+## How it works
 
 | System | Job |
 |---|---|
-| XProtect Corporate 2026 R1 | Records and plays back the scene; receives the Analytics Event (Event Server, port 9090); raises the camera-specific alarm the operator works from. |
+| XProtect Corporate 2026 R1 | Records and plays back the scene; receives the analytics event (Event Server, port 9090); raises the camera-specific alarm the operator works from. |
 | Hafnia VLM | Reads the recording through the local gateway and answers in words, including when the answer is no. |
 | Linux A10G vision | Watches the same footage for one configured condition and keeps its own record. |
 
-Built during the hackathon: the detector pipeline and tracker, the Hafnia/vision comparison, source-integrity checks and
-case-scoped review storage, the review interface, the guarded native handoff (ledger-protected, never retried), the job
-runner for New assessment, and the presentation.
+```
+XProtect recording --> Hafnia answer ----\
+        |                                 +--> compare --> review exception --> operator inspects
+        +-------> detector (A10G) -------/                                          |
+                                                                      guarded handoff to the Event Server
+                                                                      --> XProtect alarm in Smart Client
+```
 
-## Native XProtect status (verified 28 Oct 2026)
+Source files are hashed when a case is saved and verified every time it is opened. The handoff is guarded: it needs a
+saved review request, shows the exact event and its fingerprint, needs a second confirmation, goes through a
+duplicate-send ledger and is never retried.
 
-- Analytics Event `Adaptive Watch Review Required` and alarm definition `Adaptive Watch review: station platform`
-  (scoped to the one camera) were created ([script](scripts/xprotect/setup_review_alarm.ps1)).
-- Two events were sent, each once, through the app's confirmation dialog and the duplicate ledger: the saved flagship case
-  (source time 22 Oct 11:03:44) and a **live assessment started from the browser** (source time 28 Oct 15:34:29, with the
-  detector's bounding box). The Event Server accepted both. **Smart Client's Alarm Manager lists alarms 4 and 5** with the
-  right camera, message and source time.
-- **Smart Client preview: resolved by restarting Smart Client (28 Oct, 18:45 to 18:48 local, approved by the operator).**
-  Before the restart the alarm preview showed "The camera is not available" for alarms 4 to 9; the restart removed it, so the likely cause was a Smart Client
-  session open since 19 Oct. After closing and reopening only Smart Client (no VM, service, Event Server, recording server or
-  gateway restart):
-  - Live and recorded playback of `person_on_railway_tracks` work in the Smart Client (camera search, Live and Playback; the
-    timeline shows a recording sequence through the current time).
-  - **Alarm 5** (live run, source time 28 Oct 15:34:29) shows its preview: the recording at 15:34:29.5 with the detector
-    box. Alarms 6 and 9 (diagnostic tests) preview their footage too.
-  - **Alarm 4** (saved case, source time 22 Oct) is before the retained recording, so its preview shows other footage of the
-    camera (27 Oct 18:13) without the box. That is retention, not a camera defect.
-  - Stored association, read with `Get-AlarmLine` (read-only): alarms 4 to 9 carry `CameraId` = `SourceId` =
-    `1dfb0898-730f-44c1-bca8-7f541e8ef116`, which is the GUID of `person_on_railway_tracks` in the VMS camera list (matched by
-    GUID, not by name). Alarms 1 to 3 carry `2de5fcf8-9c47-48da-9d1e-1ee32a595a94` (`vandalism`).
-  - Earlier tests that did not help (kept for the record): the full management-server `ServerId` block (alarm 6), and an
-    approved change of the alarm definition `Adaptive Watch review: station platform` (`MapType` 2 to 1, related camera cleared;
-    alarms 7 to 9). Prior values: `runs/release/native/alarm-definition-before-maptype.json`. Those definition changes remain
-    in place; whether they are needed was not tested, because the restart alone resolved the preview for alarms 4 and 5, which
-    were raised before any change.
-  - Diagnostic alarms 6 to 9 stay in the Alarm Manager with their ledgers. No further event was sent.
-  - The operator's saved native note in `runs/release/app/native/status.json` still carries the old "preview says the camera is
-    not available" text. It was not edited (operator state); the film uses a copy with the corrected note.
+## Run the judge demo (on p022)
 
-## Live assessment (verified 28 Oct 2026)
+The application runs on the hackathon Windows machine and is opened **inside p022** (over Remote Desktop). `localhost`
+on any other computer does not reach it.
 
-Started from the browser with `-AssessmentLogin`: a fresh 13 s window of `person_on_railway_tracks` was acquired from
-XProtect, a person detector ran on the A10G (26 frames in 2.4 s), and one
-Hafnia request answered `not observed`; the detector placed a person at the platform edge from 15:34:29.5. The continuity
-confirmation for that run was given by Claude (an AI) as demo reviewer, not by a human.
+```powershell
+cd C:\Users\Administrator\dev\hafnia-hackathon-2026
+powershell -ExecutionPolicy Bypass -File scripts\review.ps1
+```
 
-**Continuity review of that interval (28 Oct 15:34:25 to 15:34:38 UTC).** The camera replays a 15 s clip that is visually
-seamless: the step from its last frame to its first is no larger than neighbouring steps, and the next walk-in starts
-about 13.3 s into the clip. Frame by frame, the live snapshots at clip positions 1.0 to 12.5 s are identical to the saved
-22 Oct reference. The last snapshot (clip position 13.5 s, 15:34:37.5) is a genuine frame of that cycle's tail, not a
-restart; it is, however, the next cycle's person entering at the left edge, so the window ended too late. The interval
-chooser now stops 2 s before the restart instant (`TAIL_S`), and the historical recording is kept and labelled as it is.
+This checks the release build and source files, starts an **isolated** copy of the flagship case (no password, no
+XProtect event can be sent, the operator's saved state is not touched) on port 8781 and opens it in Edge, with the
+presentation film in the media player. Walk-through, what to expect and how to restart or stop it:
+[docs/submission/product-owner-review.md](docs/submission/product-owner-review.md).
+
+In short: the Station platform case is paused on the detector's trigger. **Play from the trigger** and the person climbs
+down about four seconds later. Click a signal on the right (Hafnia, Local vision, Footage review) to jump to its moment;
+the three lanes under the footage show what each source said and when. **Send to XProtect review** saves your decision;
+**Preview XProtect event** shows the exact event and its fingerprint, with sending switched off.
+
+`scripts\review.ps1 -Reset` starts over; `-Stop` stops only the review server.
+
+## Inspect the prepared evidence
+
+- **Cases.** Four saved cases: the station platform, plus secondary examples that are not railway validations: the
+  school gate (Hafnia's two prompts disagree; saved snapshots only, no local vision) and the sidewalk scooter and bin
+  (local vision measured how long each stayed still; Hafnia agreed).
+- **Evidence details** in the application lists the saved sources behind a case.
+- **Prepared release record:** [docs/submission/release-manifest.json](docs/submission/release-manifest.json) (hashes and
+  results of the checks), [storyboard](docs/submission/storyboard.md), [form copy](docs/submission/form-copy.md).
+- **Research record:** [docs/research/](docs/research/README.md), the pre-registered experiments and negative results
+  behind the limits, with result files in [results/](results/).
+
+## Start a new authorized assessment
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -AssessmentLogin
+```
+
+This opens the operator application on port 8780 with the saved operator state and asks once, in that window, for the
+Hafnia gateway password (kept in memory, never sent to the browser). **New assessment** then acquires the latest 15 s of
+the camera from XProtect, runs the A10G detector, asks Hafnia once and compares them. It needs an authorized user, the
+gateway and the Linux GPU host. Without the password the dialog explains that it is unavailable and nothing is
+submitted. Details: [docs/adaptive-watch/new-assessment.md](docs/adaptive-watch/new-assessment.md).
+
+`launch.ps1 -NativeSend` additionally allows one confirmed event to be sent to the XProtect Event Server.
+
+## Native XProtect: what has been verified
+
+Verified on p022 on 28 Oct 2026 (details and limits in
+[docs/adaptive-watch/native-xprotect.md](docs/adaptive-watch/native-xprotect.md)):
+
+- The analytics event `Adaptive Watch Review Required` and the camera-scoped alarm definition
+  `Adaptive Watch review: station platform` exist ([setup script](scripts/xprotect/setup_review_alarm.ps1)).
+- Two events were sent, each once, through the application's confirmation dialog: the saved flagship case (alarm 4)
+  and a **live assessment started from the browser** (alarm 5, with the detector's bounding box). The Event Server
+  accepted both and Smart Client's Alarm Manager lists both with the right camera, message and source time.
+- **Alarm 5 opens its source recording at 15:34:29.5 with the detector box**, and live view and recorded playback of the
+  camera work. Smart Client playback began working after the approved Smart Client restart; the underlying cause was
+  not independently established.
+- **Alarm 4's source recording (22 Oct) has expired**, so its preview shows other footage of the camera without the box.
+- Four further diagnostic events (alarms 6 to 9) were sent while investigating the preview; they remain in the Alarm Manager.
+
+The live assessment (28 Oct, window 15:34:25 to 15:34:38 UTC) acquired the footage from XProtect, ran the detector on the
+A10G (26 frames in 2.4 s), made one Hafnia request (`not observed`) and placed a person at the platform edge from
+15:34:29.5. Its continuity confirmation was given by Claude (an AI) as demo reviewer, not by a human.
 
 ## Limits
 
 The evidence comes from controlled synthetic camera scenarios. There is no accuracy benchmark, no measured reduction in
 missed events and no production deployment. The attention region is a draft. The camera replays a 15 s clip on a loop.
-
-**Submission deadline: Monday, 2 November 2026 at 11:00 CET.**
+Footage reviews labelled "Claude demo reviewer" are AI assessments, not human ones.
 
 ## Repository
 
 ```
-adaptive_watch/        casebook, review store, native handoff, job runner, API server
-scene_contracts/       Hafnia gateway client and the Event Server serializer and ledger
-frontend/              React 19, TypeScript, Vite application and browser checks
-presentation/          standalone HTML/CSS/JS deck, narration, timing, render script
-scripts/               acquisition, vision, launch and XProtect setup
-docs/                  product definition, submission copy, storyboard, evidence notes
+adaptive_watch/        casebook, review store, native handoff, assessment job runner, application server
+scene_contracts/       Hafnia gateway client, Event Server serializer and duplicate-send ledger (plus an
+                       earlier, separate operator console kept for the record)
+frontend/              React 19, TypeScript, Vite: the Adaptive Watch application and its browser checks
+presentation/          HTML/CSS/JS deck, narration, timing and render scripts for the film
+scripts/               launchers (review.ps1, launch.ps1), XProtect acquisition and setup, vision runner, release tooling
+tests/                 Python regression tests (unittest)
+docs/                  product docs, submission materials, research record, archive (see docs/README.md)
+results/, contracts/,  research result files and the earlier Scene Contracts / ML experiment code
+config/, prompts/,     (aw.py, vis.py, hack26.py, scene26.py, scene_web.py); tested but not part of the demo
+brand-kit/             Polar brand tokens
 ```
 
-Source CCTV, credentials, raw Hafnia responses, identity files, model weights, review databases and captures are private
-and ignored by Git. A clone alone cannot show the saved cases; they need the original files on p022.
+Source CCTV, credentials, raw Hafnia responses, identity files, model weights, review databases, recordings and
+captures are private and ignored by Git. A clone alone cannot show the saved cases; they need the original files on p022.
 
 ## Checks
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests
-cd frontend; ..\runs\tooling\bun-windows-x64\bun.exe run build
+cd frontend; ..\runs\tooling\bun-windows-x64\bun.exe run build      # tsc -b, then vite build
 ```
 
-See [docs/adaptive-watch/product-definition.md](docs/adaptive-watch/product-definition.md) for the design reasoning and
-[docs/submission/](docs/submission/) for the submission package. Earlier workflows are kept in
-[docs/adaptive-watch/prior-workflow.md](docs/adaptive-watch/prior-workflow.md) and
-[docs/adaptive-watch/single-case-readme.md](docs/adaptive-watch/single-case-readme.md).
+Browser checks (real Edge, isolated session): see [frontend/README.md](frontend/README.md).
+
+## Submission status
+
+The presentation film is a local file on p022 (`runs/release/adaptive-watch-submission.mp4`, 177 s); it has not been
+published and the form has not been submitted. Source: https://github.com/magnusgp/hafnia-hackathon-2026, branch
+`release/adaptive-watch-submission`.
+
+## License and notices
+
+No software license has been chosen yet; that is an open repository-governance item for the team. Bundled fonts (DM Sans, IBM Plex Mono, Space Grotesk) are under the SIL Open
+Font License 1.1: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

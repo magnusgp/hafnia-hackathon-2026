@@ -13,16 +13,18 @@ production bundle (`publicDir: false`).
 ..\runs\tooling\bun-windows-x64\bun.exe run build
 ```
 
-Browser checks use real Edge against an isolated demo instance (never the operator's saved decisions):
+Browser checks use real Edge against an isolated session (never the operator's saved decisions). Start one with
+`scripts\review.ps1 -NoBrowser` from the repository root (port 8781), then, in this order (the second expects the
+review the first saves):
 
 ```powershell
-cd ..
-.\.venv\Scripts\python.exe scripts\adaptive_watch\make_demo_root.py
-.\.venv\Scripts\python.exe scripts\adaptive_watch\record_agent_review.py --root runs\release\demo-app --railway runs\release\demo-railway --evaluations $env:USERPROFILE\adaptive-watch-private\hafnia-16
-# start the server on port 8781 with --root runs\release\demo-app --railway runs\release\demo-railway, then:
-$env:PLAYWRIGHT_BROWSERS_PATH = (Resolve-Path runs\tooling\playwright).Path
-cd frontend; ..\runs\tooling\bun-windows-x64\bun.exe scripts\check-app.mjs ..\runs\release\checks
+$env:PLAYWRIGHT_BROWSERS_PATH = (Resolve-Path ..\runs\tooling\playwright).Path
+..\runs\tooling\bun-windows-x64\bun.exe scripts\check-app.mjs ..\runs\review-notes\checks http://127.0.0.1:8781
+..\runs\tooling\bun-windows-x64\bun.exe scripts\check-release.mjs ..\runs\review-notes\checks http://127.0.0.1:8781
 ```
 
-`scripts/shoot.mjs` captures screenshots, `capture-walkthrough.mjs` records the application for the presentation,
+Stop it with `scripts\review.ps1 -Stop`; `-Reset` gives a fresh session.
+
+
+`frontend/scripts/shoot.mjs` captures screenshots, `capture-walkthrough.mjs` records the application for the presentation,
 `record-deck.mjs` and `deck-preview.mjs` record and preview the deck (see `../presentation`).
