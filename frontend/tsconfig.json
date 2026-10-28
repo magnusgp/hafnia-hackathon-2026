@@ -16,6 +16,7 @@
     "resolveJsonModule": true
   },
   "include": [
+    "src/application.tsx",
     "src/main.tsx",
     "src/negative-review.tsx",
     "src/components/**/*.tsx",

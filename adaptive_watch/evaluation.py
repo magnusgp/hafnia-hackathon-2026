@@ -144,6 +144,11 @@ class Evaluation:
         deadline = time.monotonic()+timeout
         while time.monotonic() < deadline:
             result = gateway.request('GET','/api/Summaries/'+record['summary']['Id'])
+            if not isinstance(result, dict) or not isinstance(result.get('Progress'), str):
+                record['poll_outcome'] = 'malformed_response'
+                record['malformed_poll_response'] = result
+                self._save(digest,record)
+                return record
             record['summary'] = result
             if result.get('Progress') in {'Completed','Failed'}:
                 record['parsed'] = parse_result(result)
@@ -153,4 +158,6 @@ class Evaluation:
                 return record
             self._save(digest,record)
             time.sleep(3)
+        record['poll_outcome'] = 'timeout'
+        self._save(digest,record)
         raise TimeoutError('Request remains pending; poll existing ID, do not resubmit')

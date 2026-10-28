@@ -85,8 +85,10 @@ class Gateway:
         except (URLError, TimeoutError):
             raise GatewayError("Cannot reach local Hafnia gateway") from None
 
-    def authenticate(self):
-        password = os.getenv("HAFNIA_GW_PASSWORD") or getpass.getpass("Gateway administrator password: ")
+    def authenticate(self, *, interactive_only=False):
+        if interactive_only and not __import__("sys").stdin.isatty():
+            raise GatewayError("Interactive terminal required for password entry")
+        password = (None if interactive_only else os.getenv("HAFNIA_GW_PASSWORD")) or getpass.getpass("Gateway administrator password: ")
         response = self.request("POST", "/api/Sessions/Login", {"Name": "administrator", "Password": password}, login=True)
         self.session = response.get("Id") if isinstance(response, dict) else None
         if not self.session:

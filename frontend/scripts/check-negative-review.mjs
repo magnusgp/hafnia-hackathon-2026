@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import {mkdir,copyFile,writeFile,readFile} from 'node:fs/promises';
-import {spawn} from 'node:child_process';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+import {spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
 const repo=fileURLToPath(new URL('../../',import.meta.url));
 // Keep release verification separate from the preserved evidence-video sources.
-const out=new URL('../../runs/negative-review-release-checks/',import.meta.url);
+const out=new URL(`../../runs/negative-review-release-checks/${Date.now()}/`,import.meta.url);
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({channel:'msedge',headless:true});
 const reports=[];
@@ -16,7 +16,8 @@ async function ready(base){for(let i=0;i<100;i++){try{if((await fetch(base+'/api
 try{
 for(const [width,height,port] of [[1440,900,8874],[1920,1080,8875]]){
  const root=new URL(`case-${width}/`,out);await mkdir(root,{recursive:true});
- await copyFile(new URL('../../runs/negative-result-review/review.sqlite3',import.meta.url),new URL('review.sqlite3',root));
+ const prepared=spawnSync(repo+'/.venv/Scripts/python.exe',['-c',"from adaptive_watch.negative_review import ReviewStore; import sys; source=ReviewStore('runs/negative-result-review'); record,_=source.verified(); source.close(); target=ReviewStore(sys.argv[1]); target.install(record); target.close()",fileURLToPath(root)],{cwd:repo,windowsHide:true,encoding:'utf8'});
+ assert.equal(prepared.status,0,prepared.stderr);
  const server=spawn(repo+'/.venv/Scripts/python.exe',['-m','adaptive_watch.negative_review_api','--root',fileURLToPath(root),'--frontend','frontend/dist','--port',String(port)],{cwd:repo,windowsHide:true,stdio:'ignore'});
  const base=`http://127.0.0.1:${port}`;
  let context;
@@ -25,7 +26,7 @@ for(const [width,height,port] of [[1440,900,8874],[1920,1080,8875]]){
   context=await browser.newContext({viewport:{width,height},recordVideo:{dir:fileURLToPath(out),size:{width,height}}});
   const page=await context.newPage();const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base,{waitUntil:'networkidle'});
+  await page.goto(base+'/#case/railway',{waitUntil:'networkidle'});
   const data=(await (await page.request.get(base+'/api/review')).json()).review;
   assert.equal(data.frames.length,26);assert.equal(data.hafnia.outcome,'not_observed');
   assert.equal(data.hafnia.summaryId,'5a1ab040-fc44-4156-ad7a-1eeecd8c7b60');
