@@ -75,20 +75,39 @@ runner for New assessment, and the presentation.
   detector's bounding box). The Event Server accepted both. **Smart Client's Alarm Manager lists alarms 4 and 5** with the
   right camera, message and source time.
 - **Not verified:** playback association and bounding-box overlay. In both cases Smart Client's alarm preview shows
-  "The camera is not available", although XProtect holds recording at the live alarm's source time. This was not
-  investigated further (a camera or alarm-definition preview setting is the likely place to look).
+  "The camera is not available". Findings of the 28 Oct investigation (read-only, nothing sent or changed):
+  - Alarm 4's source time (22 Oct) is before the retained recording (27 Oct 17:13 onward), so retention explains alarm 4.
+    It does **not** explain alarm 5: its source time (28 Oct 15:34:29 UTC) lies inside one continuous recording sequence
+    (27 Oct 17:13:39 to 28 Oct 18:02 UTC), and live snapshots of the camera are retrievable for the same operator.
+  - Both alarms carry the correct `CameraId` and `SourceId`. A missing `ServerId` in the event's source FQID is **not** the
+    cause on its own: alarm 3 (camera `vandalism`, sent 22 Oct by the same serializer, also without a `ServerId`) does show
+    a camera preview. In a MIP camera FQID the `ServerId` is the *management* server (`XPCO`), not the recording server.
+  - Differences still open: the Adaptive Watch alarm definition lists the camera as a related camera while
+    `Visually Observed Damage` does not; alarms 1 to 3 carry a snapshot icon, alarms 4 and 5 do not; the Smart Client
+    alarm-preview settings (Show event source cameras, Show related cameras) and Smart Client's own log were not
+    readable from this session. The root cause is therefore **unresolved**. Any fix needs a definition change or a new
+    test event, both of which are waiting for operator approval.
 
 ## Live assessment (verified 28 Oct 2026)
 
 Started from the browser with `-AssessmentLogin`: a fresh 13 s window of `person_on_railway_tracks` was acquired from
-XProtect (chosen to avoid the camera's 15 s loop seam), a person detector ran on the A10G (26 frames in 2.4 s), and one
+XProtect, a person detector ran on the A10G (26 frames in 2.4 s), and one
 Hafnia request answered `not observed`; the detector placed a person at the platform edge from 15:34:29.5. The continuity
-confirmation for that run was given by the Claude demo reviewer after viewing every snapshot, not by a human.
+confirmation for that run was given by Claude (an AI) as demo reviewer, not by a human.
+
+**Continuity review of that interval (28 Oct 15:34:25 to 15:34:38 UTC).** The camera replays a 15 s clip that is visually
+seamless: the step from its last frame to its first is no larger than neighbouring steps, and the next walk-in starts
+about 13.3 s into the clip. Frame by frame, the live snapshots at clip positions 1.0 to 12.5 s are identical to the saved
+22 Oct reference. The last snapshot (clip position 13.5 s, 15:34:37.5) is a genuine frame of that cycle's tail, not a
+restart; it is, however, the next cycle's person entering at the left edge, so the window ended too late. The interval
+chooser now stops 2 s before the restart instant (`TAIL_S`), and the historical recording is kept and labelled as it is.
 
 ## Limits
 
 The evidence comes from controlled synthetic camera scenarios. There is no accuracy benchmark, no measured reduction in
 missed events and no production deployment. The attention region is a draft. The camera replays a 15 s clip on a loop.
+
+**Submission deadline: Monday, 2 November 2026 at 11:00 CET.**
 
 ## Repository
 
