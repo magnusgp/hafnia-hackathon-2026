@@ -29,18 +29,21 @@ The application runs on the hackathon Windows machine and is opened **inside p02
 
 ```powershell
 cd C:\Users\Administrator\dev\hafnia-hackathon-2026
-powershell -ExecutionPolicy Bypass -File scripts\launch.ps1
+powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -Demo
 ```
 
-Edge opens `http://127.0.0.1:8780/#/railway`. Close the window to stop it. If `frontend\dist` is missing the launcher
-builds it first.
+`-Demo` opens an isolated copy of the flagship case in its pending state, so a judge can walk the whole flow without
+touching the operator's own saved decision. Without `-Demo` the launcher opens the real saved state (review request
+saved, alarm 4 sent). Edge opens `http://127.0.0.1:8780/#/railway`. Close the window to stop it. If `frontend\dist` is
+missing the launcher builds it first.
 
 1. The **Station platform** exception is already selected and the footage is paused on the trigger sample.
 2. Press **Play from the trigger**. The person climbs down about four seconds later.
 3. Click a signal on the right (Hafnia, Local vision, Footage review) to jump to its moment. The three lanes under the
    footage show what each source said and when.
 4. **Send to XProtect review** saves your review request. The next step, **Send to XProtect**, shows the exact event and
-   its fingerprint and needs a second confirmation (start with `-NativeSend` to enable it).
+   its fingerprint and needs a second confirmation (add `-NativeSend` to the launch command to enable it). The duplicate
+   ledger refuses a second send of an event that was already sent.
 5. Open Smart Client, Alarm Manager, to see the alarm.
 
 The other tabs are secondary evidence: the school gate (Hafnia prompts disagree, saved snapshots only, no local vision),
