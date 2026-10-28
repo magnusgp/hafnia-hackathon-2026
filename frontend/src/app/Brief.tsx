@@ -13,6 +13,7 @@ export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) =
   const saved = ['xprotect_review_requested', 'review_request_saved'].includes(c.state.status);
   const dismissed = c.state.status === 'dismissed';
   const open = !saved && !dismissed;
+  const review = c.flagship || !!c.handoff;  // a live assessment with a trigger is a review exception too
   const trigger = c.vision?.trigger ?? null;
   const decisive = c.agent?.decisiveMoment ?? null;
   const lead = trigger && decisive ? (ms(decisive.timestamp) - ms(trigger.timestamp)) / 1000 : null;
@@ -21,9 +22,9 @@ export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) =
   return (
     <aside className="brief" aria-label="Second signal and XProtect handoff">
       <header className="brief-head">
-        <p className={`status ${!c.flagship ? 'quiet' : open ? 'open' : 'done'}`}>{c.flagship ? (saved ? 'Review requested' : dismissed ? 'Not needed' : 'Ready for XProtect review') : 'Saved evidence'}</p>
-        <h1>{c.flagship ? 'Review the station platform' : c.title}</h1>
-        {!c.flagship && <p className="lede">{c.purpose}</p>}
+        <p className={`status ${!review ? 'quiet' : open ? 'open' : 'done'}`}>{review ? (saved ? 'Review requested' : dismissed ? 'Not needed' : 'Ready for XProtect review') : 'Saved evidence'}</p>
+        <h1>{review ? (c.flagship ? 'Review the station platform' : 'Review the live station platform') : c.title}</h1>
+        {!review && <p className="lede">{c.purpose}</p>}
       </header>
 
       <ol className="signals">

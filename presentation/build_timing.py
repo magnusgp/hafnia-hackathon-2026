@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parent
 spec = json.loads((root/'narration.json').read_text(encoding='utf-8'))
 audio = root/'assets/audio'
 # Minimum on-screen time per scene so footage and animation can finish; capture length overrides operator.
-MINIMUM = dict(open=12.5, silent=12.5, signal=20.0, how=24.0, operator=28.0, xprotect=14.0, built=24.0, close=14.0)
+MINIMUM = dict(open=12.5, silent=12.5, signal=20.0, how=24.0, operator=28.0, live=13.0, xprotect=14.0, built=24.0, close=14.0)
 LEAD, TAIL = 0.5, 1.4
 if len(sys.argv) > 1:
     MINIMUM['operator'] = float(sys.argv[1])

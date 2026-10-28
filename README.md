@@ -70,10 +70,20 @@ runner for New assessment, and the presentation.
 
 - Analytics Event `Adaptive Watch Review Required` and alarm definition `Adaptive Watch review: station platform`
   (scoped to the one camera) were created ([script](scripts/xprotect/setup_review_alarm.ps1)).
-- One event was sent for the flagship case and the Event Server accepted it. **Smart Client's Alarm Manager lists alarm 4**
-  with the right camera, message and source time.
-- **Not verified:** playback association and bounding-box overlay. The 22 Oct recording is past the 24-hour retention,
-  so Smart Client reports the camera as unavailable for that alarm. A fresh assessment is needed for that check.
+- Two events were sent, each once, through the app's confirmation dialog and the duplicate ledger: the saved flagship case
+  (source time 22 Oct 11:03:44) and a **live assessment started from the browser** (source time 28 Oct 15:34:29, with the
+  detector's bounding box). The Event Server accepted both. **Smart Client's Alarm Manager lists alarms 4 and 5** with the
+  right camera, message and source time.
+- **Not verified:** playback association and bounding-box overlay. In both cases Smart Client's alarm preview shows
+  "The camera is not available", although XProtect holds recording at the live alarm's source time. This was not
+  investigated further (a camera or alarm-definition preview setting is the likely place to look).
+
+## Live assessment (verified 28 Oct 2026)
+
+Started from the browser with `-AssessmentLogin`: a fresh 13 s window of `person_on_railway_tracks` was acquired from
+XProtect (chosen to avoid the camera's 15 s loop seam), a person detector ran on the A10G (26 frames in 2.4 s), and one
+Hafnia request answered `not observed`; the detector placed a person at the platform edge from 15:34:29.5. The continuity
+confirmation for that run was given by the Claude demo reviewer after viewing every snapshot, not by a human.
 
 ## Limits
 

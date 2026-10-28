@@ -1,5 +1,5 @@
 {
- "total": 153.89,
+ "total": 173.43,
  "scenes": [
   {
    "id": "open",
@@ -152,34 +152,58 @@
    ]
   },
   {
-   "id": "xprotect",
+   "id": "live",
    "start": 98.68,
-   "dur": 16.8,
+   "dur": 17.39,
    "audioStart": 99.18,
-   "audioLength": 14.9,
+   "audioLength": 15.49,
    "sentences": [
     {
      "t": 0.5,
-     "d": 6.14,
+     "d": 3.61,
+     "text": "The same flow also ran live from the browser:"
+    },
+    {
+     "t": 4.11,
+     "d": 5.22,
+     "text": "a fresh recording, one real Hafnia request, and the GPU detector."
+    },
+    {
+     "t": 9.33,
+     "d": 6.66,
+     "text": "Hafnia again answered not observed, and the detector placed the person at the edge."
+    }
+   ]
+  },
+  {
+   "id": "xprotect",
+   "start": 116.07,
+   "dur": 18.95,
+   "audioStart": 116.57,
+   "audioLength": 17.05,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 5.92,
      "text": "XProtect receives the review event on the correct camera and raises its own alarm."
     },
     {
-     "t": 6.64,
-     "d": 3.37,
-     "text": "Here it is in the Smart Client Alarm Manager."
+     "t": 6.42,
+     "d": 5.27,
+     "text": "Both the saved case and a live run are in the Smart Client Alarm Manager."
     },
     {
-     "t": 10.01,
-     "d": 5.39,
-     "text": "This recording has aged out of retention, so playback was not available."
+     "t": 11.7,
+     "d": 5.85,
+     "text": "The alarm preview did not open footage, so playback and overlay are not verified."
     }
    ]
   },
   {
    "id": "built",
-   "start": 115.48,
+   "start": 135.02,
    "dur": 24.19,
-   "audioStart": 115.98,
+   "audioStart": 135.52,
    "audioLength": 22.29,
    "sentences": [
     {
@@ -211,9 +235,9 @@
   },
   {
    "id": "close",
-   "start": 139.67,
+   "start": 159.2,
    "dur": 14.22,
-   "audioStart": 140.17,
+   "audioStart": 159.7,
    "audioLength": 12.32,
    "sentences": [
     {
@@ -234,5 +258,5 @@
    ]
   }
  ],
- "proof": "Playback unavailable: the 22 Oct recording is past the 24-hour retention."
+ "proof": "Alarm preview showed the camera as unavailable: playback and overlay not verified."
 }

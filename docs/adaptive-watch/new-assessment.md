@@ -27,7 +27,9 @@ A failed stage stops the job with the reason and the next useful action. An unfi
 
 ## Status
 
-The recording, continuity pre-check and GPU stages were run live on 28 Oct 2026 (window 11:01:32 to 11:01:47 UTC, A10G,
-30 frames in 2.6 s). The Hafnia and matching stages are covered by unit tests with fakes. **The first live Hafnia request
-needs the operator to start the server with `-AssessmentLogin`.** Native sending for a live result works the same way as for
-the saved case once its review request is saved.
+Run end to end from the browser on 28 Oct 2026 (job window 15:34:25 to 15:34:38 UTC): acquisition and aligned MP4, loop
+check, A10G detection (26 frames in 2.4 s, 10 person tracks), one Hafnia request (`not observed`), matching, and the
+result case with its XProtect handoff. The review request was then saved and its event sent through the app. Smart
+Client lists the alarm (alarm 5); playback and overlay were not verified (the alarm preview reports the camera as not
+available). The continuity step was confirmed by the Claude demo reviewer, not a human. The window starts after the
+clip start and ends before it repeats, but its last snapshot already shows the next cycle's person entering at the edge.

@@ -22,8 +22,12 @@
       "text": "The operator opens the exception at the moment that matters. The detection, the watched region, and Hafnia's answer share one timeline over the original footage. Play from the trigger, and the person reaches the track bed. One click requests the XProtect review."
     },
     {
+      "id": "live",
+      "text": "The same flow also ran live from the browser: a fresh recording, one real Hafnia request, and the GPU detector. Hafnia again answered not observed, and the detector placed the person at the edge."
+    },
+    {
       "id": "xprotect",
-      "text": "XProtect receives the review event on the correct camera and raises its own alarm. Here it is in the Smart Client Alarm Manager. This recording has aged out of retention, so playback was not available."
+      "text": "XProtect receives the review event on the correct camera and raises its own alarm. Both the saved case and a live run are in the Smart Client Alarm Manager. The alarm preview did not open footage, so playback and overlay are not verified."
     },
     {
       "id": "built",

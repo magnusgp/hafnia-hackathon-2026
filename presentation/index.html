@@ -66,14 +66,20 @@
     <video id="v-operator" class="capture" muted playsinline preload="auto" src="assets/operator.mp4"></video>
   </section>
 
+  <!-- 5b. The same flow, live -->
+  <section class="scene dark" id="live" aria-label="Live assessment">
+    <img class="capture" alt="Live assessment result in Adaptive Watch" src="assets/live.png">
+    <p class="proof live-tag" data-in="2">Live from the browser, 28 Oct 2026, 15:34 UTC: fresh XProtect recording, one Hafnia request, A10G detector.</p>
+  </section>
+
   <!-- 6. The XProtect result -->
   <section class="scene dark" id="xprotect" aria-label="XProtect result">
     <h2 class="title on-dark" data-in="1">The alarm arrives in XProtect.</h2>
-    <img id="x-shot" class="shot" alt="Smart Client Alarm Manager listing the Adaptive Watch review alarm for the station platform camera" src="assets/xprotect.png" data-in="2">
+    <img id="x-shot" class="shot" alt="Smart Client Alarm Manager listing two Adaptive Watch review alarms for the station platform camera" src="assets/xprotect.png" data-in="2">
     <ul class="facts-row" data-in="4">
-      <li><b>Alarm 4</b><span>Smart Client, Alarm Manager</span></li>
+      <li><b>Alarms 4 and 5</b><span>Smart Client, Alarm Manager</span></li>
       <li><b>person_on_railway_tracks</b><span>the source camera</span></li>
-      <li><b>22 Oct, 11:03:44</b><span>source time of the moment</span></li>
+      <li><b>Saved case and live run</b><span>22 Oct 11:03:44, 28 Oct 15:34:29</span></li>
     </ul>
     <p class="proof" id="x-proof" data-in="6"></p>
   </section>

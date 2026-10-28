@@ -93,3 +93,5 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--stage)
 #progress i { display: block; height: 100%; width: 0; background: var(--primary); }
 body.record #progress { display: none; }
 @media (prefers-reduced-motion: reduce) { .scene, [data-in], .w { transition: none !important; } [data-in] { opacity: 1; transform: none; } .w { stroke-dashoffset: 0; } }
+
+.live-tag { position: absolute; left: 4vw; bottom: 9vh; background: rgba(10,21,36,.9); color: var(--on-stage); padding: 1.2vh 1.2vw; border-radius: 6px; }
