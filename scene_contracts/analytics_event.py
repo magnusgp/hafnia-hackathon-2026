@@ -103,7 +103,13 @@ def build(message, camera_id, timestamp, dispatch_key, description=None, start=N
     sub(header, 'CustomTag', dispatch_key)
     fqid = sub(sub(header, 'Source'), 'FQID')
     if server_id:
-        sub(sub(fqid, 'ServerId'), 'Id', _guid(server_id))
+        # Documented FQID: ServerId{Type,Hostname,Port,Id}. A bare GUID emits Id only; a dict emits the full block.
+        info = server_id if isinstance(server_id, dict) else dict(id=server_id)
+        sid = sub(fqid, 'ServerId')
+        for key, tag in (('type', 'Type'), ('hostname', 'Hostname'), ('port', 'Port')):
+            if info.get(key) not in (None, ''):
+                sub(sid, tag, info[key])
+        sub(sid, 'Id', _guid(info['id']))
     sub(fqid, 'ObjectId', _guid(camera_id))
     sub(fqid, 'Kind', CAMERA_KIND)
     if description:

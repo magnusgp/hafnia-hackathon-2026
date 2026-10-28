@@ -106,13 +106,21 @@
         "dispatchKey": "sc1-a3ad7ae4962f809bc527d9c1a911c620",
         "payloadSha256": "79ba404c04af83c973ac9735ec3fc0bfb22dde60544a68906872914218ca67f1",
         "http": 200
+      },
+      {
+        "alarm": "6 (test)",
+        "sourceTime": "2026-10-28T18:17:34Z",
+        "dispatchKey": "sc1-test-preview-1-serverid",
+        "payloadSha256": "ae276fa49bd8cee7ba64a78a829145cf89b728bf26ff3d0ba68561d64a63c259",
+        "http": 200,
+        "purpose": "diagnostic: full ServerId block; preview still \"camera is not available\""
       }
     ],
-    "ledger": "unchanged; no new send since 28 Oct",
-    "smartClientFinding": "Both alarms are listed with the right camera and source time. Alarm preview says \"The camera is not available\" for both. Alarm 4: its 22 Oct source time precedes the retained recording (from 27 Oct 17:13 UTC). Alarm 5: source time lies inside one continuous recording sequence and live snapshots of the camera are retrievable, so retention does not explain it. A missing ServerId in the event FQID is not sufficient: alarm 3 (vandalism, same serializer, no ServerId) previews. Root cause unresolved; open differences: related-camera entry on the Adaptive Watch definition, no snapshot attached, alarm-preview settings not inspected. Overlay unverified."
+    "ledger": "original two rows unchanged; one diagnostic test send added on 28 Oct",
+    "smartClientFinding": "Both alarms are listed with the right camera and source time. Alarm preview says \"The camera is not available\" for both. Alarm 4: its 22 Oct source time precedes the retained recording (from 27 Oct 17:13 UTC). Alarm 5: source time lies inside one continuous recording sequence and live snapshots of the camera are retrievable, so retention does not explain it. A missing ServerId in the event FQID is not sufficient: alarm 3 (vandalism, same serializer, no ServerId) previews. Root cause unresolved; open differences: related-camera entry on the Adaptive Watch definition, no snapshot attached, alarm-preview settings not inspected. Overlay unverified. Test alarm 6 (full management-server ServerId, recent source time) also fails to preview, refuting the ServerId hypothesis. Strongest lead: MapType 2 (Smart Map) on our definition vs 1 (Map) on the working one; change not applied."
   },
   "verification": {
-    "pythonTests": "219 run, OK, 16 skipped (unittest discover, 28 Oct, includes 2 new regression tests)",
+    "pythonTests": "221 run expected after new tests; last full run 219 OK, 16 skipped (28 Oct); analytics-event suite re-run OK",
     "typescript": "tsc --noEmit exit 0",
     "frontendBuild": "vite production build OK",
     "browserChecks": "62 real-browser checks at 1440x900 and 1920x1080 on an isolated demo instance (earlier run, 28 Oct); not re-run after the interval-chooser change, which is server-side only",

@@ -82,6 +82,14 @@ runner for New assessment, and the presentation.
   - Both alarms carry the correct `CameraId` and `SourceId`. A missing `ServerId` in the event's source FQID is **not** the
     cause on its own: alarm 3 (camera `vandalism`, sent 22 Oct by the same serializer, also without a `ServerId`) does show
     a camera preview. In a MIP camera FQID the `ServerId` is the *management* server (`XPCO`), not the recording server.
+  - **Tested and refuted:** test alarm 6 (28 Oct 18:17:34 UTC, source time inside the recording, event source FQID with the
+    full management-server `ServerId` block `XPCO`/`p022`/80/`9d4de506-...`) also shows "The camera is not available".
+    The serializer now supports the full block (tested), but the missing `ServerId` is not the cause.
+  - **Strongest lead:** the Adaptive Watch alarm definition has `MapType = 2` (Smart Map); `Visually Observed Damage`, whose
+    preview works, has `MapType = 1` (Map). For our alarms Smart Client's map pane says the source must be added to the
+    smart map. Changing `MapType` (and possibly removing the related-camera entry) on our own definition is the next test.
+    It has **not** been done: the session's permission classifier denied the configuration write. The prior definition is
+    saved in `runs/release/native/alarm-definition-before-maptype.json` (private).
   - Differences still open: the Adaptive Watch alarm definition lists the camera as a related camera while
     `Visually Observed Damage` does not; alarms 1 to 3 carry a snapshot icon, alarms 4 and 5 do not; the Smart Client
     alarm-preview settings (Show event source cameras, Show related cameras) and Smart Client's own log were not

@@ -67,6 +67,15 @@ class SerializerTests(unittest.TestCase):
         for data in (golden_event()[1], golden_event(server_id='beef2f96-03db-4815-a33c-adcc9fcb8610')[1]):
             self.assertTrue(schema.validate(etree.fromstring(data)), schema.error_log)
 
+    def test_full_server_id_block_precedes_object_id_in_schema_order(self):
+        mgmt = '9d4de506-9b54-4d03-b852-0a4b0fd79958'
+        data = golden_event(server_id=dict(type='XPCO', hostname='p022', port=80, id=mgmt))[1].decode()
+        self.assertIn(f'<FQID><ServerId><Type>XPCO</Type><Hostname>p022</Hostname><Port>80</Port><Id>{mgmt}</Id></ServerId>'
+                      f'<ObjectId>{CAMERA}</ObjectId>', data)
+        self.assertTrue(ae.validate(data.encode()))
+        with self.assertRaises(ValueError):
+            golden_event(server_id=dict(type='XPCO', id='not-a-guid'))
+
     def test_message_and_camera_identity_are_exact(self):
         data = golden_event()[1].decode()
         self.assertIn(f'<Message>{MESSAGE}</Message>', data)
