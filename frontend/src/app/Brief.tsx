@@ -21,7 +21,7 @@ export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) =
   return (
     <aside className="brief" aria-label="Second signal and XProtect handoff">
       <header className="brief-head">
-        <p className={`status ${open ? 'open' : 'done'}`}>{c.flagship ? (saved ? 'Review requested' : dismissed ? 'Not needed' : 'Ready for XProtect review') : 'Saved evidence'}</p>
+        <p className={`status ${!c.flagship ? 'quiet' : open ? 'open' : 'done'}`}>{c.flagship ? (saved ? 'Review requested' : dismissed ? 'Not needed' : 'Ready for XProtect review') : 'Saved evidence'}</p>
         <h1>{c.flagship ? 'Review the station platform' : c.title}</h1>
         {!c.flagship && <p className="lede">{c.purpose}</p>}
       </header>

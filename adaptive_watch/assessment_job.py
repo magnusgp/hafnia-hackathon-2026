@@ -34,6 +34,8 @@ STAGES = [('acquisition', 'Record the camera interval'), ('continuity', 'Check t
 STATE_STAGE = dict(queued=0, acquiring=0, awaiting_continuity=1, cv_running=2, hafnia_submitting=3,
                    hafnia_waiting=3, matching=4)
 TERMINAL = {'completed', 'failed'}
+REFERENCE = 'runs/xprotect/person_on_railway_tracks_20261022T110339Z/manifest.json'  # clip starts at frame 0
+LEAD_S, PHASE_MAX_AGE_S, CAL_SECONDS, CYCLE = 0.6, 6*3600, 32, 'loop-cycle.npz'
 NATIVE_EVENT = 'Adaptive Watch Review Required'
 HANDOFF_NEGATIVE = ('Review exception: Hafnia reported no entry; independent person detection placed a person at the '
                     'platform edge from {trigger} UTC. Neither signal confirms entry. Review the footage.')
@@ -43,7 +45,8 @@ TRACKER_REL = 'adaptive_watch/tracking.py'
 EVIDENCE_LOST = 'Source files failed verification. Restore the original recording, response and vision output for this case.'
 
 
-class StageError(Exception):
+class StageError(ValueError):
+    """A specific, user-facing failure. A ValueError subclass, so HTTP routes that catch ValueError already cover it."""
     def __init__(self, reason, next_step, resumable=False):
         super().__init__(reason)
         self.reason, self.next, self.resumable = reason, next_step, resumable
@@ -61,16 +64,59 @@ def parse(value):
     return datetime.fromisoformat(value.replace('Z', '+00:00'))
 
 
+def hms(value):
+    """HH:MM:SS.s (one decimal, UTC, no zone suffix) from an ISO timestamp."""
+    t = parse(value).astimezone(timezone.utc)
+    return f'{t:%H:%M:%S}.{t.microsecond//100000}'
+
+
+_CACHE, _CACHE_LOCK = {}, threading.Lock()
+
+
+def _signature(paths):
+    return tuple((str(p), Path(p).stat().st_size, Path(p).stat().st_mtime_ns) for p in paths)
+
+
+def _verified_once(key, paths, compute):
+    """Run the expensive hash verification once per (key, size/mtime signature) of the files."""
+    sig = _signature(paths)
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+    if hit and hit[0] == sig:
+        return hit[1]
+    value = compute()
+    with _CACHE_LOCK:
+        if len(_CACHE) > 64:
+            _CACHE.clear()
+        _CACHE[key] = (sig, value)
+    return value
+
+
 # -- interval and continuity (pure) ----------------------------------------------------------------
-def choose_interval(sequences, now, window=WINDOW_S, margin=MARGIN_S):
-    """Newest whole-second window of `window` s ending at least `margin` s ago, inside one recording sequence."""
-    latest = math.floor(now.timestamp()-margin)
-    for seq in sorted(sequences, key=lambda s: parse(s['end_utc']), reverse=True):
-        end = min(latest, math.floor(parse(seq['end_utc']).timestamp()))
-        if end-window >= math.ceil(parse(seq['start_utc']).timestamp()):
-            t = datetime.fromtimestamp(end, timezone.utc)
-            return iso(t-timedelta(seconds=window)), iso(t)
-    raise ValueError(f'The camera has no retained recording that covers a {window} second interval ending at least '
+def choose_interval(sequences, now, phase=None, window=WINDOW_S, margin=MARGIN_S):
+    """Newest whole-second window ending at least `margin` s ago, inside one recording sequence.
+
+    Without `phase`: a `window`-second window. With a calibrated loop `phase` (the camera replays one clip every
+    `period` s, restarting at seam_utc + k*period): the longest whole-second window that starts just after a
+    restart and ends before the next one, so no restart can lie inside it.
+    """
+    latest = now.timestamp()-margin
+    spans = [(math.ceil(parse(s['start_utc']).timestamp()), math.floor(parse(s['end_utc']).timestamp())) for s in sequences]
+    if phase:
+        seam0, period = parse(phase['seam_utc']).timestamp(), float(phase['period'])
+        top = math.floor((latest-seam0)/period)
+        for k in range(top, top-1500, -1):
+            seam = seam0+k*period
+            start, end = math.ceil(seam+LEAD_S), math.floor(seam+period-LEAD_S)
+            if end-start >= 12 and end <= latest and any(a <= start and end <= b for a, b in spans):
+                return iso(datetime.fromtimestamp(start, timezone.utc)), iso(datetime.fromtimestamp(end, timezone.utc))
+    else:
+        for a, b in sorted(spans, key=lambda x: x[1], reverse=True):
+            end = min(math.floor(latest), b)
+            if end-window >= a:
+                t = datetime.fromtimestamp(end, timezone.utc)
+                return iso(t-timedelta(seconds=window)), iso(t)
+    raise ValueError(f'The camera has no retained recording that covers a clean {window} second interval ending at least '
                      f'{margin} seconds ago. Check that it is recording, then try again in a minute.')
 
 
@@ -95,15 +141,23 @@ def flag_loop(diffs, times=None, ratio=6.0, floor=4.0, minimum=20, span=5):
 
 
 def check_manifest(manifest, guid, start, end):
+    manifest = Path(manifest)
     m = read(manifest)
     if (m.get('camera_id', '').lower() != guid.lower() or m.get('camera_name') != CAMERA
             or parse(m['requested_start_utc']) != parse(start) or parse(m['requested_end_utc']) != parse(end)
             or 'mkv_export' not in m or len(m.get('frames', [])) < 2):
         raise StageError('The recording does not match the requested camera and interval', 'Start a new assessment.')
-    for f in m['frames']:
-        path = (Path(manifest).parent/f['file']).resolve()
-        if not path.is_relative_to(Path(manifest).parent.resolve()) or sha(path) != f['sha256']:
-            raise StageError('A recorded snapshot is missing or changed', 'Start a new assessment.')
+    paths = [manifest]+[(manifest.parent/f['file']).resolve() for f in m['frames']]
+
+    def verify():
+        for f, path in zip(m['frames'], paths[1:]):
+            if not path.is_relative_to(manifest.parent.resolve()) or sha(path) != f['sha256']:
+                raise StageError('A recorded snapshot is missing or changed', 'Start a new assessment.')
+        return True
+    try:
+        _verified_once(('manifest', str(manifest), guid, start, end), paths, verify)
+    except FileNotFoundError:
+        raise StageError('A recorded snapshot is missing or changed', 'Start a new assessment.')
     return m
 
 
@@ -195,15 +249,37 @@ class Effects:
             raise StageError('XProtect did not list the recording', 'Check that the XProtect management server is running, then try again.')
         return json.loads(line.split(':', 1)[1])
 
-    def acquire(self, camera, start, end, out):
+    def acquire(self, camera, start, end, out, interval='0.5', mkv=True):
         seconds = int((parse(end)-parse(start)).total_seconds())
-        r = _run(self._ps('-Start', start, '-Seconds', seconds, '-Interval', '0.5', '-Mkv', '-OutRoot', out), 600, self.repo)
+        r = _run(self._ps('-Start', start, '-Seconds', seconds, '-Interval', interval, *(['-Mkv'] if mkv else []), '-OutRoot', out), 600, self.repo)
         manifests = list(Path(out).glob('*/manifest.json'))
         if r.returncode or len(manifests) != 1:
             if 'not covered' in r.stdout+r.stderr:
                 raise StageError('The interval is no longer inside the retained recording', 'Choose a different interval.')
             raise StageError('XProtect would not provide the recording', 'Check that the XProtect management server is running, then try again.')
         return manifests[0]
+
+    def calibrate(self, sequences, now, out):
+        """Read a dense recent snapshot window (read only) and locate where the looping clip restarts."""
+        import shutil
+        from adaptive_watch.review_media import locate_seam
+        start, end = choose_interval(sequences, now, window=CAL_SECONDS, margin=100)
+        manifest = self.acquire(CAMERA, start, end, out, interval='0.1', mkv=False)
+        try:
+            return locate_seam(manifest, self.repo/REFERENCE, cycle_out=Path(out).parent/CYCLE) | dict(calibrated_window=[start, end], reference=REFERENCE, cycle=CYCLE)
+        except FileNotFoundError:
+            raise StageError('The reference clip needed to time the camera loop is missing', f'Restore {REFERENCE}.')
+        except ValueError as exc:
+            raise StageError('Could not time the camera loop: '+str(exc), 'Try again in a minute.')
+        finally:
+            shutil.rmtree(out, ignore_errors=True)
+
+    def check_window(self, manifest, offset, cycle):
+        from adaptive_watch.review_media import verify_window
+        try:
+            return verify_window(manifest, cycle, offset)
+        except FileNotFoundError:
+            raise StageError('The saved camera loop cycle is missing', 'Start a new assessment; the loop will be measured again.')
 
     def encode(self, manifest, out):
         from adaptive_watch.review_media import prepare
@@ -265,12 +341,19 @@ def initial_state(d):
 
 
 def verified_sources(d):
+    """Hash every source once per size/mtime signature; a changed file forces a full re-verification."""
     d = Path(d)
     sources = read(d/'sources.json')
-    for s in sources:
-        if sha(d/s['path']) != s['sha256']:
-            raise ValueError('Original evidence changed; this assessment is blocked')
-    return sources
+
+    def verify():
+        for s in sources:
+            if sha(d/s['path']) != s['sha256']:
+                raise ValueError('Original evidence changed; this assessment is blocked')
+        return sources
+    try:
+        return _verified_once(('sources', str(d)), [d/'sources.json']+[d/s['path'] for s in sources], verify)
+    except FileNotFoundError:
+        raise ValueError('Original evidence changed; this assessment is blocked')
 
 
 def case_files(live_root, job_id):
@@ -346,7 +429,7 @@ def live_case(live_root, job_id, state=None, native=None):
     answer, verdict = {'not_observed': ('No entry observed', 'negative'), 'supported': ('Entry observed', 'positive'),
                        'uncertain': ('Hafnia was unsure', 'uncertain')}.get(outcome, ('No usable answer', 'uncertain'))
     quote = parsed.get('evidence') if valid else str(parsed.get('reason') or summary.get('Response') or '')[:600]
-    at = trigger['timestamp'][11:21] if trigger else 'n/a'
+    at = hms(trigger['timestamp']) if trigger else 'n/a'
     if trigger and verdict == 'negative':
         purpose, message = ('Hafnia answered no entry. Independent person detection had a person at the platform edge.',
                             HANDOFF_NEGATIVE.format(trigger=at))
@@ -375,7 +458,7 @@ def live_case(live_root, job_id, state=None, native=None):
                     meaning=('A person was at the platform edge. This asks for a look. It does not say they entered.'
                              if trigger else 'No detected person reached the platform edge region. Detection can miss people.')),
         handoff=dict(event=NATIVE_EVENT, camera=TITLE, window=job['interval'], message=message,
-                     alarm='Adaptive Watch review: station platform'),
+                     alarm='Adaptive Watch review: station platform') if trigger else None,
         agent=None, state=state, native=native or default_native(),
         diagnostic=dict(note='Live assessment: one Hafnia request, no repeated-request diagnostic.'),
         provenance=dict(hashes=[dict(name=Path(s['path']).name, sha256=s['sha256']) for s in sources],
@@ -493,7 +576,16 @@ class Jobs:
                                  (CAMERA,)).fetchone()
             if row:
                 return self.get(row['id'])
-            start, end = choose_interval(self.runner.sequences(CAMERA), self.clock())
+            sequences = self.runner.sequences(CAMERA)
+            phase = self._phase(sequences)
+            start, end = choose_interval(sequences, self.clock(), phase)
+            with self._db() as db:
+                old = db.execute('SELECT id,state,resumable FROM jobs WHERE camera=? AND start=? AND end=?', (CAMERA, start, end)).fetchone()
+            if old and old['state'] == 'failed' and not old['resumable']:
+                if self._claims(old['id']):  # a Hafnia request exists for this interval: never allow another
+                    return self.get(old['id'])
+                with self._db() as db:  # failed before anything was sent: set it aside and allow a fresh attempt
+                    db.execute("UPDATE jobs SET camera=camera||'#superseded-'||id WHERE id=?", (old['id'],))
             job_id = uuid.uuid4().hex
             now = self.clock().isoformat()
             with self._db() as db:
@@ -503,10 +595,37 @@ class Jobs:
             d = self._dir(job_id)
             if not (d/'job.json').exists():
                 d.mkdir(parents=True, exist_ok=True)
+                loop = dict(seamUtc=phase['seam_utc'], period=phase['period'],
+                            offset=round((parse(start).timestamp()-parse(phase['seam_utc']).timestamp()) % float(phase['period']), 3))
                 (d/'job.json').write_text(json.dumps(dict(id=job_id, camera=CAMERA, cameraGuid=guid, interval=[start, end],
-                                                          region=REGION), indent=2), encoding='utf-8')
+                                                          region=REGION, loop=loop), indent=2), encoding='utf-8')
             self._kick(job_id)
             return self.get(job_id)
+
+    def _claims(self, job_id):
+        db_path = self._dir(job_id)/'hafnia'/'ledger.sqlite3'
+        if not db_path.exists():
+            return 0
+        db = sqlite3.connect(db_path, timeout=15)
+        try:
+            return db.execute('SELECT COUNT(*) FROM submissions').fetchone()[0]
+        finally:
+            db.close()
+
+    def _phase(self, sequences):
+        """Calibrated loop phase, re-measured when missing or older than PHASE_MAX_AGE_S."""
+        path = self.live/'phase.json'
+        if path.exists():
+            phase = read(path)
+            if (self.clock()-parse(phase['calibrated_at'])).total_seconds() < PHASE_MAX_AGE_S:
+                return phase
+        phase = dict(self.runner.calibrate(sequences, self.clock(), self.live/'calibration'), calibrated_at=self.clock().isoformat())
+        path.write_text(json.dumps(phase, indent=2), encoding='utf-8')
+        return phase
+
+    def _forget_phase(self):
+        (self.live/'phase.json').unlink(missing_ok=True)
+        (self.live/CYCLE).unlink(missing_ok=True)
 
     def get(self, job_id):
         row = self._row(job_id) if isinstance(job_id, str) and re.fullmatch(r'[0-9a-f]{32}', job_id) else None
@@ -647,6 +766,13 @@ class Jobs:
         found = list((d/'acquisition').glob('*/manifest.json'))
         manifest = found[0] if found and 'mkv_export' in read(found[0]) else self.runner.acquire(CAMERA, row['start'], row['end'], d/'acquisition')
         m = check_manifest(manifest, self._guid(), row['start'], row['end'])
+        window = self.runner.check_window(manifest, read(d/'job.json')['loop']['offset'], self.live/CYCLE)
+        (d/'loop-window.json').write_text(json.dumps(window), encoding='utf-8')
+        if not window.get('ok'):
+            self._forget_phase()  # the next start measures the loop again
+            self._detail(job_id, 'continuity', str(window.get('reason')), 'failed')
+            return self._fail(job_id, 'continuity', 'The recording does not follow the expected 15 second loop timing',
+                              'Start a new assessment. The loop timing will be measured again.')
         self._detail(job_id, 'acquisition', f"{len(m['frames'])} snapshots and the original recording saved. Preparing the video.")
         info, diffs = self.runner.encode(manifest, d/'media')
         native_times = [i/info['fps'] for i in range(len(diffs)+1)]
@@ -658,7 +784,8 @@ class Jobs:
         if check['flagged']:
             self._detail(job_id, 'continuity', f"Automatic check: the picture jumps at {check['atSeconds']} s, {check['ratio']}x a typical frame change.", 'failed')
             return self._fail(job_id, 'continuity', 'The recording appears to restart partway through', 'Choose a different interval.')
-        self._detail(job_id, 'continuity', 'Automatic check found no restart. Watch the recording and confirm it is one continuous scene.', 'needs_you')
+        self._detail(job_id, 'continuity', f"Every snapshot matches the reference clip from {window['firstPosition']:.1f} s to {window['lastPosition']:.1f} s: "
+                     'the window starts after the clip start and ends before it repeats. Watch it and confirm it is one continuous scene.', 'needs_you')
         self._set(job_id, state='awaiting_continuity')
 
     def _vision(self, job_id):
@@ -715,6 +842,6 @@ class Jobs:
         (d/'sources.json').write_text(json.dumps([dict(path=str(p.relative_to(d)).replace('\\', '/'), sha256=sha(p)) for p in paths], indent=2), encoding='utf-8')
         case = live_case(self.live, job_id)
         n = case['vision']['trackId']
-        self._detail(job_id, 'matching', f'Person track {n} first reaches the platform edge region at {case["vision"]["trigger"]["timestamp"][11:19]} UTC.'
+        self._detail(job_id, 'matching', f'Person track {n} first reaches the platform edge region at {hms(case["vision"]["trigger"]["timestamp"])} UTC.'
                      if n is not None else 'No person track reached the platform edge region.')
         self._set(job_id, state='completed', case_id=case['id'])

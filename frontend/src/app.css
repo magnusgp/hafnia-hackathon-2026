@@ -83,6 +83,7 @@ button { cursor: pointer; }
 .status { margin: 0; font-weight: 600; font-size: 0.875rem; }
 .status.open { color: var(--aw-review); }
 .status.done { color: var(--aw-confirmed); }
+.status.quiet { color: var(--aw-text-secondary); }
 .brief h1 { margin: 0; font: 600 clamp(1.5rem, 1.1rem + 0.7vw, 1.875rem)/1.1 var(--aw-font-display); letter-spacing: -0.04em; }
 .brief .lede { margin: 0; color: var(--aw-text-secondary); }
 .signals { list-style: none; margin: 0; padding: 0 0 0 14px; position: relative; display: grid; gap: 2px; }
@@ -117,7 +118,7 @@ button { cursor: pointer; }
 .problem h1 { font: 600 1.75rem var(--aw-font-display); letter-spacing: -0.03em; margin: 0 0 8px; }
 
 /* Dialogs */
-.modal { border: 1px solid var(--aw-border); border-radius: var(--aw-radius-lg); padding: 0; width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); background: var(--aw-surface); color: var(--aw-text); box-shadow: 0 24px 60px rgba(19, 38, 58, 0.22); }
+.modal { margin: auto; inset: 0; border: 1px solid var(--aw-border); border-radius: var(--aw-radius-lg); padding: 0; width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); background: var(--aw-surface); color: var(--aw-text); box-shadow: 0 24px 60px rgba(19, 38, 58, 0.22); }
 .modal.wide { width: min(860px, calc(100vw - 32px)); }
 .modal::backdrop { background: rgba(19, 38, 58, 0.45); }
 .modal > header { display: flex; align-items: center; justify-content: space-between; padding: 20px 28px 0; }

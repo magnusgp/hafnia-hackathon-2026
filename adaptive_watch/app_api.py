@@ -57,7 +57,7 @@ def handler(repo, root, railway, evaluations, frontend, release, jobs=None, nati
                     raise ValueError('This assessment has no XProtect review event to send')
                 guid = self.camera_guid(case)
                 if body.get('action') == 'preview':
-                    return self.workspace_reply(dict(preview=native.preview(case, guid)))
+                    return self.workspace_reply(dict(preview=native.preview(case, guid, include_box=case_id.startswith('live-'))))
                 if body.get('action') != 'send' or body.get('confirmed') is not True:
                     raise ValueError('Explicit confirmation required')
                 if case['state'].get('status') not in ('xprotect_review_requested', 'review_request_saved'):
@@ -65,7 +65,7 @@ def handler(repo, root, railway, evaluations, frontend, release, jobs=None, nati
                 if case['native']['state'] != 'configured':
                     raise ValueError('The XProtect alarm is not configured for this camera')
                 with lock:
-                    native.send(case, case_id, guid, str(body.get('approval', '')))
+                    native.send(case, case_id, guid, str(body.get('approval', '')), include_box=case_id.startswith('live-'))
                 return self.workspace_reply(dict(case=self.present(book.view(case_id))))
             except KeyError:
                 self.reply(dict(error='Unknown assessment'), 404)
@@ -146,7 +146,7 @@ def handler(repo, root, railway, evaluations, frontend, release, jobs=None, nati
                     return self.file(paths[i]) if i < len(paths) else self.reply(dict(error='Frame not found'), 404)
                 except KeyError:
                     return self.reply(dict(error='Not available yet'), 404)
-                except (ValueError, OSError):
+                except (ValueError, OSError, StageError):
                     return self.reply(dict(error='Source files failed verification.'), 422)
             m = re.fullmatch(r'/api/jobs/([0-9a-f]{32})', path)
             if not m:
@@ -190,8 +190,7 @@ def handler(repo, root, railway, evaluations, frontend, release, jobs=None, nati
                 body = json.loads(self.rfile.read(length))
                 if body.get('action') == 'save_review_request':
                     body['action'] = 'request_xprotect_review'
-                if body.get('annotation') in ('condition_visible',):
-                    body['annotation'] = 'entry_visible'
+                body['annotation'] = {'condition_visible': 'entry_visible', 'condition_not_visible': 'entry_not_visible'}.get(body.get('annotation'), body.get('annotation'))
                 book = self.book()
                 try:
                     with lock:
@@ -260,7 +259,7 @@ def main():
     jobs = Jobs(a.repo.resolve(), a.root.resolve(), gateway_factory=factory)
     server = ThreadingHTTPServer(('127.0.0.1', a.port), handler(a.repo.resolve(), a.root.resolve(), a.railway.resolve(),
                                                               a.evaluations.resolve(), a.frontend.resolve(), a.release.resolve(), jobs,
-                                                              NativeReview(a.release.resolve(), a.event_target, a.native_send)))
+                                                              NativeReview(a.release.resolve(), a.event_target, a.native_send, a.root.resolve()/'native')))
     print(f'Adaptive Watch: http://127.0.0.1:{a.port}', flush=True)
     server.serve_forever()
 

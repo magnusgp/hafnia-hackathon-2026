@@ -23,8 +23,11 @@ function Modal({title, onClose, children, wide}: {title: string; onClose: () => 
 }
 
 export function Decision({c, mode, onClose, onDone}: {c: Case; mode: 'request' | 'dismiss'; onClose: () => void; onDone: (c: Case) => void}) {
-  const visible = c.flagship ? 'entry_visible' : 'condition_visible';
-  const hidden = c.flagship ? 'entry_not_visible' : 'condition_not_visible';
+  const entry = c.kind === 'video';
+  const visible = entry ? 'entry_visible' : 'condition_visible';
+  const hidden = entry ? 'entry_not_visible' : 'condition_not_visible';
+  const [revision, setRevision] = useState(c.actionRevision);
+  const [reviewed, setReviewed] = useState(false);
   const [verdict, setVerdict] = useState('');
   const [note, setNote] = useState('');
   const [ack, setAck] = useState(false);
@@ -36,9 +39,15 @@ export function Decision({c, mode, onClose, onDone}: {c: Case; mode: 'request' |
     setError('');
     try {
       const path = `/api/cases/${c.id}/action`;
-      const first = await api(path, {action: 'review', revision: c.actionRevision});
+      let rev = revision;
+      if (!reviewed) {
+        const first = await api(path, {action: 'review', revision});
+        rev = first.case.actionRevision;
+        setRevision(rev);
+        setReviewed(true);  // a retry after a validation error must not repeat this step on a stale revision
+      }
       const done = await api(path, {
-        action: mode === 'request' ? 'save_review_request' : 'dismiss', revision: first.case.actionRevision,
+        action: mode === 'request' ? 'save_review_request' : 'dismiss', revision: rev,
         footageReviewed: true, annotation: verdict || 'not_verified', note,
       });
       onDone(done.case);
@@ -49,7 +58,7 @@ export function Decision({c, mode, onClose, onDone}: {c: Case; mode: 'request' |
       setBusy(false);
     }
   }
-  const choices: [string, string][] = [[visible, c.flagship ? 'Entry onto the tracks' : 'The condition'], [hidden, 'Not visible'], ['uncertain', 'Cannot tell']];
+  const choices: [string, string][] = [[visible, entry ? 'Entry onto the tracks' : 'The condition'], [hidden, 'Not visible'], ['uncertain', 'Cannot tell']];
   return (
     <Modal title={mode === 'request' ? 'Request XProtect review' : 'Dismiss this exception'} onClose={onClose}>
       <form onSubmit={submit}>

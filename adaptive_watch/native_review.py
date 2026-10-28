@@ -15,10 +15,12 @@ EVENT_NAME = 'Adaptive Watch Review Required'
 
 
 class NativeReview:
-    def __init__(self, release, target, enabled=False):
+    def __init__(self, release, target, enabled=False, state_dir=None):
         self.release, self.target, self.enabled = Path(release), target, enabled
-        self.release.mkdir(parents=True, exist_ok=True)
-        self.status_path = self.release/'native/status.json'
+        (self.release/'native').mkdir(parents=True, exist_ok=True)  # shared duplicate-send ledger lives here
+        self.state_dir = Path(state_dir) if state_dir else self.release/'native'  # per-instance send status
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        self.status_path = self.state_dir/'status.json'
 
     def payload(self, case, camera_guid, include_box=False):
         """One deterministic AnalyticsEvent for the case's trigger moment (source camera, source time)."""

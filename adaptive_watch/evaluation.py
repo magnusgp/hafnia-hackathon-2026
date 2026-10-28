@@ -150,6 +150,9 @@ class Evaluation:
                 self._save(digest,record)
                 return record
             record['summary'] = result
+            # A usable status supersedes any earlier malformed/timeout outcome saved on a resumed record.
+            record.pop('poll_outcome', None)
+            record.pop('malformed_poll_response', None)
             if result.get('Progress') in {'Completed','Failed'}:
                 record['parsed'] = parse_result(result)
                 self._save(digest,record)

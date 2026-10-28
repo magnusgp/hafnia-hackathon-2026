@@ -56,10 +56,12 @@ for (const [w, h] of [[1440, 900], [1920, 1080]]) {
   check(`${w}: Escape closes and focus returns`, await page.evaluate(() => document.activeElement?.textContent === 'Evidence details'));
 
   // Case switching, with isolation.
-  for (const [name, expect] of [['School gate at night', 'Two prompts, two readings'], ['Sidewalk with scooter', 'Still for'], ['Sidewalk with bin', 'Still for']]) {
+  for (const [name, expect] of [['School gate at night', 'no opening observed'], ['Sidewalk with scooter', 'Still for'], ['Sidewalk with bin', 'Still for']]) {
     await page.getByRole('link', { name: new RegExp(name) }).click();
-    await page.waitForSelector('.stage img', { timeout: 15000 });
+    await page.waitForFunction(() => { const i = document.querySelector('.stage img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
+    await page.waitForTimeout(600);
     check(`${w}: ${name} loads its own evidence`, (await page.locator('.brief').innerText()).includes(expect));
+    if (name === 'School gate at night') check(`${w}: gate shows no detector controls (none exist)`, await page.getByLabel('Box').count() === 0 && await page.locator('.sampled').count() === 0);
     check(`${w}: ${name} is not a railway review`, !(await page.locator('.brief').innerText()).includes('What XProtect receives'));
     if (w === 1440 || name !== 'Sidewalk with bin') await page.screenshot({ path: `${out}/${name.split(' ').pop()}-${w}.png` });
   }
@@ -71,6 +73,8 @@ for (const [w, h] of [[1440, 900], [1920, 1080]]) {
   const dlg = page.getByRole('dialog');
   const text = await dlg.innerText();
   check(`${w}: New assessment states availability or the exact next step`, /Start it with|Start assessment/.test(text), text.slice(0, 120).replace(/\n/g, ' '));
+  const box = await dlg.boundingBox();
+  check(`${w}: dialog is centered`, Math.abs(box.x + box.width / 2 - w / 2) < 24 && box.y > 20, JSON.stringify(box));
   if (w === 1440) await page.screenshot({ path: `${out}/new-assessment-${w}.png` });
   await page.keyboard.press('Escape');
 

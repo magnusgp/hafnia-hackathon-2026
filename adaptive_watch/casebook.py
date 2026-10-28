@@ -19,9 +19,16 @@ PURPOSE = dict(
     scooter='Local vision measured how long the scooter stayed still. Hafnia agreed it was left there.',
     bin='Local vision measured how long the bin stayed still. Hafnia agreed it was left there.')
 NATIVE_EVENT = 'Adaptive Watch Review Required'
+HAFNIA_HEAD = dict(gate='Negative: no opening observed', scooter='Supports a left object', bin='Supports a left object')
 HANDOFF_TEXT = ('Review exception: Hafnia reported no entry; independent person detection placed a person at the '
                 'platform edge from {trigger} UTC. Neither signal confirms entry. Review the footage.')
 REVIEWERS = {'Claude demo reviewer'}
+
+
+def clock_tenths(timestamp):
+    """HH:MM:SS.s (UTC) from an ISO timestamp, always one decimal."""
+    t = datetime.fromisoformat(timestamp.replace('Z', '+00:00')).astimezone(timezone.utc)
+    return f'{t:%H:%M:%S}.{t.microsecond // 100000}'
 
 
 def agent_review_table(db):
@@ -68,7 +75,10 @@ class Casebook:
         """Planned / configured / sent / alarm-verified, kept apart. Read-only."""
         state = dict(eventName=NATIVE_EVENT, state='not_configured', alarmId=None,
                      detail='The review event and its camera alarm have not been set up in XProtect.')
-        proof = self.release/'native'/'status.json'
+        config = self.release/'native'/'config.json'
+        if config.exists() and read(config).get('railway', {}).get('configured') is True:
+            state.update(state='configured', detail='The review event and its camera alarm exist in XProtect. Nothing has been sent.')
+        proof = self.root/'native'/'status.json'  # per application instance, so demo and real runs never share send state
         if proof.exists():
             mine = read(proof).get(case_id)
             if mine:
@@ -103,7 +113,7 @@ class Casebook:
                         trigger=trigger, regionStatus='draft region, reviewed against the footage', samplesPerSecond=2,
                         meaning='The person was at the platform edge. This asks for a look. It does not say they entered.'),
             handoff=dict(event=NATIVE_EVENT, camera=DISPLAY['railway'], window=v['interval'],
-                         message=HANDOFF_TEXT.format(trigger=trigger['timestamp'][11:21] if trigger else 'n/a'),
+                         message=HANDOFF_TEXT.format(trigger=clock_tenths(trigger['timestamp']) if trigger else 'n/a'),
                          alarm='Adaptive Watch review: station platform'),
             agent=self.agent_review('railway', revision), state=v['state'], native=self.native('railway'),
             diagnostic=dict(v['diagnostic']), provenance=dict(hashes=v['evidenceHashes'], reference=v['reference']),
@@ -122,18 +132,21 @@ class Casebook:
         revision = v['revision']
         return dict(id=case_id, flagship=False, title=DISPLAY[case_id], camera=v['camera'], interval=v['interval'],
                     purpose=PURPOSE[case_id], revision=revision, actionRevision=revision, kind='snapshots', frames=frames, video=None,
-                    hafnia=dict(answers=answers, quote=v['summary']), vision=vision,
+                    hafnia=dict(answer=HAFNIA_HEAD[case_id], answers=answers, quote=v['summary']), vision=vision,
                     agent=self.agent_review(case_id, revision), state=v['state'], native=self.native(case_id),
                     diagnostic=v.get('diagnostic'), limitations=v['limitations'],
                     provenance=dict(interval=v['interval']))
 
     # -- live (browser-started) assessments; state is per case id in the workspace db ---------------
-    def live_native(self):
-        """Event and alarm exist for this camera; nothing was ever sent for a live assessment."""
+    def live_native(self, case_id):
+        """The camera's event and alarm exist; send state is read per live case, never borrowed from another case."""
         state = live.default_native()
-        proof = self.release/'native'/'status.json'
-        if proof.exists() and read(proof).get('railway', {}).get('state') == 'configured':
+        config = self.release/'native'/'config.json'
+        if config.exists() and read(config).get('railway', {}).get('configured') is True:
             state.update(state='configured', detail='Event and camera alarm exist in XProtect. Nothing has been sent for this assessment.')
+        proof = self.root/'native'/'status.json'
+        if proof.exists() and read(proof).get(case_id):
+            state.update(read(proof)[case_id])
         return state
 
     def live_job(self, case_id):
@@ -145,7 +158,7 @@ class Casebook:
 
     def live_view(self, case_id):
         job_id = self.live_job(case_id)
-        return live.live_case(self.live_root, job_id, self.live_state(case_id, job_id), self.live_native())
+        return live.live_case(self.live_root, job_id, self.live_state(case_id, job_id), self.live_native(case_id))
 
     def live_files(self, case_id):
         return live.case_files(self.live_root, self.live_job(case_id))

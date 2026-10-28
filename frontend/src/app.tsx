@@ -77,13 +77,13 @@ function Investigation({c, onChange}: {c: Case; onChange: (c: Case) => void}) {
           <button className="step" onClick={() => step(-1)} aria-label="Previous sample">‹</button>
           <button className="step" onClick={() => step(1)} aria-label="Next sample">›</button>
           <output className="clock" aria-live="off">{readout} <small>UTC</small></output>
-          <span className="sampled" aria-live="polite">
+          {c.vision && <span className="sampled" aria-live="polite">
             {sample ? (sample.box ? (sample.near ? 'Detector sample: at the edge' : 'Detector sample: tracked') : 'Detector sample: nobody found') : 'Between detector samples'}
-          </span>
+          </span>}
           <span className="spacer" />
           {decisive && <button className="quiet" onClick={() => seek(decisive.mediaTime)}>The climb</button>}
           {c.kind === 'video' && trigger && <button className="quiet" onClick={watch}>Play from the trigger</button>}
-          <label className="toggle"><input type="checkbox" checked={p.box} onChange={e => setP(q => ({...q, box: e.target.checked}))} />Box</label>
+          {c.vision && <label className="toggle"><input type="checkbox" checked={p.box} onChange={e => setP(q => ({...q, box: e.target.checked}))} />Box</label>}
           {c.vision?.region && <label className="toggle"><input type="checkbox" checked={p.region} onChange={e => setP(q => ({...q, region: e.target.checked}))} />Region</label>}
         </div>
         <Timeline c={c} p={p} seek={seek} />

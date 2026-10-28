@@ -51,10 +51,28 @@ class CasebookLedger(unittest.TestCase):
     def test_native_state_is_never_inferred(self):
         self.assertEqual(self.book.native('railway')['state'], 'not_configured')
         (self.release/'native').mkdir(parents=True)
-        (self.release/'native/status.json').write_text(json.dumps(dict(railway=dict(state='configured'))))
+        (self.release/'native/config.json').write_text(json.dumps(dict(railway=dict(configured=True))))
         self.assertEqual(self.book.native('railway')['state'], 'configured')
-        self.assertEqual(self.book.native('gate')['state'], 'not_configured')
         self.assertIsNone(self.book.native('railway')['alarmId'])
+
+    def test_send_state_is_per_case_and_per_instance(self):
+        (self.release/'native').mkdir(parents=True)
+        (self.release/'native/config.json').write_text(json.dumps(dict(railway=dict(configured=True))))
+        (self.book.root/'native').mkdir(parents=True)
+        (self.book.root/'native/status.json').write_text(json.dumps(dict(railway=dict(state='alarm_verified'))))
+        self.assertEqual(self.book.native('railway')['state'], 'alarm_verified')
+        self.assertEqual(self.book.native('gate')['state'], 'configured')  # another case never inherits it
+        self.assertEqual(self.book.live_native('live-12345678')['state'], 'configured')
+        other = Casebook(self.release.parent, self.release.parent/'other-app', self.release.parent/'railway', self.release.parent/'r', self.release)
+        try:
+            self.assertEqual(other.native('railway')['state'], 'configured')  # a second instance has its own status
+        finally:
+            other.close()
+
+    def test_clock_formatting(self):
+        from adaptive_watch.casebook import clock_tenths
+        self.assertEqual(clock_tenths('2026-10-22T11:03:44.513Z'), '11:03:44.5')
+        self.assertEqual(clock_tenths('2026-10-22T11:03:44Z'), '11:03:44.0')
 
     def test_status_labels(self):
         sent = dict(native=dict(state='sent'), state=dict(status='review_required'), flagship=True)

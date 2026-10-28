@@ -33,6 +33,16 @@ class FakeRunner:
         now = datetime.now(timezone.utc)
         return [dict(start_utc=iso(now-timedelta(hours=1)), end_utc=iso(now-timedelta(seconds=5)))]
 
+    def calibrate(self, sequences, now, out):
+        self.calls.append('calibrate')
+        if 'calibrate' in self.fail:
+            raise self.fail['calibrate']
+        return dict(seam_utc=iso(now-timedelta(seconds=400))[:-1]+'.013Z', period=15.0, seams=2, score=0.0, contrast=300.0)
+
+    def check_window(self, manifest, offset, cycle=None):
+        self.calls.append('check_window')
+        return self.fail.get('window', dict(ok=True, firstPosition=offset, lastPosition=offset+12.0, maxError=0.1))
+
     def acquire(self, camera, start, end, out):
         self.calls.append('acquire')
         if 'acquire' in self.fail:
@@ -90,7 +100,7 @@ class FakeRunner:
 
 class FakeGateway:
     def __init__(self, poll_error=None):
-        self.posts, self.poll_error = 0, poll_error
+        self.posts, self.poll_error, self.request_payload = 0, poll_error, None
 
     def request(self, method, path, payload=None, login=False):
         if method == 'POST':
@@ -181,7 +191,7 @@ class Lifecycle(Base):
         self.assertIsNone(case['vision']['trigger'])
         self.assertIsNone(case['vision']['trackId'])
         self.assertTrue(all(f['box'] is None and not f['near'] for f in case['frames']))
-        self.assertIn('No handoff', case['handoff']['message'])
+        self.assertIsNone(case['handoff'])
 
     def test_duplicate_click_returns_same_job_and_one_request(self):
         ticks = iter(range(10**6))
@@ -401,6 +411,7 @@ class Case(Base):
         self.assertEqual(set(case['hafnia']), {'answer', 'verdict', 'quote', 'summaryId', 'request'})
         self.assertLessEqual({'label', 'model', 'trackId', 'region', 'trigger', 'regionStatus', 'samplesPerSecond', 'meaning'}, set(case['vision']))
         self.assertEqual(set(case['handoff']), {'event', 'camera', 'window', 'message', 'alarm'})
+        self.assertRegex(case['handoff']['message'], r'from \d\d:\d\d\d?:?\d?')
         self.assertEqual(case['native']['state'], 'not_configured')
         self.assertNotIn('sentAt', case['native'])
 
@@ -435,6 +446,162 @@ class Case(Base):
             self.assertEqual(book.view('live-'+job['id'][:8])['native']['state'], 'not_configured')
         finally:
             book.close()
+
+class Phase(Base):
+    SEAM = '2026-10-28T11:00:00.013Z'
+
+    def check(self, now, seqs):
+        start, end = choose_interval(seqs, now, dict(seam_utc=self.SEAM, period=15.0))
+        seam = aj.parse(self.SEAM).timestamp()
+        s, e = aj.parse(start).timestamp(), aj.parse(end).timestamp()
+        into = (s-seam) % 15
+        self.assertGreaterEqual(into, .6)
+        self.assertLessEqual(into+(e-s), 15-.6+1e-6)  # ends before the next restart
+        self.assertTrue(12 <= e-s <= 14)
+        self.assertLessEqual(e, now.timestamp()-90)
+        return start, end
+
+    def test_window_never_contains_a_seam(self):
+        base = datetime(2026, 10, 28, 12, 0, 0, tzinfo=timezone.utc)
+        seqs = [dict(start_utc='2026-10-28T08:00:00Z', end_utc='2026-10-28T13:00:00Z')]
+        for k in range(60):
+            self.check(base+timedelta(seconds=k*1.37), seqs)
+
+    def test_phased_window_must_be_covered(self):
+        now = datetime(2026, 10, 28, 12, 0, 0, tzinfo=timezone.utc)
+        start, end = self.check(now, [dict(start_utc='2026-10-28T08:00:00Z', end_utc='2026-10-28T11:30:00Z')])
+        self.assertLessEqual(end, '2026-10-28T11:30:00Z')
+        with self.assertRaisesRegex(ValueError, 'retained recording'):
+            choose_interval([dict(start_utc='2026-10-28T11:59:00Z', end_utc='2026-10-28T11:59:20Z')], now, dict(seam_utc=self.SEAM, period=15.0))
+
+    def test_phase_is_persisted_and_reused(self):
+        jobs, runner, _ = self.make()
+        self.complete(jobs)
+        self.assertEqual(runner.calls.count('calibrate'), 1)
+        saved = json.loads((jobs.live/'phase.json').read_text())
+        self.assertIn('calibrated_at', saved)
+        jobs.start(dict(cameraId=GUID))
+        self.assertEqual(runner.calls.count('calibrate'), 1)
+        job = json.loads((next(jobs.live.glob('*/job.json'))).read_text())
+        self.assertIn('offset', job['loop'])
+
+    def test_stale_phase_is_remeasured(self):
+        jobs, runner, _ = self.make()
+        (jobs.live/'phase.json').write_text(json.dumps(dict(seam_utc=self.SEAM, period=15.0, calibrated_at='2020-01-01T00:00:00+00:00')))
+        self.to_continuity(jobs)
+        self.assertEqual(runner.calls.count('calibrate'), 1)
+
+    def test_failed_validation_fails_job_and_drops_phase(self):
+        jobs, runner, gw = self.make(FakeRunner(window=dict(ok=False, reason='snapshots differ from the clip')))
+        job = self.to_continuity(jobs)
+        self.assertEqual(job['state'], 'failed')
+        self.assertEqual([s['key'] for s in job['stages'] if s['status'] == 'failed'], ['continuity'])
+        self.assertIn('loop timing', job['error']['reason'])
+        self.assertFalse((jobs.live/'phase.json').exists())
+        self.assertNotIn('cv', runner.calls)
+        self.assertEqual(gw.posts, 0)
+
+    def test_calibration_failure_is_reported_and_creates_no_job(self):
+        jobs, _, _ = self.make(FakeRunner(calibrate=StageError('Could not time the camera loop', 'Try again.')))
+        with self.assertRaisesRegex(ValueError, 'time the camera loop'):
+            jobs.start(dict(cameraId=GUID))
+        with jobs._db() as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM jobs').fetchone()[0], 0)
+
+    def test_continuity_detail_is_honest(self):
+        jobs, _, _ = self.make()
+        job = self.to_continuity(jobs)
+        text = job['stages'][1]['detail']
+        self.assertIn('starts after the clip start and ends before it repeats', text)
+
+
+class Fixes(Base):
+    def test_poll_clears_stale_outcome(self):
+        from adaptive_watch.evaluation import Evaluation
+        ev = Evaluation(self.root/'ev')
+        record = dict(summary=dict(Id='x'), poll_outcome='malformed_response', malformed_poll_response={'a': 1})
+        try:
+            record = ev.poll(FakeGateway(), 'd', record, timeout=5)
+        finally:
+            ev.db.close()
+        self.assertNotIn('poll_outcome', record)
+        self.assertNotIn('malformed_poll_response', record)
+        self.assertEqual(record['parsed']['outcome'], 'not_observed')
+
+    def test_resumed_poll_after_unreadable_status_completes(self):
+        class Flaky(FakeGateway):
+            n = 0
+
+            def request(self, method, path, payload=None, login=False):
+                if method == 'GET' and Flaky.n == 0:
+                    Flaky.n += 1
+                    return 'garbage'
+                return super().request(method, path, payload, login)
+        jobs, runner, gw = self.make(gateway=Flaky())
+        job = self.complete(jobs)
+        self.assertEqual(job['state'], 'failed')  # unreadable status is reported, not hidden
+        again, _, _ = self.make(gateway=Flaky(), root=self.root)  # resumed: polled afresh, not resent
+        again.wait(job['id'])
+        self.assertEqual(again.get(job['id'])['state'], 'completed')
+
+    def test_hms_format(self):
+        self.assertEqual(aj.hms('2026-10-22T11:03:48.513Z'), '11:03:48.5')
+        self.assertEqual(aj.hms('2026-10-22T11:03:48Z'), '11:03:48.0')
+        self.assertEqual(aj.hms('2026-10-22T11:03:48.013Z'), '11:03:48.0')
+
+    def test_stage_error_is_a_value_error(self):
+        self.assertTrue(issubclass(StageError, ValueError))
+        self.assertEqual(str(StageError('why', 'next')), 'why')
+
+    def test_failed_job_allows_fresh_job_for_same_interval(self):
+        now = datetime.now(timezone.utc)
+        runner = FakeRunner(acquire=StageError('XProtect would not provide the recording', 'Try again.'))
+        jobs, _, gw = self.make(runner, clock=lambda: now)
+        first = self.settle(jobs, jobs.start(dict(cameraId=GUID))['id'])
+        self.assertEqual(first['state'], 'failed')
+        runner.fail.pop('acquire')
+        second = jobs.start(dict(cameraId=GUID))
+        self.assertNotEqual(second['id'], first['id'])
+        self.assertEqual(second['interval'], first['interval'])
+        self.assertEqual(self.settle(jobs, second['id'])['state'], 'awaiting_continuity')
+        self.assertEqual(jobs.get(first['id'])['state'], 'failed')
+
+    def test_interval_with_a_hafnia_claim_never_gets_a_second_job(self):
+        class Dropping(FakeGateway):
+            def request(self, method, path, payload=None, login=False):
+                self.posts += 1
+                raise GatewayError('Cannot reach local Hafnia gateway')
+        now = datetime.now(timezone.utc)
+        gw = Dropping()
+        jobs, _, _ = self.make(gateway=gw, clock=lambda: now)
+        first = self.complete(jobs)
+        self.assertEqual(first['state'], 'failed')
+        again = jobs.start(dict(cameraId=GUID))
+        self.assertEqual(again['id'], first['id'])
+        self.assertEqual(gw.posts, 1)
+
+    def test_verification_is_cached_until_a_file_changes(self):
+        jobs, _, _ = self.make()
+        job = self.complete(jobs)
+        aj._CACHE.clear()
+        with mock.patch.object(aj, 'sha', wraps=aj.sha) as counted:
+            aj.case_files(jobs.live, job['id'])
+            first = counted.call_count
+            for _ in range(5):
+                aj.case_files(jobs.live, job['id'])
+            self.assertEqual(counted.call_count, first)
+            self.assertGreater(first, 0)
+            jobs.contact_frames(job['id'])
+            second = counted.call_count
+            jobs.contact_frames(job['id'])
+            jobs.contact_frames(job['id'])
+            self.assertEqual(counted.call_count, second)
+        (jobs.live/job['id']/'media/original.mp4').write_bytes(b'mp4 changed')
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            aj.case_files(jobs.live, job['id'])
+        jobs.contact_frames(job['id'])[0].write_bytes(b'altered!')
+        with self.assertRaises(StageError):
+            jobs.contact_frames(job['id'])
 
 
 if __name__ == '__main__':
