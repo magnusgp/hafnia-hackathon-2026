@@ -38,7 +38,7 @@ function drawSample(svg, s) {
 
 const hooks = {
   async open(el) {
-    const v = vid('v-open'); await seek(v, 6.5);
+    const v = vid('v-open'); await seek(v, 8.0);
     if (!reduce) v.play();
   },
   async silent() {
@@ -74,7 +74,7 @@ async function go(i) {
   index = i;
   scenes.forEach((s, k) => s.classList.toggle('active', k === i));
   const el = scenes[i];
-  el.querySelectorAll('[data-in]').forEach(n => n.style.setProperty('--d', (Number(n.dataset.in) - 1) * 0.55 + (el.id === 'open' ? 3.2 : 0)));
+  el.querySelectorAll('[data-in]').forEach(n => n.style.setProperty('--d', (Number(n.dataset.in) - 1) * 0.55 + (el.id === 'open' ? 5.0 : 0)));
   if (el.id === 'signal') el.querySelectorAll('[data-in]').forEach(n => n.style.setProperty('--d', n.dataset.in === '4' ? 12 : 0.3));
   location.hash = el.id;
   if (hooks[el.id]) await hooks[el.id](el);

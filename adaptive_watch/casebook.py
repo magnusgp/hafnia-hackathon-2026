@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 import sqlite3
 
-from adaptive_watch.negative_review import ReviewStore, digest, read, sha
+from adaptive_watch import assessment_job as live
+from adaptive_watch.negative_review import Conflict, ReviewStore, digest, read, sha
 from adaptive_watch.workspace import Workspace, CASES
 
 DISPLAY = dict(railway='Station platform', gate='School gate at night', scooter='Sidewalk with scooter', bin='Sidewalk with bin')
@@ -35,6 +36,7 @@ def agent_review_table(db):
 class Casebook:
     def __init__(self, repo, root, railway, evaluations, release):
         self.repo, self.root, self.railway, self.evaluations, self.release = map(Path, (repo, root, railway, evaluations, release))
+        self.live_root = self.root/'live'
         self.ws = Workspace(self.repo, self.root, self.railway, self.evaluations)
         agent_review_table(self.ws.db)
         self.ws.db.commit()
@@ -125,7 +127,51 @@ class Casebook:
                     diagnostic=v.get('diagnostic'), limitations=v['limitations'],
                     provenance=dict(interval=v['interval']))
 
+    # -- live (browser-started) assessments; state is per case id in the workspace db ---------------
+    def live_native(self):
+        """Event and alarm exist for this camera; nothing was ever sent for a live assessment."""
+        state = live.default_native()
+        proof = self.release/'native'/'status.json'
+        if proof.exists() and read(proof).get('railway', {}).get('state') == 'configured':
+            state.update(state='configured', detail='Event and camera alarm exist in XProtect. Nothing has been sent for this assessment.')
+        return state
+
+    def live_job(self, case_id):
+        return live.resolve_case(self.live_root, case_id)
+
+    def live_state(self, case_id, job_id):
+        row = self.ws.db.execute('SELECT state FROM reviews WHERE case_id=?', (case_id,)).fetchone()
+        return json.loads(row[0]) if row else live.initial_state(self.live_root/job_id)
+
+    def live_view(self, case_id):
+        job_id = self.live_job(case_id)
+        return live.live_case(self.live_root, job_id, self.live_state(case_id, job_id), self.live_native())
+
+    def live_files(self, case_id):
+        return live.case_files(self.live_root, self.live_job(case_id))
+
+    def act_live(self, case_id, body):
+        job_id = self.live_job(case_id)
+        self.ws.db.execute('BEGIN IMMEDIATE')
+        try:
+            view = self.live_view(case_id)
+            if body.get('revision') != view['actionRevision']:
+                raise Conflict('Evidence or review changed; reload before deciding')
+            state = live.apply_action(view['state'], body, view['vision']['trigger'])
+            self.ws.db.execute('INSERT INTO reviews VALUES (?,?) ON CONFLICT(case_id) DO UPDATE SET state=excluded.state',
+                               (case_id, json.dumps(state)))
+            self.ws.db.execute('INSERT INTO review_audit(case_id,at,document) VALUES (?,?,?)',
+                               (case_id, datetime.now(timezone.utc).isoformat(),
+                                json.dumps(dict(action=body.get('action'), revision=view['actionRevision'], state=state))))
+            self.ws.db.commit()
+        except Exception:
+            self.ws.db.rollback()
+            raise
+        return self.live_view(case_id)
+
     def view(self, case_id):
+        if case_id.startswith('live-'):
+            return self.live_view(case_id)
         if case_id not in CASES:
             raise KeyError(case_id)
         return self.railway_view() if case_id == 'railway' else self.other_view(case_id)
@@ -140,6 +186,15 @@ class Casebook:
             except (ValueError, TypeError, KeyError, OSError, sqlite3.Error, StopIteration):
                 unavailable.append(dict(id=case_id, title=DISPLAY[case_id],
                                         error='Source files failed verification. Restore the original recording, response and vision output.'))
+        for job_id in reversed(live.completed_jobs(self.live_root)):
+            case_id = 'live-'+job_id[:8]
+            try:
+                v = self.live_view(case_id)
+                cases.append({k: v[k] for k in ('id', 'flagship', 'title', 'purpose', 'interval', 'kind')}
+                             | dict(status=self.status(v) if v['state'].get('status') != 'review_required'
+                                    else ('Needs review' if v['vision']['trigger'] else 'Evidence')))
+            except (ValueError, TypeError, KeyError, OSError, sqlite3.Error, StopIteration):
+                unavailable.append(dict(id=case_id, title=live.TITLE, error=live.EVIDENCE_LOST))
         return dict(cases=cases, unavailable=unavailable)
 
     @staticmethod

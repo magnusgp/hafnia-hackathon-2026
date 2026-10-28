@@ -168,3 +168,5 @@ legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
 .facts div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
 .facts dt { color: var(--aw-text-secondary); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
+
+.continuity { width: 100%; border-radius: var(--aw-radius-sm); background: var(--aw-video-surface); aspect-ratio: 832 / 480; }

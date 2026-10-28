@@ -1,38 +1,104 @@
 # Adaptive Watch
 
-Adaptive Watch opens at `/` as an evidence-verification workspace with four source-verified saved assessments: railway, school gate, scooter and bin. Each preserves its original camera and recording interval. Prompt variants and repeated scene loops are not independent events.
+A second signal for Milestone XProtect. Hafnia reads recorded video and sometimes answers "no" for something that
+deserves a look. Adaptive Watch runs independent computer vision on the same recording for one configured condition.
+When Hafnia says no and the detector sees the condition, it builds a **review exception** (camera, recording, moment,
+both signals) and sends it into XProtect, where the operator already works.
 
-The Polar railway investigation, original footage, region editor and review controls are preserved. Scooter and bin use their own timestamped snapshots and CV stationarity measurements. Gate shows original negative conclusions and separately dated prompt diagnostics, without invented CV.
+It is not a second summarizer, an incident manager or a model comparison. Hafnia's answer stays on record. The new
+thing is a way to stop a negative answer from being the last word.
 
-**Fresh browser analysis remains blocked.** New assessment offers only the two cameras supported by the existing persistent-object backend. It validates a past 12-17 second UTC interval within 24 hours, then reports the missing authenticated runtime, CUDA transport and acquisition/continuity handoff. No acquisition or Hafnia request is submitted. This is not a completed end-to-end analysis application.
+## What happens in the flagship case
 
-## Build and open on p022
+A person in a red jacket sits on a station platform edge, climbs down onto the tracks and walks away (22 Oct 2026,
+11:03:39 to 11:03:52 UTC, camera `person_on_railway_tracks`).
 
-Run from the repository root:
+1. XProtect recorded the scene.
+2. Hafnia answered `not_observed` for entry onto the tracks.
+3. A person detector on the Linux A10G placed the person at the platform edge from 11:03:44.5, about 3.8 s before the
+   climb. This is a proximity trigger. It does not claim entry.
+4. Adaptive Watch built the review exception. A separate footage review (by an AI, labelled as such) found the person
+   reaching the track bed at 11:03:48.3.
+5. The operator inspects the footage and requests the XProtect review. Adaptive Watch sends the
+   `Adaptive Watch Review Required` analytics event for that camera. XProtect raises its own alarm.
+
+## Open it on the judge machine (p022)
+
+The application runs on the hackathon Windows machine and is opened **inside p022** (over Remote Desktop).
+`localhost` on any other computer does not reach it.
 
 ```powershell
-cd frontend
-..\runs\tooling\bun-windows-x64\bun.exe run build
-cd ..
-.\.venv\Scripts\python.exe -m adaptive_watch.workspace_api --root runs/application --railway runs/negative-result-review --evaluations C:/Users/Administrator/adaptive-watch-private/hafnia-16 --frontend frontend/dist --port 8777
+cd C:\Users\Administrator\dev\hafnia-hackathon-2026
+powershell -ExecutionPolicy Bypass -File scripts\launch.ps1
 ```
 
-Open http://127.0.0.1:8777 **inside p022**, using existing authorized desktop access. A localhost address on another computer does not reach p022. The foreground launch stops when its terminal closes. No service, VMS configuration or native dispatch is installed or performed.
+Edge opens `http://127.0.0.1:8780/#/railway`. Close the window to stop it. If `frontend\dist` is missing the launcher
+builds it first.
 
-Original recordings, manifests, responses, CV outputs, review databases and captures are private and excluded from Git. A clone alone cannot supply the saved cases. Missing or changed sources withhold the affected case and block its frames and decisions.
+1. The **Station platform** exception is already selected and the footage is paused on the trigger sample.
+2. Press **Play from the trigger**. The person climbs down about four seconds later.
+3. Click a signal on the right (Hafnia, Local vision, Footage review) to jump to its moment. The three lanes under the
+   footage show what each source said and when.
+4. **Send to XProtect review** saves your review request. The next step, **Send to XProtect**, shows the exact event and
+   its fingerprint and needs a second confirmation (start with `-NativeSend` to enable it).
+5. Open Smart Client, Alarm Manager, to see the alarm.
 
-Decisions are case-scoped and saved locally with source revisions, stale-decision checks and an append-only audit. Railway retains its existing database. Browser checks use isolated stores and preserve operator decisions. Local cookie/CSRF sessions do not authenticate identity. A saved review request is not a native XProtect alarm.
+The other tabs are secondary evidence: the school gate (Hafnia prompts disagree, saved snapshots only, no local vision),
+and the scooter and bin (local vision measured how long each stayed still; Hafnia agreed). They are not railway
+false-negative validations.
+
+Optional: `scripts\launch.ps1 -AssessmentLogin` asks once in that window for the Hafnia gateway password (kept in memory,
+never sent to the browser) and enables **New assessment**, which acquires the latest 15 s of the camera from XProtect,
+runs the A10G detector, asks Hafnia once and compares them. See [docs/adaptive-watch/new-assessment.md](docs/adaptive-watch/new-assessment.md).
+
+## How XProtect, Hafnia and the GPU each contribute
+
+| System | Job |
+|---|---|
+| XProtect Corporate 2026 R1 | Records and plays back the scene; receives the Analytics Event (Event Server, port 9090); raises the camera-specific alarm the operator works from. |
+| Hafnia VLM | Reads the recording through the local gateway and answers in words, including when the answer is no. |
+| Linux A10G vision | Watches the same footage for one configured condition and keeps its own record. |
+
+Built during the hackathon: the detector pipeline and tracker, the Hafnia/vision comparison, source-integrity checks and
+case-scoped review storage, the review interface, the guarded native handoff (ledger-protected, never retried), the job
+runner for New assessment, and the presentation.
+
+## Native XProtect status (verified 28 Oct 2026)
+
+- Analytics Event `Adaptive Watch Review Required` and alarm definition `Adaptive Watch review: station platform`
+  (scoped to the one camera) were created ([script](scripts/xprotect/setup_review_alarm.ps1)).
+- One event was sent for the flagship case and the Event Server accepted it. **Smart Client's Alarm Manager lists alarm 4**
+  with the right camera, message and source time.
+- **Not verified:** playback association and bounding-box overlay. The 22 Oct recording is past the 24-hour retention,
+  so Smart Client reports the camera as unavailable for that alarm. A fresh assessment is needed for that check.
+
+## Limits
+
+The evidence comes from controlled synthetic camera scenarios. There is no accuracy benchmark, no measured reduction in
+missed events and no production deployment. The attention region is a draft. The camera replays a 15 s clip on a loop.
+
+## Repository
+
+```
+adaptive_watch/        casebook, review store, native handoff, job runner, API server
+scene_contracts/       Hafnia gateway client and the Event Server serializer and ledger
+frontend/              React 19, TypeScript, Vite application and browser checks
+presentation/          standalone HTML/CSS/JS deck, narration, timing, render script
+scripts/               acquisition, vision, launch and XProtect setup
+docs/                  product definition, submission copy, storyboard, evidence notes
+```
+
+Source CCTV, credentials, raw Hafnia responses, identity files, model weights, review databases and captures are private
+and ignored by Git. A clone alone cannot show the saved cases; they need the original files on p022.
 
 ## Checks
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-$env:PLAYWRIGHT_BROWSERS_PATH=(Resolve-Path runs/tooling/playwright).Path
-$env:AW_EVALUATIONS='C:/Users/Administrator/adaptive-watch-private/hafnia-16'
-.\runs\tooling\bun-windows-x64\bun.exe frontend/scripts/check-workspace.mjs
-.\runs\tooling\bun-windows-x64\bun.exe frontend/scripts/check-negative-review.mjs
+.\.venv\Scripts\python.exe -m unittest discover -s tests
+cd frontend; ..\runs\tooling\bun-windows-x64\bun.exe run build
 ```
 
-Actual Edge interactions at 1440x900 and 1920x1080 are recorded under ignored `runs/application-checks/` and `runs/negative-review-release-checks/`. Historical footage and the existing 78-second evidence video remain untouched under `runs/negative-review-checks/`.
-
-See [application behavior and manual orchestration](docs/adaptive-watch/application-completion.md), [original case preparation](docs/adaptive-watch/negative-result-review.md), and [supervised analysis setup](docs/adaptive-watch/setup.md). The former root README is preserved verbatim in [single-case-readme.md](docs/adaptive-watch/single-case-readme.md); older workflows remain in [prior-workflow.md](docs/adaptive-watch/prior-workflow.md).
+See [docs/adaptive-watch/product-definition.md](docs/adaptive-watch/product-definition.md) for the design reasoning and
+[docs/submission/](docs/submission/) for the submission package. Earlier workflows are kept in
+[docs/adaptive-watch/prior-workflow.md](docs/adaptive-watch/prior-workflow.md) and
+[docs/adaptive-watch/single-case-readme.md](docs/adaptive-watch/single-case-readme.md).

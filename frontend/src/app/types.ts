@@ -24,5 +24,5 @@ export type Case = {
 };
 export type Summary = {id: string; flagship: boolean; title: string; purpose: string; interval: string[]; kind: string; status: string};
 export type Stage = {key: string; label: string; status: 'waiting' | 'running' | 'done' | 'failed' | 'needs_you'; detail?: string};
-export type Job = {id: string; state: string; stages: Stage[]; error?: {reason: string; next: string} | null; caseId?: string | null; camera: string; interval: string[]};
+export type Job = {id: string; state: string; stages: Stage[]; error?: {reason: string; next: string} | null; caseId?: string | null; camera: string; interval: string[]; video?: string | null; frameCount?: number};
 export type Assessment = null | {available: boolean; reason?: string; next?: string; cameras: {id: string; name: string; title: string}[]; defaults?: {start: string; end: string}};

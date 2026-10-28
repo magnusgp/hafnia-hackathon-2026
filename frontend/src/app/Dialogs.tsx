@@ -162,7 +162,9 @@ export function NewAssessment({a, onClose, onOpen}: {a: Assessment; onClose: () 
             ))}
           </ol>
           {job.state === 'awaiting_continuity' && (
-            <div className="callout"><p>Check that the recording plays as one continuous scene with no restart in the middle.</p>
+            <div className="callout">
+              {job.video && <video className="continuity" src={job.video} controls muted playsInline />}
+              <p>Watch the recording. The camera replays a short clip on a loop, so check there is no restart or jump partway through. No restart was detected automatically.</p>
               <button className="primary" onClick={confirm}>Continuous. Go on</button></div>
           )}
           {job.error && <p role="alert" className="error"><b>{job.error.reason}</b> {job.error.next}</p>}

@@ -1,0 +1,238 @@
+{
+ "total": 153.89,
+ "scenes": [
+  {
+   "id": "open",
+   "start": 0.0,
+   "dur": 12.5,
+   "audioStart": 0.5,
+   "audioLength": 10.04,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 5.18,
+     "text": "A person climbs off a station platform onto the railway tracks."
+    },
+    {
+     "t": 5.68,
+     "d": 3.37,
+     "text": "Hafnia, watching this recording, answers:"
+    },
+    {
+     "t": 9.06,
+     "d": 1.48,
+     "text": "no entry observed."
+    }
+   ]
+  },
+  {
+   "id": "silent",
+   "start": 12.5,
+   "dur": 14.26,
+   "audioStart": 13.0,
+   "audioLength": 12.36,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 2.83,
+     "text": "That answer is understandable."
+    },
+    {
+     "t": 3.33,
+     "d": 4.06,
+     "text": "The person sat at the edge for six seconds."
+    },
+    {
+     "t": 7.39,
+     "d": 3.68,
+     "text": "But in a security room, a no is silent."
+    },
+    {
+     "t": 11.07,
+     "d": 1.79,
+     "text": "Nobody looks again."
+    }
+   ]
+  },
+  {
+   "id": "signal",
+   "start": 26.76,
+   "dur": 20.0,
+   "audioStart": 27.26,
+   "audioLength": 17.3,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 2.76,
+     "text": "Adaptive Watch adds a second signal."
+    },
+    {
+     "t": 3.26,
+     "d": 7.19,
+     "text": "A person detector on a Linux A10G GPU watches the same recording for one configured condition:"
+    },
+    {
+     "t": 10.45,
+     "d": 2.22,
+     "text": "someone at the platform edge."
+    },
+    {
+     "t": 12.67,
+     "d": 5.13,
+     "text": "It flagged the person almost four seconds before they climbed down."
+    }
+   ]
+  },
+  {
+   "id": "how",
+   "start": 46.76,
+   "dur": 24.33,
+   "audioStart": 47.26,
+   "audioLength": 22.43,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 2.01,
+     "text": "Here is the mechanism."
+    },
+    {
+     "t": 2.51,
+     "d": 2.47,
+     "text": "XProtect records the scene."
+    },
+    {
+     "t": 4.99,
+     "d": 1.46,
+     "text": "Hafnia reads it."
+    },
+    {
+     "t": 6.45,
+     "d": 2.56,
+     "text": "The GPU detector watches it."
+    },
+    {
+     "t": 9.01,
+     "d": 2.93,
+     "text": "Adaptive Watch compares the two."
+    },
+    {
+     "t": 11.94,
+     "d": 10.98,
+     "text": "When Hafnia says no, but the detector sees the condition, it raises a review exception, and sends it back into XProtect."
+    }
+   ]
+  },
+  {
+   "id": "operator",
+   "start": 71.08,
+   "dur": 27.6,
+   "audioStart": 71.58,
+   "audioLength": 19.97,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 4.63,
+     "text": "The operator opens the exception at the moment that matters."
+    },
+    {
+     "t": 5.13,
+     "d": 7.71,
+     "text": "The detection, the watched region, and Hafnia's answer share one timeline over the original footage."
+    },
+    {
+     "t": 12.84,
+     "d": 4.63,
+     "text": "Play from the trigger, and the person reaches the track bed."
+    },
+    {
+     "t": 17.46,
+     "d": 3.01,
+     "text": "One click requests the XProtect review."
+    }
+   ]
+  },
+  {
+   "id": "xprotect",
+   "start": 98.68,
+   "dur": 16.8,
+   "audioStart": 99.18,
+   "audioLength": 14.9,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 6.14,
+     "text": "XProtect receives the review event on the correct camera and raises its own alarm."
+    },
+    {
+     "t": 6.64,
+     "d": 3.37,
+     "text": "Here it is in the Smart Client Alarm Manager."
+    },
+    {
+     "t": 10.01,
+     "d": 5.39,
+     "text": "This recording has aged out of retention, so playback was not available."
+    }
+   ]
+  },
+  {
+   "id": "built",
+   "start": 115.48,
+   "dur": 24.19,
+   "audioStart": 115.98,
+   "audioLength": 22.29,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 2.39,
+     "text": "Three systems, three jobs."
+    },
+    {
+     "t": 2.89,
+     "d": 3.41,
+     "text": "XProtect records, and owns the alarm."
+    },
+    {
+     "t": 6.3,
+     "d": 2.12,
+     "text": "Hafnia reads the scene."
+    },
+    {
+     "t": 8.42,
+     "d": 3.68,
+     "text": "A local GPU detector watches for a rule."
+    },
+    {
+     "t": 12.1,
+     "d": 10.68,
+     "text": "During the hackathon we built the detector pipeline, the comparison, the review interface, and the XProtect handoff."
+    }
+   ]
+  },
+  {
+   "id": "close",
+   "start": 139.67,
+   "dur": 14.22,
+   "audioStart": 140.17,
+   "audioLength": 12.32,
+   "sentences": [
+    {
+     "t": 0.5,
+     "d": 5.13,
+     "text": "A negative AI assessment no longer has to be the end of the review."
+    },
+    {
+     "t": 5.63,
+     "d": 4.75,
+     "text": "The evidence comes from controlled synthetic camera scenarios."
+    },
+    {
+     "t": 10.37,
+     "d": 2.45,
+     "text": "It is not an accuracy benchmark."
+    }
+   ]
+  }
+ ],
+ "proof": "Playback unavailable: the 22 Oct recording is past the 24-hour retention."
+}

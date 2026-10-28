@@ -52,11 +52,11 @@
       <div class="node n-a" data-in="5"><b>Adaptive Watch</b><span>compares the two</span></div>
       <div class="node n-e" data-in="6"><b>Review exception</b><span>camera, moment, footage</span></div>
       <div class="node n-r" data-in="7"><b>XProtect alarm</b><span>operator takes the next step</span></div>
-      <svg class="wires" viewBox="0 0 1600 520" preserveAspectRatio="none">
-        <path d="M290 260 H380 M290 260 C340 260 340 120 380 120 M290 260 C340 260 340 400 380 400" class="w w1" data-in="3"/>
-        <path d="M700 120 C760 120 760 260 820 260 M700 400 C760 400 760 260 820 260" class="w w2" data-in="5"/>
-        <path d="M1130 260 H1190" class="w w3" data-in="6"/>
-        <path d="M1380 260 H1440" class="w w4" data-in="7"/>
+      <svg class="wires" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M17.5 50 C21 50 21 15.7 24 15.7 M17.5 50 C21 50 21 84.3 24 84.3" class="w w1" data-in="3"/>
+        <path d="M41.5 15.7 C46 15.7 46 50 51 50 M41.5 84.3 C46 84.3 46 50 51 50" class="w w2" data-in="5"/>
+        <path d="M68.5 50 H73" class="w w3" data-in="6"/>
+        <path d="M85 50 H88" class="w w4" data-in="7"/>
       </svg>
     </div>
   </section>
@@ -68,8 +68,14 @@
 
   <!-- 6. The XProtect result -->
   <section class="scene dark" id="xprotect" aria-label="XProtect result">
-    <img id="x-shot" class="capture" alt="XProtect result" src="assets/xprotect.png">
-    <p class="proof" id="x-proof"></p>
+    <h2 class="title on-dark" data-in="1">The alarm arrives in XProtect.</h2>
+    <img id="x-shot" class="shot" alt="Smart Client Alarm Manager listing the Adaptive Watch review alarm for the station platform camera" src="assets/xprotect.png" data-in="2">
+    <ul class="facts-row" data-in="4">
+      <li><b>Alarm 4</b><span>Smart Client, Alarm Manager</span></li>
+      <li><b>person_on_railway_tracks</b><span>the source camera</span></li>
+      <li><b>22 Oct, 11:03:44</b><span>source time of the moment</span></li>
+    </ul>
+    <p class="proof" id="x-proof" data-in="6"></p>
   </section>
 
   <!-- 7. Three systems, three jobs -->

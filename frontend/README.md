@@ -1,11 +1,28 @@
 # Adaptive Watch frontend
 
-`src/application.tsx` is the default multi-case entry. It loads source-verified records from `adaptive_watch.workspace_api`. `publicDir: false` excludes private evidence from the production bundle.
+React 19, TypeScript and Vite. `src/app.tsx` is the only entry. It reads the unified case view model from
+`adaptive_watch.app_api` (`/api/casebook`, `/api/cases/<id>`), never from files, so private footage is not in the
+production bundle (`publicDir: false`).
 
-`src/railway-review.tsx` preserves the video-focused railway investigation extracted from `negative-review.tsx`. Shared evidence details, source identity, review state, snapshot viewing and review controls live in `src/evidence-components.tsx`. The single-case mounting implementation remains in `src/negative-review.tsx`; the current app also opens railway at `/#case/railway`. Historical `src/main.tsx` and unrelated presentation files are preserved and are not default entries.
+- `src/app/Stage.tsx` footage with the detector box and region, drawn only on the frame the detector measured
+- `src/app/Timeline.tsx` three evidence lanes on one clock (Hafnia, local vision, footage review)
+- `src/app/Brief.tsx` the two signals and the review exception XProtect receives
+- `src/app/Dialogs.tsx` decision, XProtect send confirmation, evidence details, New assessment
 
-Run `../runs/tooling/bun-windows-x64/bun.exe run build` from this directory. Vite uses its runner config loader to avoid esbuild traversing restricted parent directories when bundling config. Start the workspace API using the [root README](../README.md).
+```powershell
+..\runs\tooling\bun-windows-x64\bun.exe run build
+```
 
-From the repository root, run the Python suite, `frontend/scripts/check-workspace.mjs`, and `frontend/scripts/check-negative-review.mjs` using the installed Bun executable. Set `PLAYWRIGHT_BROWSERS_PATH` to `runs/tooling/playwright` and `AW_EVALUATIONS` to the private Hafnia response directory. Both scripts record actual Edge interactions at 1440x900 and 1920x1080 using isolated decision stores. No inference or native events are sent.
+Browser checks use real Edge against an isolated demo instance (never the operator's saved decisions):
 
-New assessment currently returns a persisted readiness failure. Authenticated Hafnia runtime handoff, Linux CUDA transport, fresh acquisition and continuity review require the supervised workflow. See [application notes](../docs/adaptive-watch/application-completion.md).
+```powershell
+cd ..
+.\.venv\Scripts\python.exe scripts\adaptive_watch\make_demo_root.py
+.\.venv\Scripts\python.exe scripts\adaptive_watch\record_agent_review.py --root runs\release\demo-app --railway runs\release\demo-railway --evaluations $env:USERPROFILE\adaptive-watch-private\hafnia-16
+# start the server on port 8781 with --root runs\release\demo-app --railway runs\release\demo-railway, then:
+$env:PLAYWRIGHT_BROWSERS_PATH = (Resolve-Path runs\tooling\playwright).Path
+cd frontend; ..\runs\tooling\bun-windows-x64\bun.exe scripts\check-app.mjs ..\runs\release\checks
+```
+
+`scripts/shoot.mjs` captures screenshots, `capture-walkthrough.mjs` records the application for the presentation,
+`record-deck.mjs` and `deck-preview.mjs` record and preview the deck (see `../presentation`).
