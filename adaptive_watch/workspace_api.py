@@ -118,6 +118,7 @@ def handler(repo, root, railway, evaluations, frontend):
                 self.reply(dict(error=str(exc) if isinstance(exc,ValueError) else 'Action blocked: source data unavailable or invalid'),422)
             finally:
                 store.close()
+    Handler.sessions = sessions
     return Handler
 
 
