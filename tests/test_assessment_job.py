@@ -456,8 +456,8 @@ class Phase(Base):
         s, e = aj.parse(start).timestamp(), aj.parse(end).timestamp()
         into = (s-seam) % 15
         self.assertGreaterEqual(into, .6)
-        self.assertLessEqual(into+(e-s), 15-.6+1e-6)  # ends before the next restart
-        self.assertTrue(12 <= e-s <= 14)
+        self.assertLessEqual(into+(e-s), 15-aj.TAIL_S+1e-6)  # stops before the next walk-in, not at the restart
+        self.assertTrue(10 <= e-s <= 13)
         self.assertLessEqual(e, now.timestamp()-90)
         return start, end
 
@@ -466,6 +466,26 @@ class Phase(Base):
         seqs = [dict(start_utc='2026-10-28T08:00:00Z', end_utc='2026-10-28T13:00:00Z')]
         for k in range(60):
             self.check(base+timedelta(seconds=k*1.37), seqs)
+
+    def test_window_stops_before_the_next_walk_in(self):
+        # 28 Oct 2026: the old window ended 1.5 s before the restart and its last frame already showed the next
+        # walk-in (it begins ~13.3 s into the 15 s loop). The end now keeps TAIL_S clear of the restart instant.
+        now = datetime(2026, 10, 28, 15, 36, 40, tzinfo=timezone.utc)
+        seqs = [dict(start_utc='2026-10-28T14:00:00Z', end_utc='2026-10-28T16:00:00Z')]
+        start, end = choose_interval(seqs, now, dict(seam_utc='2026-10-28T15:33:54.013Z', period=15.0))
+        seam = aj.parse('2026-10-28T15:33:54.013Z').timestamp()
+        self.assertLessEqual((aj.parse(end).timestamp()-seam) % 15, 13.0 + 1e-6)
+
+    def test_continuity_note_never_claims_a_person(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d)/'a').mkdir()
+            (Path(d)/'a'/'continuity.json').write_text(json.dumps(dict(manifest_sha256='x', reviewed_at='t')))
+            note = aj.continuity_note(d, 'a')
+            self.assertNotIn('A person confirmed', note)
+            self.assertIn('did not record who', note)
+            (Path(d)/'a'/'continuity.json').write_text(json.dumps(dict(reviewer='Claude demo reviewer (AI)')))
+            self.assertIn('Claude demo reviewer (AI)', aj.continuity_note(d, 'a'))
 
     def test_phased_window_must_be_covered(self):
         now = datetime(2026, 10, 28, 12, 0, 0, tzinfo=timezone.utc)

@@ -36,6 +36,9 @@ STATE_STAGE = dict(queued=0, acquiring=0, awaiting_continuity=1, cv_running=2, h
 TERMINAL = {'completed', 'failed'}
 REFERENCE = 'runs/xprotect/person_on_railway_tracks_20261022T110339Z/manifest.json'  # clip starts at frame 0
 LEAD_S, PHASE_MAX_AGE_S, CAL_SECONDS, CYCLE = 0.6, 6*3600, 32, 'loop-cycle.npz'
+# The loop is visually seamless: the next walk-in already starts about 13.3 s into the 15 s cycle (measured on the
+# 28 Oct recording), so a window must stop well before the restart instant, not at it.
+TAIL_S, MIN_WINDOW_S = 2.0, 10
 NATIVE_EVENT = 'Adaptive Watch Review Required'
 HANDOFF_NEGATIVE = ('Review exception: Hafnia reported no entry; independent person detection placed a person at the '
                     'platform edge from {trigger} UTC. Neither signal confirms entry. Review the footage.')
@@ -98,7 +101,8 @@ def choose_interval(sequences, now, phase=None, window=WINDOW_S, margin=MARGIN_S
 
     Without `phase`: a `window`-second window. With a calibrated loop `phase` (the camera replays one clip every
     `period` s, restarting at seam_utc + k*period): the longest whole-second window that starts just after a
-    restart and ends before the next one, so no restart can lie inside it.
+    restart and ends TAIL_S before the next one. The clip is seamless, so the next cycle's walk-in begins before
+    the restart instant; ending early keeps it out of the window.
     """
     latest = now.timestamp()-margin
     spans = [(math.ceil(parse(s['start_utc']).timestamp()), math.floor(parse(s['end_utc']).timestamp())) for s in sequences]
@@ -107,8 +111,8 @@ def choose_interval(sequences, now, phase=None, window=WINDOW_S, margin=MARGIN_S
         top = math.floor((latest-seam0)/period)
         for k in range(top, top-1500, -1):
             seam = seam0+k*period
-            start, end = math.ceil(seam+LEAD_S), math.floor(seam+period-LEAD_S)
-            if end-start >= 12 and end <= latest and any(a <= start and end <= b for a, b in spans):
+            start, end = math.ceil(seam+LEAD_S), math.floor(seam+period-TAIL_S)
+            if end-start >= MIN_WINDOW_S and end <= latest and any(a <= start and end <= b for a, b in spans):
                 return iso(datetime.fromtimestamp(start, timezone.utc)), iso(datetime.fromtimestamp(end, timezone.utc))
     else:
         for a, b in sorted(spans, key=lambda x: x[1], reverse=True):
@@ -466,7 +470,16 @@ def live_case(live_root, job_id, state=None, native=None):
         limitations=['Person tracks are association hypotheses; identities can switch and detections can be missed.',
                      'The attention region is a draft that was not reviewed against this footage.',
                      'Hafnia answered one prompt once. Its answer is a model assessment, not a verified fact.',
-                     'A person confirmed the recording plays as one continuous scene.'])
+                     continuity_note(live_root, job_id)])
+
+
+def continuity_note(live_root, job_id):
+    """Who confirmed continuity is stated only when the saved confirmation records it; never assumed to be a person."""
+    saved = read(Path(live_root)/job_id/'continuity.json')
+    who = saved.get('reviewer')
+    if who:
+        return f'The recording was confirmed as one continuous scene by: {who}.'
+    return 'The browser confirmation that the recording plays as one continuous scene did not record who gave it.'
 
 
 def completed_jobs(live_root):
@@ -687,7 +700,7 @@ class Jobs:
             raise ValueError('This assessment is not waiting for a continuity check.')
         manifest = next((self._dir(job_id)/'acquisition').glob('*/manifest.json'))
         (self._dir(job_id)/'continuity.json').write_text(json.dumps(dict(manifest_sha256=sha(manifest),
-            reviewed_at=self.clock().isoformat())), encoding='utf-8')
+            reviewed_at=self.clock().isoformat(), reviewer='operator confirmation in the browser (identity not authenticated)')), encoding='utf-8')
         with self._db() as db:
             changed = db.execute("UPDATE jobs SET state='cv_running',updated=? WHERE id=? AND state='awaiting_continuity'",
                                  (self.clock().isoformat(), job_id)).rowcount
