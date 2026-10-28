@@ -50,7 +50,7 @@ export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) =
           <p className="message">{c.handoff.message}</p>
           {open && <button className="primary wide" onClick={() => onAct('request')}>Send to XProtect review</button>}
           {open && <button className="link" onClick={() => onAct('dismiss')}>Not needed</button>}
-          {saved && c.native.state === 'configured' && c.native.canSend && <button className="primary wide" onClick={() => onAct('send')}>Send to XProtect</button>}
+          {saved && c.native.state === 'configured' && <button className="primary wide" onClick={() => onAct('send')}>{c.native.canSend ? 'Send to XProtect' : 'Preview XProtect event'}</button>}
           {saved && <p className="saved">Your review request is saved{c.state.humanAnnotation ? `: ${c.state.humanAnnotation.value.replace(/_/g, ' ')}` : ''}.</p>}
           <p className={`native ${c.native.state}`}><b>{nativeLabel}</b> {c.native.state === 'alarm_verified' || c.native.state === 'blocked' ? c.native.detail : nativeNote}{c.native.alarmId ? ` Alarm ${c.native.alarmId}.` : ''}</p>
         </section>

@@ -1,0 +1,21 @@
+﻿Adaptive Watch review notes (private; optional)
+Nothing here is required. Write whatever is useful, in any order. This file is not part of the repository.
+
+Date / reviewer:
+
+FIRST IMPRESSION
+- Is the purpose understandable immediately?
+
+THE FILM
+- Narration (clear? pace? tone?):
+- Captions and visuals:
+- Anything missing, wrong or too long:
+
+THE APPLICATION
+- Do the video and controls feel natural?
+- Was the important event easy to find?
+- Was the handoff to XProtect clear?
+- Is there unnecessary information on screen?
+- Any interaction that was confusing or frustrating? (what you clicked, what you expected)
+
+ANYTHING ELSE

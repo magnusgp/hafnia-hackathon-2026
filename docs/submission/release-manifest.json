@@ -6,9 +6,9 @@
   "deadline": "Monday, 2 November 2026 at 11:00 CET",
   "app": {
     "entry": "frontend/dist/index.html",
-    "entrySha256": "e4b6d87ffbe5e3b7a8128ceed6dc8eddb44b9fc9a9fdcc79b2d65dac55de7f21",
+    "entrySha256": "d3fdb83ff9b58f33b7327e1252e10c7d88bef6e410332252cc6b1a1a143db23e",
     "assets": {
-      "index-BabLNKow.js": "08c6a9b39c91e7c00634889fbed98e2c6865ff5175e7de20eab80fd02a0842e4",
+      "index-BgvTZV1y.js": "205b2906803b995beba6fbb52cc1f284fa0d3a49e518d766f572f72d4071a4a4",
       "index-Cyo9r-Cw.css": "9556364e8adea1fbc93a2a47ed6e4624a147667488aa863b13af91ce4a785eee"
     }
   },

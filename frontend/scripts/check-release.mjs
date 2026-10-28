@@ -75,7 +75,11 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await page.goto(base + '/#/railway', { waitUntil: 'networkidle' });
 await page.waitForSelector('.saved');
 check('review persists across reload (isolated store)', /entry visible/.test(await page.locator('.saved').innerText()));
-check('no Send to XProtect button while sending is off', await page.getByRole('button', { name: 'Send to XProtect', exact: true }).count() === 0);
+check('sending off: the confirmation is a preview only', await page.getByRole('button', { name: 'Send to XProtect', exact: true }).count() === 0 && await page.getByRole('button', { name: 'Preview XProtect event' }).count() === 1);
+await page.getByRole('button', { name: 'Preview XProtect event' }).click();
+await page.getByText('Sending is switched off for this session.').waitFor();
+check('preview shows event, camera and fingerprint; Send event is disabled', await page.getByText('Adaptive Watch Review Required').isVisible() && await page.getByRole('button', { name: 'Send event' }).isDisabled());
+await page.getByRole('button', { name: 'Cancel' }).click();
 const r = await page.evaluate(async () => {
   const get = await (await fetch('/api/cases/railway')).json();
   const send = await fetch('/api/cases/railway/native', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Review-CSRF': get.csrf }, body: JSON.stringify({ action: 'send', confirmed: true, approval: 'x' }) });
