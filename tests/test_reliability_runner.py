@@ -97,7 +97,7 @@ class RunnerTests(unittest.TestCase):
         review = dict(status='reviewed', review_mode='ai_demo', user_authorized_ai_review=True,
             reviewer='AI',reviewed_at='2026-10-26T18:00:00Z',review_artifact=str(artifact),
             review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
-            definitions_sha256=hashlib.sha256((module.REPO / 'docs/reliability/label-definitions.json').read_bytes()).hexdigest())
+            definitions_sha256=hashlib.sha256((module.REPO / 'docs/research/reliability/label-definitions.json').read_bytes()).hexdigest())
         self.assertEqual(list(module.validate([],review)),[])
         review['user_authorized_ai_review'] = False
         with self.assertRaisesRegex(ValueError,'explicitly authorized'):
@@ -195,7 +195,7 @@ class RunnerTests(unittest.TestCase):
         review = dict(status='reviewed',review_mode='ai_demo',user_authorized_ai_review=True,
             reviewer='AI',reviewed_at='2026-10-26T22:00:00Z',review_artifact=str(artifact),
             review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
-            definitions_sha256=hashlib.sha256((module.REPO/'docs/reliability/label-definitions.json').read_bytes()).hexdigest())
+            definitions_sha256=hashlib.sha256((module.REPO/'docs/research/reliability/label-definitions.json').read_bytes()).hexdigest())
         entry = dict(experiment_id='REL26-B-gate-v3-r01',stage='B',event_id='gate-loop-001',
             prompt='Visible gate manipulation',camera_id=camera,start=start.isoformat(),
             end=end.isoformat(),recording_manifest=str(manifest),
@@ -223,7 +223,7 @@ class RunnerTests(unittest.TestCase):
         review=root/'review.json';review.write_text(json.dumps(dict(status='reviewed',review_mode='ai_demo',
             user_authorized_ai_review=True,reviewer='AI',reviewed_at='2026-10-26T22:00:00Z',
             review_artifact=str(artifact),review_artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
-            definitions_sha256=hashlib.sha256((module.REPO/'docs/reliability/label-definitions.json').read_bytes()).hexdigest())))
+            definitions_sha256=hashlib.sha256((module.REPO/'docs/research/reliability/label-definitions.json').read_bytes()).hexdigest())))
         calls=[]
         class ReadOnlyGateway:
             def request(self,method,path):

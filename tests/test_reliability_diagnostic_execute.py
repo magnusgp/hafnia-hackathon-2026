@@ -18,10 +18,10 @@ class CampaignTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
-        directory = self.root/'docs/reliability'
+        directory = self.root/'docs/research/reliability'
         directory.mkdir(parents=True)
         for name in ('diagnostic-24-matrix.json','quota-contract.json'):
-            (directory/name).write_bytes((REPO/'docs/reliability'/name).read_bytes())
+            (directory/name).write_bytes((REPO/'docs/research/reliability'/name).read_bytes())
         matrix = json.loads((directory/'diagnostic-24-matrix.json').read_text())
         matrix_hash=hashlib.sha256((directory/'diagnostic-24-matrix.json').read_bytes()).hexdigest()
         self.plan=[dict(row,stage='B',original_matrix_sha256=matrix_hash,response_contract='diagnostic_free_text')

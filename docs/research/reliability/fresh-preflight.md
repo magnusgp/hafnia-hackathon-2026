@@ -52,13 +52,13 @@ At 11:03:44.013 the seated person's box-bottom proxy is `(0.501994, 0.816871)`, 
 
 The candidate starts **3.5–4 seconds early**. It flags 0/6 clear pre-entry negatives, 8/13 ambiguous pre-entry samples and 5/5 clear post-entry samples. Ambiguous seated samples are not counted as proven false physical occupancy. Ten track hypotheses remain hypotheses; no identity fragments were silently joined.
 
-Separate outputs are required: **proximity candidate** from geometry versus **visually confirmed entry** from reference review. The latter is not a newly implemented automatic detector. No timestamp delay, margin, persistence or box-shape threshold was tuned to move this onset. These frames remain calibration; no independent accuracy claim follows. Exact boxes, footpoints, margins, track IDs and all 26 frame interpretations are in [railway-frame-audit.json](../../results/reliability/railway-frame-audit.json); [railway-timing.svg](railway-timing.svg) provides a sanitized presentation comparison.
+Separate outputs are required: **proximity candidate** from geometry versus **visually confirmed entry** from reference review. The latter is not a newly implemented automatic detector. No timestamp delay, margin, persistence or box-shape threshold was tuned to move this onset. These frames remain calibration; no independent accuracy claim follows. Exact boxes, footpoints, margins, track IDs and all 26 frame interpretations are in [railway-frame-audit.json](../../../results/reliability/railway-frame-audit.json); [railway-timing.svg](railway-timing.svg) provides a sanitized presentation comparison.
 
 ## Relevant controls
 
 The eleven-camera catalog contains one railway scene and one gate scene. The fresh railway platform-only period spans about 3.5 seconds; the selected gate approach spans about one second. Seated edge contact is ambiguous. Extending these periods to 12 seconds would include positive action or a loop reset. No eligible distinct task-matched negative is established. Other street/traffic cameras are domain-mismatched; their repeated loops cannot supply independent hard negatives.
 
-The additional control plan is explicitly empty and its rejected candidates retain source IDs and timestamps in [fresh-controls.json](../../results/reliability/fresh-controls.json). Keep Stage C at zero until distinct, coherent platform-only or gate-without-manipulation footage is available. Authorization and intent are not negative-label criteria.
+The additional control plan is explicitly empty and its rejected candidates retain source IDs and timestamps in [fresh-controls.json](../../../results/reliability/fresh-controls.json). Keep Stage C at zero until distinct, coherent platform-only or gate-without-manipulation footage is available. Authorization and intent are not negative-label criteria.
 
 ## Reproduce and authenticate without inference
 
@@ -80,4 +80,4 @@ After the offline status, enter the password locally and press Enter; characters
 
 Installed gateway documentation and generated UI client identify `GET /api/System/Information` and `QuotaInformation.DailySummaryCount`, `DailySummaryQuota`, and `DailySummaryReset`. [quota-contract.json](quota-contract.json) records the verified schema; unexpected live values block submission. The UI explicitly says these counts apply to this gateway, not all potential account clients. No global usage claim is made.
 
-Runner cap remains 480, gateway headroom 20, concurrency one, A/B/C ceilings unchanged. Source coverage proof must be refreshed within 15 minutes of submission. Zero claims exist in both the superseded and fresh ledgers. The successful offline, authenticated, quota and coverage preflights are recorded in [fresh-preflight.json](../../results/reliability/fresh-preflight.json). Validation: 17 runner tests plus four parser-recovery tests pass; live submission behavior is untested.
+Runner cap remains 480, gateway headroom 20, concurrency one, A/B/C ceilings unchanged. Source coverage proof must be refreshed within 15 minutes of submission. Zero claims exist in both the superseded and fresh ledgers. The successful offline, authenticated, quota and coverage preflights are recorded in [fresh-preflight.json](../../../results/reliability/fresh-preflight.json). Validation: 17 runner tests plus four parser-recovery tests pass; live submission behavior is untested.

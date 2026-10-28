@@ -1,4 +1,4 @@
-"""Fog / haze visibility degradation on fixed outdoor cameras (docs/visibility/preregistration.md).
+"""Fog / haze visibility degradation on fixed outdoor cameras (docs/research/visibility/preregistration.md).
 
 Data: Transient Attributes (CC BY 4.0) for training/selection/test, Digitraffic (CC BY 4.0)
 as an external real-weather test. Features are cached per image under AW_CACHE.

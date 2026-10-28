@@ -15,7 +15,7 @@ def audit(root):
         raise ValueError('Original CV prediction bytes changed')
     labels=read(REPO/'runs/reliability-20261026/reviewed-ai-demo.json')['sources'][0]['frames']
     cv=read(source)
-    polygon=read(REPO/'docs/reliability/railway-geometry-v3.json')['polygon']
+    polygon=read(REPO/'docs/research/reliability/railway-geometry-v3.json')['polygon']
     rows=[]
     for i,(obs,label) in enumerate(zip(cv['observations'],labels,strict=True)):
         if obs['timestamp_utc']!=label['timestamp_utc']:

@@ -1,4 +1,4 @@
-"""Visibility-degradation experiment CLI (pre-registered: docs/visibility/preregistration.md).
+"""Visibility-degradation experiment CLI (pre-registered: docs/research/visibility/preregistration.md).
 
     uv run --group ml python vis.py extract            # cache features (TA)
     uv run --group ml python vis.py select             # fit/val only -> results/visibility/config.json

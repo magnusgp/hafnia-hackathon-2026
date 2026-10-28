@@ -38,7 +38,7 @@ def prepare(root, responses):
     if sha(artifact) != signoff['review_artifact_sha256']:
         raise ValueError('Frozen review hash mismatch')
     review = read(artifact)
-    definitions = REPO / 'docs/reliability/label-definitions.json'
+    definitions = REPO / 'docs/research/reliability/label-definitions.json'
     if sha(definitions) != signoff['definitions_sha256'] or sha(definitions) != review['definitions_sha256']:
         raise ValueError('Frozen definition hash mismatch')
     sources = {}
@@ -93,7 +93,7 @@ def prepare(root, responses):
     if len(saved) != 16:
         raise ValueError('Expected the original 16 saved assessments')
     frozen_write(root / 'original-response-hashes.private.json', original_locks)
-    matrix_path = REPO / 'docs/reliability/first-batch-matrix.json'
+    matrix_path = REPO / 'docs/research/reliability/first-batch-matrix.json'
     matrix = read(matrix_path)
     plan = []
     for spec in matrix['experiments']:

@@ -2,7 +2,7 @@
 
 One saved railway case, one Polar operator screen. A negative Hafnia assessment plus an independent CV proximity observation requests human review. Proximity does not establish entry; disagreement does not establish which model is correct.
 
-The original Hafnia evidence, Linux CV implementation, XProtect integration and Polar identity are preserved. Historical incident/replay code remains in the repository; this workflow adds no dashboard or replay mode. The former root README is preserved in [prior-workflow.md](docs/adaptive-watch/prior-workflow.md).
+The original Hafnia evidence, Linux CV implementation, XProtect integration and Polar identity are preserved. Historical incident/replay code remains in the repository; this workflow adds no dashboard or replay mode. The former root README is preserved in [prior-workflow.md](prior-workflow.md).
 
 ## Open the prepared case
 
@@ -42,4 +42,4 @@ Browser checks use isolated copies of the real case at 1440×900 and 1920×1080.
 
 The preserved **78-second evidence video** (`adaptive-watch-negative-review.mp4`), diagnostic comparison PNG and their original sources remain under ignored `runs/negative-review-checks/`. The video includes the original XProtect export, saved CV overlay and automated operator flow. These are historical evidence assets and can show the earlier action wording; they are **not the final narrated submission video**. Do not overwrite them when preparing the submission. The outstanding submission work is to combine the existing Polar slides, narration, limitations and current UI evidence into a final video under three minutes, verify its claims and playback, and submit it with the repository link and judge-access instructions. Human entry verification remains outstanding; the automated walkthrough is not human attestation. Native XProtect configuration and dispatch require separate authorization and are outside this release.
 
-See [implementation and acceptance notes](docs/adaptive-watch/negative-result-review.md) for exact provenance, behavior and remaining authorization gates.
+See [implementation and acceptance notes](../research/negative-result-review.md) for exact provenance, behavior and remaining authorization gates.

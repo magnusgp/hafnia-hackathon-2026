@@ -4,7 +4,7 @@ No new inference was submitted. The precise, frozen [24-request matrix](diagnost
 
 ## Eight-request audit and model identity
 
-[Sanitized audit](../../results/reliability/eight-request-audit.json) records all eight exact prompts, summary IDs, payload hashes, URI hashes, camera-path hashes, requested UTC intervals, source-manifest/video hashes where available, returned metadata and parser results. Historical gate sources have reviewed snapshots and manifest hashes but no recorded MKV digest; that missing provenance is explicit as null. Full original payloads and responses remain private. All 16 historical saved response files passed their original hash checks. All eight prompt and URI lists exactly match their returned `Request` fields.
+[Sanitized audit](../../../results/reliability/eight-request-audit.json) records all eight exact prompts, summary IDs, payload hashes, URI hashes, camera-path hashes, requested UTC intervals, source-manifest/video hashes where available, returned metadata and parser results. Historical gate sources have reviewed snapshots and manifest hashes but no recorded MKV digest; that missing provenance is explicit as null. Full original payloads and responses remain private. All 16 historical saved response files passed their original hash checks. All eight prompt and URI lists exactly match their returned `Request` fields.
 
 All eight actual payloads contain `Prompt` and `VideoUris`, without `PromptId` or an explicit model selection. All eight returned `Request.AiModelId` values are **`traffic-general`**. All report `Source.Trigger: Manual` and `Progress: Completed`. Transport HTTP status, backend weights/version, system prompt, sampling schedule, fetched video digest and model-consumed frames are not recorded. Completed status and echoed source URIs establish neither which frames were decoded nor their delivery to the model. Returned `Source` is trigger metadata, not independent recording provenance.
 
@@ -37,7 +37,7 @@ Use concurrency one, the existing 480/day cap and 20-request gateway headroom. A
 
 ## Fresh recording verification
 
-Read-only XProtect acquisition on October 27 obtained two one-minute exports and selected whole-second intervals below. No clips were fabricated, stretched or concatenated. [Verification results](../../results/reliability/diagnostic-recording-verification.json) contain full manifest and MKV SHA-256 hashes. Every saved snapshot hash, selected export hash, source/review binding, under-24-hour age and 12–17-second contract passed offline validation across all 24 definitions. A subsequent read-only exact camera/GUID sequence query verified coverage for both sources and passed the runner's availability checks for all 24 definitions.
+Read-only XProtect acquisition on October 27 obtained two one-minute exports and selected whole-second intervals below. No clips were fabricated, stretched or concatenated. [Verification results](../../../results/reliability/diagnostic-recording-verification.json) contain full manifest and MKV SHA-256 hashes. Every saved snapshot hash, selected export hash, source/review binding, under-24-hour age and 12–17-second contract passed offline validation across all 24 definitions. A subsequent read-only exact camera/GUID sequence query verified coverage for both sources and passed the runner's availability checks for all 24 definitions.
 
 | Scene | Date | Actual UTC interval | Snapshots | Decoded export frames / PTS |
 |---|---|---|---:|---|

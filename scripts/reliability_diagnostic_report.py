@@ -84,11 +84,11 @@ def main():
     private=ROOT/'runs/reliability-diagnostics'
     batch=private/'operator-batch'
     plan=read(private/'execution-plan-v1.private.json')
-    matrix_path=ROOT/'docs/reliability/diagnostic-24-matrix.json'
+    matrix_path=ROOT/'docs/research/reliability/diagnostic-24-matrix.json'
     matrix=read(matrix_path)
     signoff=read(private/'signoff-v1.private.json')
     assert sha(Path(signoff['review_artifact'])) == signoff['review_artifact_sha256']
-    assert sha(ROOT/'docs/reliability/label-definitions.json') == signoff['definitions_sha256']
+    assert sha(ROOT/'docs/research/reliability/label-definitions.json') == signoff['definitions_sha256']
     assert digest(plan) == (batch/'plan.sha256').read_text() == digest(read(batch/'plan.private.json'))
     coverage=read(private/'recording-availability.private.json')
     proof=read(batch/'execution-preflight.private.json')

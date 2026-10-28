@@ -14,7 +14,7 @@ def sha(path):
 def main():
     batch = ROOT / 'runs/reliability-fresh/operator-batch'
     plan = json.loads((batch / 'plan.private.json').read_text())
-    matrix = json.loads((ROOT / 'docs/reliability/first-batch-matrix.json').read_text())
+    matrix = json.loads((ROOT / 'docs/research/reliability/first-batch-matrix.json').read_text())
     expected = {e['experiment_id']: e['body'] + matrix['suffix'] for e in matrix['experiments']}
     db = sqlite3.connect(f'file:{(batch / "reliability-ledger.sqlite3").as_posix()}?mode=ro', uri=True)
     rows = db.execute('select experiment,summary_id,state,payload,result from requests order by experiment').fetchall()

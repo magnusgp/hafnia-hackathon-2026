@@ -11,8 +11,8 @@ from reliability_runner import digest, validate
 
 
 def prepare(root, railway, gate):
-    matrix_path = REPO/'docs/reliability/first-batch-matrix.json'
-    definitions = REPO/'docs/reliability/label-definitions.json'
+    matrix_path = REPO/'docs/research/reliability/first-batch-matrix.json'
+    definitions = REPO/'docs/research/reliability/label-definitions.json'
     matrix = read(matrix_path)
     sources = []
     for name,path,start,end in [

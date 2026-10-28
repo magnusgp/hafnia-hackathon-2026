@@ -34,7 +34,7 @@ The existing dedicated event and scooter-only alarm definition were retained. Re
 
 ## Release review
 
-Base: GitHub main `8833c744910bd73dff06d498d361b435558339a5`; starting feature revision `3b14be9f92a47f8b06be4e1d820e1575b85f7ddd`. The entire feature diff includes prior Adaptive Watch CV/evaluation experiments, evidence acquisition/joining, lifecycle/dispatch guards, UI, tests and public result reports. It retains Scene Contracts as pre-existing work. Review the complete file manifest in [release-files.txt](release-files.txt), not just this sprint's UI correction.
+Base: GitHub main `8833c744910bd73dff06d498d361b435558339a5`; starting feature revision `3b14be9f92a47f8b06be4e1d820e1575b85f7ddd`. The entire feature diff includes prior Adaptive Watch CV/evaluation experiments, evidence acquisition/joining, lifecycle/dispatch guards, UI, tests and public result reports. It retains Scene Contracts as pre-existing work. Review the complete file manifest in the release file list (removed from the repository; see Git history), not just this sprint's UI correction.
 
 Review commands:
 

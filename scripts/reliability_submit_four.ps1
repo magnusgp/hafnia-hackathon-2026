@@ -13,5 +13,5 @@ if ($LASTEXITCODE -ne 0) { throw 'Authentication preflight failed; no submission
 & (Join-Path $PSScriptRoot 'reliability_availability.ps1')
 if ($LASTEXITCODE -ne 0) { throw 'Recording coverage refresh failed; no submissions attempted.' }
 Write-Host 'Preflight completed. Enter the password again for the authorized four-request execution.'
-& $python $runner @batchArgs --apply --quota-contract docs/reliability/quota-contract.json --recording-availability runs/reliability-fresh/recording-availability.private.json
+& $python $runner @batchArgs --apply --quota-contract docs/research/reliability/quota-contract.json --recording-availability runs/reliability-fresh/recording-availability.private.json
 if ($LASTEXITCODE -ne 0) { throw 'Execution stopped. Preserve the ledger; reconcile any ambiguous submission before continuing.' }

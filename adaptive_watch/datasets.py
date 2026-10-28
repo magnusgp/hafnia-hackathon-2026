@@ -2,7 +2,7 @@
 
 Raw data lives outside Git under AW_DATA (default ~/.cache/adaptive-watch/data).
 Splits are at the original video-sequence level; see
-docs/adaptive-watch/preregistration.md.
+docs/research/preregistration.md.
 """
 
 from __future__ import annotations

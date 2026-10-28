@@ -60,7 +60,7 @@ It writes `results/hardware/footage-{snapshot,mkv}-cuda.json`. Commit those JSON
 
 ## 2. ML direction
 
-- **Selected task: fog/haze visibility degradation on fixed outdoor cameras.** Family 3, narrowed. The rationale table is in [visibility/preregistration.md](visibility/preregistration.md).
+- **Selected task: fog/haze visibility degradation on fixed outdoor cameras.** Family 3, narrowed. The rationale table is in [visibility/preregistration.md](../research/visibility/preregistration.md).
   - Family 1 is already solved by tracker+rule baselines, and its only open dataset is 516 GB from a single site.
   - Family 2 has no usable labelled data.
   - Camera-local vs weather discrimination is out of scope: no real labelled camera-local data exists publicly.
@@ -68,7 +68,7 @@ It writes `results/hardware/footage-{snapshot,mkv}-cuda.json`. Commit those JSON
   - Transient Attributes: CC BY 4.0, 101 fixed webcams, official camera-disjoint split, 1.8 GB.
   - External test: Digitraffic road cameras (CC BY 4.0). Labels are the co-located visibility sensor (≤ 200 m): < 1 km = fog, ≥ 5 km = clear.
 - **Model:** frozen DINOv2-S (Apache-2.0) CLS+mean-patch features, then logistic regression. Trains in seconds on CPU; T4 is not a constraint.
-- **Result (TA final test, 20 unseen cameras, run once): gate FAILS.** Full detail in [visibility/results.md](visibility/results.md).
+- **Result (TA final test, 20 unseen cameras, run once): gate FAILS.** Full detail in [visibility/results.md](../research/visibility/results.md).
   - AUPRC 0.878 vs 0.832 for zero-shot CLIP: +0.045, below the required +0.05.
   - CI [−0.04, +0.13].
   - F1 0.82 vs 0.76. AUROC 0.963.

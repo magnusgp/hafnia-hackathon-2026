@@ -120,7 +120,7 @@ def matrix():
     assert len(rows)==24 and len({r['experiment_id'] for r in rows})==24
     for a,b in zip(rows[:12],rows[12:]):
         assert a['prompt']==b['prompt']
-    freeze(ROOT/'docs/reliability/diagnostic-24-matrix.json',dict(batch='REL26-D',authorization='not_authorized',expected_requests=24,concurrency=1,design='2 scenes x 6 prompt families x 2 exact repetitions; fixed interleaved order',response_contract='Unconstrained text; retain verbatim. Separately extract recognition/action items as observed, not_observed, unknown or unparseable; do not run legacy incident parser on diagnostic prose.',experiments=rows))
+    freeze(ROOT/'docs/research/reliability/diagnostic-24-matrix.json',dict(batch='REL26-D',authorization='not_authorized',expected_requests=24,concurrency=1,design='2 scenes x 6 prompt families x 2 exact repetitions; fixed interleaved order',response_contract='Unconstrained text; retain verbatim. Separately extract recognition/action items as observed, not_observed, unknown or unparseable; do not run legacy incident parser on diagnostic prose.',experiments=rows))
     print('Prepared 24 diagnostic definitions; no execution or inference')
 
 
@@ -171,7 +171,7 @@ def bind():
                     pts_absolute_origin='unverified; gate export spans 13.9s for 13s request; no fabricated UTC join')
         sources.append(source)
         sanitized.append(dict(scene=scene,start=start,end=end,duration_s=13,manifest_sha256=sha(path),video_sha256=sha(video),snapshot_count=len(frames),decoded_frames=decoded['decoded_frames'],first_pts=decoded['pts_s'][0],last_pts=decoded['pts_s'][-1],continuity=source['continuity_review'],independent_new_events=0))
-    review=dict(review_mode='ai_demo',definitions_sha256=sha(ROOT/'docs/reliability/label-definitions.json'),sources=sources,
+    review=dict(review_mode='ai_demo',definitions_sha256=sha(ROOT/'docs/research/reliability/label-definitions.json'),sources=sources,
         rejected_candidate=dict(scene='gate',start='2026-10-27T11:55:41Z',end='2026-10-27T11:55:54Z',reason='Person disappears across reset bracket 11:55:48.465-48.965; original retained'),
         boundary_brackets=dict(railway_next_reset=['2026-10-27T11:55:52.313Z','2026-10-27T11:55:52.813Z'],gate_previous_reset=['2026-10-27T11:55:48.465Z','2026-10-27T11:55:48.965Z']))
     rp=root/'reference-v1.private.json'; freeze(rp,review)
@@ -180,7 +180,7 @@ def bind():
     # Actual wall-clock review time, retained on subsequent offline reproductions.
     signoff['reviewed_at']=read(sp)['reviewed_at'] if sp.exists() else datetime.now(timezone.utc).isoformat()
     freeze(sp,signoff)
-    matrix_path=ROOT/'docs/reliability/diagnostic-24-matrix.json'; matrix=read(matrix_path); plan=[]
+    matrix_path=ROOT/'docs/research/reliability/diagnostic-24-matrix.json'; matrix=read(matrix_path); plan=[]
     for row in matrix['experiments']:
         index=0 if row['scene']=='railway' else 1
         scene,directory,start,end,decode=specs[index]; source=sources[index]

@@ -4,7 +4,7 @@ Execution update: the historical October 22 batch was superseded by four fresh s
 
 **Provisional NO-GO for independent AI verification as the hackathon flagship.** The saved evidence supports investigating Hafnia contradictions, but does not establish that the CV verifier improves reliability. The previous geometry revision introduces clear negative-frame flags. A narrower image-reviewed track-bed polygon removes those flags on calibration frames, but seated-edge ambiguity remains. AI demo labels are now frozen with explicit user authorization; the password fix is completed as reported by the operator; separate-session authentication validation is reserved for the operator. This is an interim evidence report, not a completed large evaluation.
 
-Sixteen saved requests were reused; zero new inference requests were sent. Original response files remain untouched outside Git. Private audit files preserve exact prompts, responses, source hashes, frame timestamps and track IDs. Sanitized counts are in [saved-analysis.json](../../results/reliability/saved-analysis.json). The standalone [comparison.svg](comparison.svg) is suitable for a short presentation comparison without private imagery.
+Sixteen saved requests were reused; zero new inference requests were sent. Original response files remain untouched outside Git. Private audit files preserve exact prompts, responses, source hashes, frame timestamps and track IDs. Sanitized counts are in [saved-analysis.json](../../../results/reliability/saved-analysis.json). The standalone [comparison.svg](comparison.svg) is suitable for a short presentation comparison without private imagery.
 
 | Incident camera | v1: supported / not observed / uncertain | v2: supported / not observed / uncertain |
 |---|---:|---:|

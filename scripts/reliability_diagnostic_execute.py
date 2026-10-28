@@ -10,7 +10,7 @@ from reliability_runner import (Runner, Gateway, REPO, validate, validate_age,
 
 def main():
     root = REPO/'runs/reliability-diagnostics'
-    matrix_path = REPO/'docs/reliability/diagnostic-24-matrix.json'
+    matrix_path = REPO/'docs/research/reliability/diagnostic-24-matrix.json'
     matrix = json.loads(matrix_path.read_text(encoding='utf-8-sig'))
     plan = json.loads((root/'execution-plan-v1.private.json').read_text(encoding='utf-8-sig'))
     review = json.loads((root/'signoff-v1.private.json').read_text(encoding='utf-8-sig'))
@@ -58,7 +58,7 @@ def execute(root,plan,prepared,runner):
     history = gateway.request('GET','/api/Summaries?Limit=1')
     if not isinstance(history,(dict,list)):
         raise ValueError('Authenticated inference-history check failed')
-    contract = json.loads((REPO/'docs/reliability/quota-contract.json').read_text())
+    contract = json.loads((REPO/'docs/research/reliability/quota-contract.json').read_text())
     quota = gateway.request('GET',contract['endpoint'])
     balance = quota_balance(quota,contract)
     today = datetime.now(timezone.utc).date().isoformat()

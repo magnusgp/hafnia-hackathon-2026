@@ -128,7 +128,7 @@ def validate(plan, review):
             and review.get('user_authorized_ai_review') is True)
     if not (human or demo) or not review.get('reviewer') or not review.get('reviewed_at'):
         raise ValueError('Phase A human review or explicitly authorized AI demo review is required')
-    definitions = REPO / 'docs/reliability/label-definitions.json'
+    definitions = REPO / 'docs/research/reliability/label-definitions.json'
     if review.get('definitions_sha256') != hashlib.sha256(definitions.read_bytes()).hexdigest():
         raise ValueError('Review must bind frozen definitions')
     draft = Path(review['review_artifact'])

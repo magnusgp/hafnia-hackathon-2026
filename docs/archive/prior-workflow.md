@@ -39,7 +39,7 @@ To start that prepared replay from this repository on p022:
 uv run --frozen python -m adaptive_watch.evidence_api --root runs/recovery-demo serve --demo-source runs/product-evidence --evaluations C:/Users/Administrator/adaptive-watch-private/hafnia-16 --frontend frontend/dist --port 8770
 ```
 
-Those private inputs are deliberately excluded from Git. To rebuild the seed from authorized originals, follow the import commands in [frontend setup](frontend/README.md). Replay validates originals and fails closed if they are missing or changed.
+Those private inputs are deliberately excluded from Git. To rebuild the seed from authorized originals, follow the import commands in [frontend setup](../../frontend/README.md). Replay validates originals and fails closed if they are missing or changed.
 
 ```powershell
 # With the replay server running:
@@ -52,13 +52,13 @@ bun frontend/scripts/capture-operator.mjs
 
 ## Verified results and remaining limits
 
-See [recovery evidence and release review](docs/adaptive-watch/recovery-sprint.md) for actual before/after HTTP results, browser recordings, checks and the native blocker. The existing dedicated Adaptive Watch analytics event and scooter-only alarm definition are configured; do not recreate them. No Adaptive Watch event has been sent in this sprint. Geometry approval, coherent recording validation, strict same-interval Hafnia qualification, explicit dispatch approval and Smart Client verification remain gates.
+See [recovery evidence and release review](recovery-sprint.md) for actual before/after HTTP results, browser recordings, checks and the native blocker. The existing dedicated Adaptive Watch analytics event and scooter-only alarm definition are configured; do not recreate them. No Adaptive Watch event has been sent in this sprint. Geometry approval, coherent recording validation, strict same-interval Hafnia qualification, explicit dispatch approval and Smart Client verification remain gates.
 
 Stationarity uses sampled image-space measurements, with unknown behavior between samples. Largest-box association can switch targets; polygon overlap is not accessible width. No independently measured accuracy improvement or continuous camera-health monitoring is claimed. Local cookie/CSRF protection is not authenticated operator identity or production access control.
 
 ## Third-party and pre-existing work
 
-This repository predates Adaptive Watch: the Scene Contracts application, gateway client, recorded assessment tooling and native analytics transport remain as prior work. Historical experiments include a failed fog improvement gate; their results are not Adaptive Watch accuracy claims. See [historical Scene Contracts documentation](docs/operator-mvp.md) and [ML report](docs/adaptive-watch/checkpoint-a.md).
+This repository predates Adaptive Watch: the Scene Contracts application, gateway client, recorded assessment tooling and native analytics transport remain as prior work. Historical experiments include a failed fog improvement gate; their results are not Adaptive Watch accuracy claims. See [historical Scene Contracts documentation](operator-mvp.md) and [ML report](../research/checkpoint-a.md).
 
 The UI uses React, TypeScript, Vite, Tailwind, Playwright and locally bundled Google Fonts (Space Grotesk, DM Sans, IBM Plex Mono); exact versions are in `frontend/bun.lock`. Optional ML dependencies and pinned versions are in `pyproject.toml` / `uv.lock`: PyTorch, Transformers/OWL-ViT, NumPy, Pillow, SciPy, scikit-learn and PyAV. XProtect, MilestonePSTools and the Hafnia gateway/model are existing external infrastructure, not authored here. Linux uses its existing compatible CUDA environment. Original evidence, models and platform components remain subject to their own licenses and access permissions.
 

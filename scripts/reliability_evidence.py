@@ -23,7 +23,7 @@ def save(path, value):
 
 
 def prepare(root):
-    definitions = REPO / 'docs/reliability/label-definitions.json'
+    definitions = REPO / 'docs/research/reliability/label-definitions.json'
     labels = json.loads(definitions.read_text())
     sources = []
     for scene, directory in [('railway', 'person_on_railway_tracks_20261022T110339Z'),
@@ -102,7 +102,7 @@ def analyze(root, responses, review_artifact=None):
     if cv['manifest_sha256'] != review['sources'][0]['manifest_sha256']:
         raise ValueError('CV/source manifest hash mismatch')
     polygon = [[.25,.32],[1,.46],[1,1],[.56,1]]
-    geometry_path = REPO / 'docs/reliability/railway-geometry-v3.json'
+    geometry_path = REPO / 'docs/research/reliability/railway-geometry-v3.json'
     geometry = json.loads(geometry_path.read_text())
     results = {}
     for name, region in [('original', None), ('revised_calibration_only', polygon),

@@ -9,7 +9,7 @@ All four authorized requests completed on 26 October 2026, 22:50:20–22:50:42 U
 | gate-v3-r01 | Completed | 30e2f6e6-8f5a-47be-9c46-e8edde88bdce | not_observed / not_observed | Markdown JSON fence |
 | gate-v4-r01 | Completed | 94375b74-db44-40f6-8238-18fb9895ac2a | not_observed / not_observed | Markdown JSON fence |
 
-Every experiment has the `REL26-B-` prefix. The ledger binds exact committed prompts and video URIs to returned requests and summary IDs. Railway requests used 22:03:53–22:04:06 UTC; gate requests used 22:03:51–22:04:03 UTC. The [source report](fresh-preflight.md) preserves hashes, reviewed continuity and export timestamp limitations. All 16 historical response files remain hash-identical. Original raw responses and the new raw gateway results remain private; [sanitized results](../../results/reliability/completed-first-four.json) contain prompts, source hashes, decisions, evidence text, formatting status and historical comparisons. No credentials, camera GUIDs or footage are included.
+Every experiment has the `REL26-B-` prefix. The ledger binds exact committed prompts and video URIs to returned requests and summary IDs. Railway requests used 22:03:53–22:04:06 UTC; gate requests used 22:03:51–22:04:03 UTC. The [source report](fresh-preflight.md) preserves hashes, reviewed continuity and export timestamp limitations. All 16 historical response files remain hash-identical. Original raw responses and the new raw gateway results remain private; [sanitized results](../../../results/reliability/completed-first-four.json) contain prompts, source hashes, decisions, evidence text, formatting status and historical comparisons. No credentials, camera GUIDs or footage are included.
 
 ## Evidence comparison
 
@@ -24,7 +24,7 @@ Railway v3/v4 show an unresolved visual or spatial interpretation miss, rather t
 
 ## CV and decision
 
-The independent railway geometry candidate remains 3.5–4 seconds before reviewed entry, driven by a seated bounding-box bottom crossing the polygon edge by only 0.173 horizontal pixels. It is a proximity candidate, not an automatic confirmed-entry detector. The accepted reference identifies descent and track occupancy separately. These saved predictions disagree meaningfully with Hafnia's persistent denial, but calibration on the same loop, fragmented tracks, ambiguous seated contact and missing hard negatives prevent a validated added-value or failure-rate claim. See the [frame audit](../../results/reliability/railway-frame-audit.json) and [visual timing comparison](railway-timing.svg).
+The independent railway geometry candidate remains 3.5–4 seconds before reviewed entry, driven by a seated bounding-box bottom crossing the polygon edge by only 0.173 horizontal pixels. It is a proximity candidate, not an automatic confirmed-entry detector. The accepted reference identifies descent and track occupancy separately. These saved predictions disagree meaningfully with Hafnia's persistent denial, but calibration on the same loop, fragmented tracks, ambiguous seated contact and missing hard negatives prevent a validated added-value or failure-rate claim. See the [frame audit](../../../results/reliability/railway-frame-audit.json) and [visual timing comparison](railway-timing.svg).
 
 **NO-GO for independent AI verification as a validated flagship.** The demo can show an evidence-backed disagreement with explicit timing/uncertainty limits. Four more negative decisions do not supply independent event coverage or validate CV accuracy.
 
