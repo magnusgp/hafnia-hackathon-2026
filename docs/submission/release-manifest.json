@@ -1,14 +1,14 @@
 {
   "product": "Adaptive Watch",
   "branch": "release/adaptive-watch-submission",
-  "commit": "850f1895bd3ed1f3053c2024da7d873bda8b66e2",
-  "workingTreeClean": false,
+  "commit": "6801a416ebe92d4f65f689517973752de0e13ea0",
+  "workingTreeClean": true,
   "app": {
     "entry": "frontend/dist/index.html",
-    "entrySha256": "b2acb4da2032ef8063b7ffdca9027de801d96a1ecdd7165812a5835a9d74568f",
+    "entrySha256": "e4b6d87ffbe5e3b7a8128ceed6dc8eddb44b9fc9a9fdcc79b2d65dac55de7f21",
     "assets": {
-      "index-Cyo9r-Cw.css": "9556364e8adea1fbc93a2a47ed6e4624a147667488aa863b13af91ce4a785eee",
-      "index-D9cIuvTk.js": "083d2654c1e133beb70ed908988a57b0dcdd1c04e84fbe2f9978d67ece3df0ca"
+      "index-BabLNKow.js": "08c6a9b39c91e7c00634889fbed98e2c6865ff5175e7de20eab80fd02a0842e4",
+      "index-Cyo9r-Cw.css": "9556364e8adea1fbc93a2a47ed6e4624a147667488aa863b13af91ce4a785eee"
     }
   },
   "evidence": {
@@ -16,7 +16,8 @@
       "railway",
       "gate",
       "scooter",
-      "bin"
+      "bin",
+      "live-d7b21eae"
     ],
     "sourceVerification": "all saved cases verified",
     "railway": {
@@ -67,8 +68,8 @@
   },
   "video": {
     "file": "adaptive-watch-submission.mp4",
-    "sha256": "5d2a146b54b6fe7105c2d6c4aa72d03ddb4b73759f164970317cd5a0fb539703",
-    "durationSeconds": 153.6,
+    "sha256": "7bd64320931336002b1e72e12ff2491018d452f7b1b47efff4905a2c7aef2fe1",
+    "durationSeconds": 173.16,
     "resolution": "1920x1080"
   },
   "native": {
@@ -81,7 +82,7 @@
   },
   "verification": {
     "pythonTests": "217 passed, 17 skipped (unittest discover)",
-    "browserChecks": "62 real-browser checks passed at 1440x900 and 1920x1080 on an isolated demo instance"
+    "browserChecks": "62 real-browser checks passed at 1440x900 and 1920x1080 on an isolated demo instance; one live browser assessment run end to end"
   },
   "notClaimed": [
     "validated false-negative reduction",
