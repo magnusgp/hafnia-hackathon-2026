@@ -85,16 +85,17 @@ runner for New assessment, and the presentation.
   - **Tested and refuted:** test alarm 6 (28 Oct 18:17:34 UTC, source time inside the recording, event source FQID with the
     full management-server `ServerId` block `XPCO`/`p022`/80/`9d4de506-...`) also shows "The camera is not available".
     The serializer now supports the full block (tested), but the missing `ServerId` is not the cause.
-  - **Strongest lead:** the Adaptive Watch alarm definition has `MapType = 2` (Smart Map); `Visually Observed Damage`, whose
-    preview works, has `MapType = 1` (Map). For our alarms Smart Client's map pane says the source must be added to the
-    smart map. Changing `MapType` (and possibly removing the related-camera entry) on our own definition is the next test.
-    It has **not** been done: the session's permission classifier denied the configuration write. The prior definition is
-    saved in `runs/release/native/alarm-definition-before-maptype.json` (private).
-  - Differences still open: the Adaptive Watch alarm definition lists the camera as a related camera while
-    `Visually Observed Damage` does not; alarms 1 to 3 carry a snapshot icon, alarms 4 and 5 do not; the Smart Client
+  - **Alarm definition tested (operator approved, 28 Oct):** on `Adaptive Watch review: station platform` only, `MapType` was
+    changed 2 (Smart Map) to 1 (Map) and the related-camera entry was cleared, so it now matches `Visually Observed Damage`
+    in every property that differs. Test alarms 7 (after MapType) and 9 (after both) were sent with the original payload
+    shape; alarm 8 repeated alarm 7's configuration. The map pane changed to "Map cannot be shown", like alarm 3, but the
+    camera pane still says "The camera is not available". Prior values: `runs/release/native/alarm-definition-before-maptype.json`.
+  - **Remaining hypothesis (untested):** this Smart Client session has been open since 19 Oct and may hold a stale device
+    list that predates `person_on_railway_tracks`; a Smart Client restart/log-in, or opening that camera from the camera
+    tree, would test it. Alarms 1 to 3 (camera `vandalism`) also carry a snapshot icon that ours lack.
+  - Not checked: the Smart Client
     alarm-preview settings (Show event source cameras, Show related cameras) and Smart Client's own log were not
-    readable from this session. The root cause is therefore **unresolved**. Any fix needs a definition change or a new
-    test event, both of which are waiting for operator approval.
+    readable from this session. The root cause is therefore **unresolved**. 
 
 ## Live assessment (verified 28 Oct 2026)
 

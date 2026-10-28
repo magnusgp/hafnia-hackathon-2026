@@ -114,10 +114,30 @@
         "payloadSha256": "ae276fa49bd8cee7ba64a78a829145cf89b728bf26ff3d0ba68561d64a63c259",
         "http": 200,
         "purpose": "diagnostic: full ServerId block; preview still \"camera is not available\""
+      },
+      {
+        "alarm": "7",
+        "sourceTime": "~2026-10-28T18:19Z",
+        "dispatchKey": "sc1-test-preview-2-maptype",
+        "http": 200,
+        "purpose": "diagnostic after MapType 2->1"
+      },
+      {
+        "alarm": "8",
+        "dispatchKey": "sc1-test-preview-3-norelated",
+        "http": 200,
+        "purpose": "diagnostic; related-camera clear had failed, same config as 7"
+      },
+      {
+        "alarm": "9",
+        "dispatchKey": "sc1-test-preview-4-norelated",
+        "http": 200,
+        "purpose": "diagnostic after MapType 1 and related cameras cleared"
       }
     ],
-    "ledger": "original two rows unchanged; one diagnostic test send added on 28 Oct",
-    "smartClientFinding": "Both alarms are listed with the right camera and source time. Alarm preview says \"The camera is not available\" for both. Alarm 4: its 22 Oct source time precedes the retained recording (from 27 Oct 17:13 UTC). Alarm 5: source time lies inside one continuous recording sequence and live snapshots of the camera are retrievable, so retention does not explain it. A missing ServerId in the event FQID is not sufficient: alarm 3 (vandalism, same serializer, no ServerId) previews. Root cause unresolved; open differences: related-camera entry on the Adaptive Watch definition, no snapshot attached, alarm-preview settings not inspected. Overlay unverified. Test alarm 6 (full management-server ServerId, recent source time) also fails to preview, refuting the ServerId hypothesis. Strongest lead: MapType 2 (Smart Map) on our definition vs 1 (Map) on the working one; change not applied."
+    "ledger": "original two rows unchanged; diagnostic test sends (alarms 6-9) added on 28 Oct",
+    "smartClientFinding": "Alarms 4-9 are listed with the right camera and source time. The preview says \"The camera is not available\" for all of them. Alarm 4: source time precedes retained recording. Alarm 5-9: source time inside one continuous recording, live snapshots retrievable. Refuted: missing ServerId (alarm 6, full management-server FQID), Smart Map MapType (alarm 7), related-camera entry (alarm 9). Remaining untested hypothesis: stale device list in the long-open Smart Client session. Overlay unverified.",
+    "definitionChange": "Adaptive Watch review: station platform: MapType 2->1, RelatedCameraList cleared (operator approved). Before-state in private runs/release/native/alarm-definition-before-maptype.json"
   },
   "verification": {
     "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, after the final code change)",
