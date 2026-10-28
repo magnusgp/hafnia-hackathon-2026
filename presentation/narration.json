@@ -1,0 +1,13 @@
+{
+  "voice": "Microsoft David Desktop",
+  "scenes": [
+    {"id": "open", "text": "A person climbs off a station platform onto the railway tracks. Hafnia, watching this recording, answers: no entry observed."},
+    {"id": "silent", "text": "That answer is understandable. The person sat at the edge for six seconds. But in a security room, a no is silent. Nobody looks again."},
+    {"id": "signal", "text": "Adaptive Watch adds a second signal. A person detector on a Linux A10G GPU watches the same recording for one configured condition: someone at the platform edge. It flagged the person almost four seconds before they climbed down."},
+    {"id": "how", "text": "Here is the mechanism. XProtect records the scene. Hafnia reads it. The GPU detector watches it. Adaptive Watch compares the two. When Hafnia says no, but the detector sees the condition, it raises a review exception, and sends it back into XProtect."},
+    {"id": "operator", "text": "The operator opens the exception at the moment that matters. The detection, the watched region, and Hafnia's answer share one timeline over the original footage. Play from the trigger, and the person reaches the track bed. One click requests the XProtect review."},
+    {"id": "xprotect", "text": "XProtect receives a dedicated review event on the correct camera, with an alarm definition made for that camera."},
+    {"id": "built", "text": "Three systems, three jobs. XProtect records, and owns the alarm. Hafnia reads the scene. A local GPU detector watches for a rule. During the hackathon we built the detector pipeline, the comparison, the review interface, and the XProtect handoff."},
+    {"id": "close", "text": "A negative AI assessment no longer has to be the end of the review. The evidence comes from controlled synthetic camera scenarios. It is not an accuracy benchmark."}
+  ]
+}

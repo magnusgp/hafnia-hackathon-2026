@@ -18,3 +18,7 @@ runs/
 *.webm
 *.mov
 *.ppk
+
+# Presentation footage, narration audio and captures stay local
+presentation/assets/
+*.wav

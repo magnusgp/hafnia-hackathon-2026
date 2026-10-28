@@ -9,7 +9,7 @@ import '@fontsource/ibm-plex-mono/400.css';
 import './app.css';
 import {api} from './app/api';
 import {Brief} from './app/Brief';
-import {Decision, Details, NewAssessment} from './app/Dialogs';
+import {Decision, Details, NewAssessment, SendNative} from './app/Dialogs';
 import {clock, utcAt} from './app/format';
 import {Stage, sampleAt, type Player} from './app/Stage';
 import {Timeline} from './app/Timeline';
@@ -24,7 +24,7 @@ function Investigation({c, onChange}: {c: Case; onChange: (c: Case) => void}) {
   const decisive = c.agent?.decisiveMoment ?? null;
   const first = c.kind === 'video' ? (trigger?.mediaTime ?? 0) : 0;
   const [p, setP] = useState<Player>({t: first, playing: false, box: true, region: true, index: 0});
-  const [dialog, setDialog] = useState<null | 'request' | 'dismiss' | 'details'>(null);
+  const [dialog, setDialog] = useState<null | 'request' | 'dismiss' | 'details' | 'send'>(null);
 
   // Open at the decisive part of the recording, never at the first sample.
   useEffect(() => {
@@ -90,6 +90,7 @@ function Investigation({c, onChange}: {c: Case; onChange: (c: Case) => void}) {
       </section>
       <Brief c={c} seek={seek} onAct={setDialog} onDetails={() => setDialog('details')} />
       {(dialog === 'request' || dialog === 'dismiss') && <Decision c={c} mode={dialog} onClose={() => setDialog(null)} onDone={onChange} />}
+      {dialog === 'send' && <SendNative c={c} onClose={() => setDialog(null)} onDone={onChange} />}
       {dialog === 'details' && <Details c={c} onClose={() => setDialog(null)} />}
     </main>
   );

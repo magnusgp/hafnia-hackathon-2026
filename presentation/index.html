@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adaptive Watch: a second signal for XProtect</title>
+<link rel="stylesheet" href="deck.css">
+</head>
+<body>
+<main id="deck" aria-label="Adaptive Watch presentation">
+
+  <!-- 1. Cold open: the clip and Hafnia's answer -->
+  <section class="scene dark" id="open" aria-label="Opening">
+    <div class="reel"><video id="v-open" muted playsinline preload="auto" src="assets/railway.mp4"></video></div>
+    <div class="col">
+      <p class="meta">Station platform<br>22 Oct 2026, 11:03 UTC</p>
+      <div class="answer" data-in="1">
+        <span class="who">Hafnia VLM</span>
+        <strong>No entry observed.</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. A no is silent -->
+  <section class="scene light" id="silent" aria-label="The problem">
+    <div class="ghost"><video id="v-silent" muted playsinline preload="auto" src="assets/railway.mp4"></video></div>
+    <h2 class="huge" data-in="1">A &ldquo;no&rdquo; is silent.</h2>
+    <p class="sub" data-in="3">Nobody looks again.</p>
+  </section>
+
+  <!-- 3. The second signal -->
+  <section class="scene dark" id="signal" aria-label="Second signal">
+    <div class="reel"><video id="v-signal" muted playsinline preload="auto" src="assets/railway.mp4"></video>
+      <svg class="overlay" id="ov-signal" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <div class="col">
+      <p class="meta">Local vision<br>Linux A10G person detector</p>
+      <div class="answer vision" data-in="1">
+        <span class="who">Detector, <time id="sig-time">11:03:44.5</time> UTC</span>
+        <strong>Person at the platform edge.</strong>
+      </div>
+      <p class="gap" data-in="4"><b>3.8 s</b> before the climb</p>
+    </div>
+  </section>
+
+  <!-- 4. Mechanism -->
+  <section class="scene light" id="how" aria-label="How it works">
+    <h2 class="title" data-in="1">Two signals in. One review exception out.</h2>
+    <div class="flow" aria-hidden="true">
+      <div class="node n-x" data-in="2"><b>XProtect</b><span>records the scene</span></div>
+      <div class="node n-h" data-in="3"><b>Hafnia VLM</b><span>reads it<br><em>&ldquo;no entry observed&rdquo;</em></span></div>
+      <div class="node n-g" data-in="4"><b>Linux A10G</b><span>watches it<br><em>person at the edge</em></span></div>
+      <div class="node n-a" data-in="5"><b>Adaptive Watch</b><span>compares the two</span></div>
+      <div class="node n-e" data-in="6"><b>Review exception</b><span>camera, moment, footage</span></div>
+      <div class="node n-r" data-in="7"><b>XProtect alarm</b><span>operator takes the next step</span></div>
+      <svg class="wires" viewBox="0 0 1600 520" preserveAspectRatio="none">
+        <path d="M290 260 H380 M290 260 C340 260 340 120 380 120 M290 260 C340 260 340 400 380 400" class="w w1" data-in="3"/>
+        <path d="M700 120 C760 120 760 260 820 260 M700 400 C760 400 760 260 820 260" class="w w2" data-in="5"/>
+        <path d="M1130 260 H1190" class="w w3" data-in="6"/>
+        <path d="M1380 260 H1440" class="w w4" data-in="7"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 5. The operator, in the real application -->
+  <section class="scene dark" id="operator" aria-label="Operator experience">
+    <video id="v-operator" class="capture" muted playsinline preload="auto" src="assets/operator.mp4"></video>
+  </section>
+
+  <!-- 6. The XProtect result -->
+  <section class="scene dark" id="xprotect" aria-label="XProtect result">
+    <img id="x-shot" class="capture" alt="XProtect result" src="assets/xprotect.png">
+    <p class="proof" id="x-proof"></p>
+  </section>
+
+  <!-- 7. Three systems, three jobs -->
+  <section class="scene light" id="built" aria-label="What each system does">
+    <h2 class="title" data-in="1">Three systems, three jobs.</h2>
+    <div class="trio">
+      <article data-in="2"><h3>XProtect</h3><p>Records the scene, plays it back, and owns the alarm the operator works from.</p></article>
+      <article data-in="3"><h3>Hafnia VLM</h3><p>Reads the recording and answers in words, including when the answer is no.</p></article>
+      <article data-in="4"><h3>Linux GPU vision</h3><p>Watches the same footage for one configured condition and keeps its own record.</p></article>
+    </div>
+    <p class="built" data-in="6">Built this week: detector pipeline &middot; comparison &middot; review interface &middot; XProtect handoff</p>
+  </section>
+
+  <!-- 8. Close -->
+  <section class="scene light" id="close" aria-label="Closing">
+    <h2 class="huge close-line" data-in="1">A negative AI assessment no longer has to be the end of the review.</h2>
+    <p class="fine" data-in="3">Evidence comes from controlled synthetic camera scenarios, not a measured accuracy benchmark.</p>
+    <p class="wm" data-in="2">Adaptive Watch</p>
+  </section>
+</main>
+
+<div id="caption" role="status" aria-live="polite"></div>
+<div id="progress"><i></i></div>
+<script src="deck.js"></script>
+</body>
+</html>

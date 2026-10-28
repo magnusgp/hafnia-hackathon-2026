@@ -11,6 +11,7 @@ param(
     [ValidateRange(2, 60)][int]$Seconds = 10,
     [ValidateRange(0.1, 10)][double]$Interval = 0.5,
     [switch]$Mkv,
+    [switch]$ListSequences,          # print recording sequences of the last 6 h as one JSON line and exit; touches nothing else
     [string]$OutRoot = 'runs\xprotect'
 )
 $ErrorActionPreference = 'Stop'
@@ -32,6 +33,11 @@ function Iso([DateTime]$t) { return $t.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") }
 
 $nowUtc = [DateTime]::UtcNow
 $seqs = @($cam | Get-SequenceData -SequenceType RecordingSequence -StartTime $nowUtc.AddHours(-6) -EndTime $nowUtc -CropToTimeSpan)
+if ($ListSequences) {
+    $rows = @($seqs | ForEach-Object { [ordered]@{ start_utc = (Iso (AsUtc $_.EventSequence.StartDateTime)); end_utc = (Iso (AsUtc $_.EventSequence.EndDateTime)) } })
+    Write-Output ('SEQUENCES_JSON:' + (ConvertTo-Json -Compress -InputObject $rows))
+    return
+}
 Write-Host "Recording sequences in the last 6 h: $($seqs.Count)"
 $seqs | Select-Object -Last 5 | ForEach-Object {
     Write-Host ('  ' + (Iso (AsUtc $_.EventSequence.StartDateTime)) + ' -> ' + (Iso (AsUtc $_.EventSequence.EndDateTime)))

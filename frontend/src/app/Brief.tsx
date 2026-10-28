@@ -9,7 +9,7 @@ const NATIVE: Record<string, [string, string]> = {
   blocked: ['Blocked', 'The handoff could not complete.'],
 };
 
-export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) => void; onAct: (a: 'request' | 'dismiss') => void; onDetails: () => void}) {
+export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) => void; onAct: (a: 'request' | 'dismiss' | 'send') => void; onDetails: () => void}) {
   const saved = ['xprotect_review_requested', 'review_request_saved'].includes(c.state.status);
   const dismissed = c.state.status === 'dismissed';
   const open = !saved && !dismissed;
@@ -49,6 +49,7 @@ export function Brief({c, seek, onAct, onDetails}: {c: Case; seek: (t: number) =
           <p className="message">{c.handoff.message}</p>
           {open && <button className="primary wide" onClick={() => onAct('request')}>Send to XProtect review</button>}
           {open && <button className="link" onClick={() => onAct('dismiss')}>Not needed</button>}
+          {saved && c.native.state === 'configured' && c.native.canSend && <button className="primary wide" onClick={() => onAct('send')}>Send to XProtect</button>}
           {saved && <p className="saved">Your review request is saved{c.state.humanAnnotation ? `: ${c.state.humanAnnotation.value.replace(/_/g, ' ')}` : ''}.</p>}
           <p className={`native ${c.native.state}`}><b>{nativeLabel}</b> {nativeNote}{c.native.alarmId ? ` Alarm ${c.native.alarmId}.` : ''}</p>
         </section>

@@ -7,7 +7,7 @@ export type Agent = null | {
 };
 export type Human = null | {value: string; note: string; at: string; provenance: string};
 export type CaseState = {status: string; version: number; humanAnnotation: Human; reviewed: boolean; region?: {polygon: number[][]; threshold: number}};
-export type Native = {eventName: string; state: string; alarmId: string | null; detail: string; sentAt?: string};
+export type Native = {eventName: string; state: string; alarmId: string | null; detail: string; sentAt?: string; canSend?: boolean};
 export type Answer = {summaryId: string; quote: string; parsed: string; prompt: string};
 export type Vision = null | {
   label: string; model: string; meaning: string; trackId?: number; region: null | {polygon: number[][]; threshold: number} | number[][];

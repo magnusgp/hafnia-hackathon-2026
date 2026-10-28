@@ -163,3 +163,8 @@ legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
   .brief h1 { animation: rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 }
+
+.facts { margin: 0 0 14px; display: grid; gap: 6px; }
+.facts div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.facts dt { color: var(--aw-text-secondary); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }

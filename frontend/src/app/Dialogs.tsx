@@ -173,3 +173,43 @@ export function NewAssessment({a, onClose, onOpen}: {a: Assessment; onClose: () 
     </Modal>
   );
 }
+
+export function SendNative({c, onClose, onDone}: {c: Case; onClose: () => void; onDone: (c: Case) => void}) {
+  const [preview, setPreview] = useState<null | {sha256: string; destination: string; camera: string; event: string; consequence: string; enabled: boolean; previous: {state: string}[]}>(null);
+  const [ack, setAck] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api(`/api/cases/${c.id}/native`, {action: 'preview'}).then(r => setPreview(r.preview)).catch(e => setError(e.message)); }, [c.id]);
+  async function send() {
+    if (!preview) return;
+    setBusy(true); setError('');
+    try {
+      const r = await api(`/api/cases/${c.id}/native`, {action: 'send', approval: preview.sha256.slice(0, 16), confirmed: true});
+      onDone(r.case); onClose();
+    } catch (e: any) { setError(e.message); } finally { setBusy(false); }
+  }
+  return (
+    <Modal title="Send to XProtect" onClose={onClose}>
+      <div>
+        {!preview && !error && <p className="lede">Preparing the event…</p>}
+        {preview && (
+          <>
+            <dl className="facts">
+              <div><dt>Event</dt><dd>{preview.event}</dd></div>
+              <div><dt>Camera</dt><dd>{preview.camera}</dd></div>
+              <div><dt>Destination</dt><dd className="mono">XProtect Event Server {preview.destination}</dd></div>
+              <div><dt>Fingerprint</dt><dd className="mono">{preview.sha256.slice(0, 16)}</dd></div>
+            </dl>
+            <p className="lede">{preview.consequence}</p>
+            {preview.previous.length > 0 && <p className="error">This event was already attempted ({preview.previous[preview.previous.length - 1].state}). It will not be sent again automatically.</p>}
+            {!preview.enabled && <p className="quiet-text">Sending is switched off for this session.</p>}
+            <label className="choice"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />Send this one event to XProtect</label>
+          </>
+        )}
+        {error && <p role="alert" className="error">{error}</p>}
+        <div className="row"><button className="primary" disabled={!preview || !preview.enabled || !ack || busy || preview.previous.length > 0} onClick={send}>Send event</button>
+          <button className="quiet" onClick={onClose}>Cancel</button></div>
+      </div>
+    </Modal>
+  );
+}
