@@ -136,6 +136,7 @@ export function NewAssessment({a, onClose, onOpen}: {a: Assessment; onClose: () 
   const [camera, setCamera] = useState(a?.cameras[0]?.id ?? '');
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState('');
+  const [starting, setStarting] = useState(false);
   useEffect(() => {
     if (!job || ['completed', 'failed'].includes(job.state)) return;
     const timer = setInterval(async () => {
@@ -145,7 +146,8 @@ export function NewAssessment({a, onClose, onOpen}: {a: Assessment; onClose: () 
   }, [job]);
   async function start() {
     setError('');
-    try { setJob((await api('/api/jobs', {cameraId: camera})).job); } catch (e: any) { setError(e.message); }
+    setStarting(true);
+    try { setJob((await api('/api/jobs', {cameraId: camera})).job); } catch (e: any) { setError(e.message); } finally { setStarting(false); }
   }
   async function confirm() {
     if (!job) return;
@@ -160,7 +162,7 @@ export function NewAssessment({a, onClose, onOpen}: {a: Assessment; onClose: () 
           <label className="field">Camera
             <select value={camera} onChange={e => setCamera(e.target.value)}>{a.cameras.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select>
           </label>
-          <div className="row"><button className="primary" onClick={start}>Start assessment</button></div>
+          <div className="row"><button className="primary" onClick={start} disabled={starting}>{starting ? 'Measuring the camera loop…' : 'Start assessment'}</button></div>
         </div>
       )}
       {job && (

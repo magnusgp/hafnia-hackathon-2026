@@ -31,7 +31,12 @@ if (-not (Test-Path (Join-Path $repo 'frontend\dist\index.html'))) {
     Push-Location (Join-Path $repo 'frontend'); & $bun install; & $bun run build; Pop-Location
 }
 if (-not (Test-Path $Evaluations)) { Write-Warning "Saved Hafnia responses not found at $Evaluations. Cases that need them will be withheld." }
-$env:PYTHONPATH = $repo
+# numpy, av and Pillow calibrate the camera loop and encode footage. They are kept out of .venv.
+$deps = Join-Path $repo 'runs\tooling\pydeps'
+if (-not (Test-Path (Join-Path $deps 'numpy'))) {
+    & uv pip install --python $python --target $deps 'av==13.1.0' 'pillow==11.0.0' 'numpy==2.1.3' | Out-Host
+}
+$env:PYTHONPATH = "$repo;$deps"
 $serverArgs = @('-m', 'adaptive_watch.app_api', '--evaluations', $Evaluations, '--port', $Port, '--event-target', $EventTarget)
 if ($Demo) {
     & $python 'scripts\adaptive_watch\make_demo_root.py' | Out-Null

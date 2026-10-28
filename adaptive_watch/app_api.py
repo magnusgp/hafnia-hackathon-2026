@@ -224,6 +224,10 @@ def handler(repo, root, railway, evaluations, frontend, release, jobs=None, nati
                 self.reply(dict(error=f'{exc.reason}. {exc.next}'), 422)
             except (ValueError, TypeError, KeyError) as exc:
                 self.reply(dict(error=str(exc) if isinstance(exc, ValueError) else 'Invalid request'), 422)
+            except Exception as exc:  # never drop the connection: say what failed and where to look
+                import traceback
+                traceback.print_exc()
+                self.reply(dict(error=f'The assessment could not start ({type(exc).__name__}: {exc}). Details are in the server window.'), 500)
 
         def sessions_ref(self):
             return type(self).sessions

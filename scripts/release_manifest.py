@@ -55,7 +55,7 @@ def main():
     finally:
         store.close()
     dist = ROOT/'frontend/dist'
-    native = read(ROOT/'runs/release/native/status.json')['railway']
+    native = read(ROOT/'runs/release/app/native/status.json')['railway']
     manifest = dict(
         product='Adaptive Watch', branch=git('rev-parse', '--abbrev-ref', 'HEAD'), commit=git('rev-parse', 'HEAD'),
         workingTreeClean=git('status', '--porcelain') == '',

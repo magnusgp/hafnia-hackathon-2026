@@ -1,0 +1,92 @@
+{
+  "product": "Adaptive Watch",
+  "branch": "release/adaptive-watch-submission",
+  "commit": "850f1895bd3ed1f3053c2024da7d873bda8b66e2",
+  "workingTreeClean": false,
+  "app": {
+    "entry": "frontend/dist/index.html",
+    "entrySha256": "b2acb4da2032ef8063b7ffdca9027de801d96a1ecdd7165812a5835a9d74568f",
+    "assets": {
+      "index-Cyo9r-Cw.css": "9556364e8adea1fbc93a2a47ed6e4624a147667488aa863b13af91ce4a785eee",
+      "index-D9cIuvTk.js": "083d2654c1e133beb70ed908988a57b0dcdd1c04e84fbe2f9978d67ece3df0ca"
+    }
+  },
+  "evidence": {
+    "cases": [
+      "railway",
+      "gate",
+      "scooter",
+      "bin"
+    ],
+    "sourceVerification": "all saved cases verified",
+    "railway": {
+      "interval": [
+        "2026-10-22T11:03:39Z",
+        "2026-10-22T11:03:52Z"
+      ],
+      "browserVideoSha256": "2c99426fdf6bd0392489af8b2863c1c99000f0daca255de24c85844a0dccb041",
+      "sources": {
+        "railway-cv-1163ddf.json": "47769c58e0d2b8169fba9ce3e9d8592e613563f40b0c225e9ba5bc3d86f8c65e",
+        "manifest.json": "cdfdbe4cea85694162181689e770a35090df810c7f580e262edc2de33b9e85db",
+        "46b7cab7070701d4518d3897e7f958f708e4ef0d2ded68d4ec4e7f97930ec752.json": "2cdca44e7480ccfd01565e3e2994156514d56ea01d9af7cd661545d94da1113f",
+        "saved-response-audit.private.json": "28598647a8a68773ff3c36b1b8e987555358c7faf383dd765b805f65d094b6ac",
+        "completed-diagnostic-24.json": "9d654f4ed286010940923a31cc8730b624e77cff61ebf4a0b0962ee4785cb44c",
+        "railway-frame-audit.json": "7c96f09b06509cc49d6f2a118fee01d9809e8b3ed695200a4af232aafa55ea21",
+        "clip.mkv": "9caa3138f6eed2c3ca69c30dd1634d1067d44f495deb284a933b77a3e63c511f",
+        "frame_0000.jpg": "39e555cf1869652f8a2d0cb32ac9c8338c27930d778dbb859baff5be7cd4d52b",
+        "frame_0001.jpg": "392da3eb85bdb8c3a0ec87927c0f90a1ea57da7bda4e61248f944fb0a1fe21fe",
+        "frame_0002.jpg": "f2f064b2b8ef3192f036ba46feef4f53d52bc507c7216b9fb55c5080518b7f62",
+        "frame_0003.jpg": "d3b79e4fdf155ce7be3f9b718952646375165da18434df984a87306776c697a8",
+        "frame_0004.jpg": "d8a823fc75ec492ee34ec8bf61940bad6b05275779376a1d3d47284a6308cf15",
+        "frame_0005.jpg": "c9ebcddc7922e1ae1c03963a0233fa91c1346a6cb0fc12643b9d7d7d24236b3a",
+        "frame_0006.jpg": "97e22f587e21462b6ca00262da9c5f806c169fe8a20acaed4ac5ada72d0ba758",
+        "frame_0007.jpg": "62b745cd4f31ea5e962fbfc4df8b3749335ed51730ea5442ed7a6dd45c484c26",
+        "frame_0008.jpg": "222b9cf2b022357fcc1ae140eacf38c8de8b33b99cab60113840444c84a3e15b",
+        "frame_0009.jpg": "d10a91da6d5128b67b1cb9cc76df44a109a6c26ee527a317260cad30b02fbb3b",
+        "frame_0010.jpg": "e1ac5af3373545841ab610d105b8f21ddb67717fbbaf5e858b770cbf3db33ada",
+        "frame_0011.jpg": "a8255824097fa1bb7f03d3d3f59d171d912dfc9b1d0ff84a3f162f8ab890c045",
+        "frame_0012.jpg": "fa5a7a9dd2246366b7424fc2bc2aed3b334db808b4c5b789d319f0d98dc72825",
+        "frame_0013.jpg": "91e22b7707d43beea5c2ae860c2d8acb469049c6dec7fe4861b3b71a4c702eb8",
+        "frame_0014.jpg": "4cf8e77ec29ba4ae289f41b3061ac624e6c0f7d941e009ad8449444f074a3afc",
+        "frame_0015.jpg": "ae7ea971522f205519048ac202824ebcef5e448c17b533e2ada310d4ca555d35",
+        "frame_0016.jpg": "8b78508e97642e9626b924b67bae0605c290760e0b9605a555cb9d7a28910d62",
+        "frame_0017.jpg": "c585c8ebaaf8154105335e0a6c3bd4bf9246f63b1283d7581a93564e75e08b01",
+        "frame_0018.jpg": "12794853d3a42c53adf5a539332fc3ea84242f521387ab9a8940076bc33dc2f4",
+        "frame_0019.jpg": "50f69786851b98064872e57f6d48004922db928bc40e1a1f8d70b61705c9450e",
+        "frame_0020.jpg": "52fab3b3aa55db2c23b9fc69053dddbc3f30d97491549503594e4e308b5418e0",
+        "frame_0021.jpg": "f07ccb4441866c0a965f2dafc6dc75c68f0ee842a2d908a325c63d85a0bb8405",
+        "frame_0022.jpg": "c46895e3e3be7bc42171a0c8698e5f68e1cfb03b777d99622829ed9bc3a9f6ae",
+        "frame_0023.jpg": "837c861b25a6f9dbb649c6ca78d7c1578d0fda63825f0a29e031ececc5f8646c",
+        "frame_0024.jpg": "4b54a4b627c3d66d0cccbceb8ee94fd781464cee93b5923f68167b212ae9ed17",
+        "frame_0025.jpg": "fb61df1ad23d6f51f7d0d73c6ebba393c06a077924e59e4f5ac3070f2274cf75",
+        "reliability-ledger.sqlite3": "4fd7d04433616e23150cef9852734e5a3a6d8e193ae6c3db7f9ef02753629303",
+        "media.json": "70df96ae458cd1e9d3c0025fe2a2ae43fbec7726e117cd541a1273e7da43814b",
+        "railway-samples.mp4": "7f3cd4bf11e8f85678455a3c855d46d0ee47877d3abb098956a9ba477f6b4779"
+      }
+    }
+  },
+  "video": {
+    "file": "adaptive-watch-submission.mp4",
+    "sha256": "5d2a146b54b6fe7105c2d6c4aa72d03ddb4b73759f164970317cd5a0fb539703",
+    "durationSeconds": 153.6,
+    "resolution": "1920x1080"
+  },
+  "native": {
+    "event": "Adaptive Watch Review Required",
+    "alarmDefinition": "Adaptive Watch review: station platform",
+    "state": "alarm_verified",
+    "alarm": "4 (419b7320-3d78-4bb9-802d-a96665415403)",
+    "payloadSha256": "f428d1e0e12a1b5a3b04bfd13ce07c1834726a1f36cdfb3880770fbc9631550c",
+    "notVerified": "Playback association and bounding-box overlay: the 22 Oct recording is past retention."
+  },
+  "verification": {
+    "pythonTests": "217 passed, 17 skipped (unittest discover)",
+    "browserChecks": "62 real-browser checks passed at 1440x900 and 1920x1080 on an isolated demo instance"
+  },
+  "notClaimed": [
+    "validated false-negative reduction",
+    "independent accuracy benchmark",
+    "production deployment",
+    "a live Hafnia request from the browser (needs the operator-supplied gateway password)"
+  ]
+}
