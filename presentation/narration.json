@@ -19,7 +19,7 @@
     },
     {
       "id": "operator",
-      "text": "The operator opens the exception at the moment that matters. The detection, the watched region, and Hafnia's answer share one timeline over the original footage. Play from the trigger, and the person reaches the track bed. One click requests the XProtect review."
+      "text": "The operator opens the exception at the moment that matters. The detection, the watched region, and Hafnia's answer share one timeline over the original footage. Play from the trigger, and the person reaches the track bed. One click requests the XProtect review. Sending it needs a second, explicit confirmation, and nothing is sent before that."
     },
     {
       "id": "live",
@@ -27,7 +27,7 @@
     },
     {
       "id": "xprotect",
-      "text": "XProtect receives the review event on the correct camera and raises its own alarm. Both the saved case and a live run are in the Smart Client Alarm Manager. The alarm preview did not open footage, so playback and overlay are not verified."
+      "text": "XProtect receives the review event on the correct camera and raises its own alarm. In the Smart Client, the live run's alarm opens the recorded footage with the detector box. The saved case's 22 October recording is past retention, so that alarm cannot replay it."
     },
     {
       "id": "built",

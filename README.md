@@ -74,28 +74,27 @@ runner for New assessment, and the presentation.
   (source time 22 Oct 11:03:44) and a **live assessment started from the browser** (source time 28 Oct 15:34:29, with the
   detector's bounding box). The Event Server accepted both. **Smart Client's Alarm Manager lists alarms 4 and 5** with the
   right camera, message and source time.
-- **Not verified:** playback association and bounding-box overlay. In both cases Smart Client's alarm preview shows
-  "The camera is not available". Findings of the 28 Oct investigation (read-only, nothing sent or changed):
-  - Alarm 4's source time (22 Oct) is before the retained recording (27 Oct 17:13 onward), so retention explains alarm 4.
-    It does **not** explain alarm 5: its source time (28 Oct 15:34:29 UTC) lies inside one continuous recording sequence
-    (27 Oct 17:13:39 to 28 Oct 18:02 UTC), and live snapshots of the camera are retrievable for the same operator.
-  - Both alarms carry the correct `CameraId` and `SourceId`. A missing `ServerId` in the event's source FQID is **not** the
-    cause on its own: alarm 3 (camera `vandalism`, sent 22 Oct by the same serializer, also without a `ServerId`) does show
-    a camera preview. In a MIP camera FQID the `ServerId` is the *management* server (`XPCO`), not the recording server.
-  - **Tested and refuted:** test alarm 6 (28 Oct 18:17:34 UTC, source time inside the recording, event source FQID with the
-    full management-server `ServerId` block `XPCO`/`p022`/80/`9d4de506-...`) also shows "The camera is not available".
-    The serializer now supports the full block (tested), but the missing `ServerId` is not the cause.
-  - **Alarm definition tested (operator approved, 28 Oct):** on `Adaptive Watch review: station platform` only, `MapType` was
-    changed 2 (Smart Map) to 1 (Map) and the related-camera entry was cleared, so it now matches `Visually Observed Damage`
-    in every property that differs. Test alarms 7 (after MapType) and 9 (after both) were sent with the original payload
-    shape; alarm 8 repeated alarm 7's configuration. The map pane changed to "Map cannot be shown", like alarm 3, but the
-    camera pane still says "The camera is not available". Prior values: `runs/release/native/alarm-definition-before-maptype.json`.
-  - **Remaining hypothesis (untested):** this Smart Client session has been open since 19 Oct and may hold a stale device
-    list that predates `person_on_railway_tracks`; a Smart Client restart/log-in, or opening that camera from the camera
-    tree, would test it. Alarms 1 to 3 (camera `vandalism`) also carry a snapshot icon that ours lack.
-  - Not checked: the Smart Client
-    alarm-preview settings (Show event source cameras, Show related cameras) and Smart Client's own log were not
-    readable from this session. The root cause is therefore **unresolved**. 
+- **Smart Client preview: resolved by restarting Smart Client (28 Oct, 18:45 to 18:48 local, approved by the operator).**
+  Before the restart the alarm preview showed "The camera is not available" for alarms 4 to 9; the restart removed it, so the likely cause was a Smart Client
+  session open since 19 Oct. After closing and reopening only Smart Client (no VM, service, Event Server, recording server or
+  gateway restart):
+  - Live and recorded playback of `person_on_railway_tracks` work in the Smart Client (camera search, Live and Playback; the
+    timeline shows a recording sequence through the current time).
+  - **Alarm 5** (live run, source time 28 Oct 15:34:29) shows its preview: the recording at 15:34:29.5 with the detector
+    box. Alarms 6 and 9 (diagnostic tests) preview their footage too.
+  - **Alarm 4** (saved case, source time 22 Oct) is before the retained recording, so its preview shows other footage of the
+    camera (27 Oct 18:13) without the box. That is retention, not a camera defect.
+  - Stored association, read with `Get-AlarmLine` (read-only): alarms 4 to 9 carry `CameraId` = `SourceId` =
+    `1dfb0898-730f-44c1-bca8-7f541e8ef116`, which is the GUID of `person_on_railway_tracks` in the VMS camera list (matched by
+    GUID, not by name). Alarms 1 to 3 carry `2de5fcf8-9c47-48da-9d1e-1ee32a595a94` (`vandalism`).
+  - Earlier tests that did not help (kept for the record): the full management-server `ServerId` block (alarm 6), and an
+    approved change of the alarm definition `Adaptive Watch review: station platform` (`MapType` 2 to 1, related camera cleared;
+    alarms 7 to 9). Prior values: `runs/release/native/alarm-definition-before-maptype.json`. Those definition changes remain
+    in place; whether they are needed was not tested, because the restart alone resolved the preview for alarms 4 and 5, which
+    were raised before any change.
+  - Diagnostic alarms 6 to 9 stay in the Alarm Manager with their ledgers. No further event was sent.
+  - The operator's saved native note in `runs/release/app/native/status.json` still carries the old "preview says the camera is
+    not available" text. It was not edited (operator state); the film uses a copy with the corrected note.
 
 ## Live assessment (verified 28 Oct 2026)
 

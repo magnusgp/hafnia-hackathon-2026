@@ -1,5 +1,5 @@
 {
- "total": 173.43,
+ "total": 177.31,
  "scenes": [
   {
    "id": "open",
@@ -125,37 +125,42 @@
   {
    "id": "operator",
    "start": 71.08,
-   "dur": 27.6,
+   "dur": 28.59,
    "audioStart": 71.58,
-   "audioLength": 19.97,
+   "audioLength": 26.69,
    "sentences": [
     {
      "t": 0.5,
-     "d": 4.63,
+     "d": 4.7,
      "text": "The operator opens the exception at the moment that matters."
     },
     {
-     "t": 5.13,
-     "d": 7.71,
+     "t": 5.2,
+     "d": 7.83,
      "text": "The detection, the watched region, and Hafnia's answer share one timeline over the original footage."
     },
     {
-     "t": 12.84,
-     "d": 4.63,
+     "t": 13.02,
+     "d": 4.7,
      "text": "Play from the trigger, and the person reaches the track bed."
     },
     {
-     "t": 17.46,
-     "d": 3.01,
+     "t": 17.72,
+     "d": 3.05,
      "text": "One click requests the XProtect review."
+    },
+    {
+     "t": 20.77,
+     "d": 6.42,
+     "text": "Sending it needs a second, explicit confirmation, and nothing is sent before that."
     }
    ]
   },
   {
    "id": "live",
-   "start": 98.68,
+   "start": 99.67,
    "dur": 17.39,
-   "audioStart": 99.18,
+   "audioStart": 100.17,
    "audioLength": 15.49,
    "sentences": [
     {
@@ -177,33 +182,33 @@
   },
   {
    "id": "xprotect",
-   "start": 116.07,
-   "dur": 18.95,
-   "audioStart": 116.57,
-   "audioLength": 17.05,
+   "start": 117.06,
+   "dur": 21.84,
+   "audioStart": 117.56,
+   "audioLength": 19.94,
    "sentences": [
     {
      "t": 0.5,
-     "d": 5.92,
+     "d": 6.26,
      "text": "XProtect receives the review event on the correct camera and raises its own alarm."
     },
     {
-     "t": 6.42,
-     "d": 5.27,
-     "text": "Both the saved case and a live run are in the Smart Client Alarm Manager."
+     "t": 6.76,
+     "d": 6.95,
+     "text": "In the Smart Client, the live run's alarm opens the recorded footage with the detector box."
     },
     {
-     "t": 11.7,
-     "d": 5.85,
-     "text": "The alarm preview did not open footage, so playback and overlay are not verified."
+     "t": 13.72,
+     "d": 6.72,
+     "text": "The saved case's 22 October recording is past retention, so that alarm cannot replay it."
     }
    ]
   },
   {
    "id": "built",
-   "start": 135.02,
+   "start": 138.9,
    "dur": 24.19,
-   "audioStart": 135.52,
+   "audioStart": 139.4,
    "audioLength": 22.29,
    "sentences": [
     {
@@ -235,9 +240,9 @@
   },
   {
    "id": "close",
-   "start": 159.2,
+   "start": 163.08,
    "dur": 14.22,
-   "audioStart": 159.7,
+   "audioStart": 163.58,
    "audioLength": 12.32,
    "sentences": [
     {
@@ -258,5 +263,5 @@
    ]
   }
  ],
- "proof": "Alarm preview showed the camera as unavailable: playback and overlay not verified."
+ "proof": "Smart Client, 28 Oct, after a client restart: live and recorded playback of the camera verified; alarm 5 preview shows the footage and box."
 }

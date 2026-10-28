@@ -82,12 +82,13 @@
   },
   "video": {
     "file": "adaptive-watch-submission.mp4",
-    "sha256": "7bd64320931336002b1e72e12ff2491018d452f7b1b47efff4905a2c7aef2fe1",
-    "durationSeconds": 173.16,
+    "sha256": "ace9c713240b5784d99b047f539860c203b18c70517ebe22bb9ca58fb89ac850",
+    "durationSeconds": 177.0,
     "resolution": "1920x1080",
     "frameRate": 25,
     "codec": "H.264 + AAC 44.1 kHz",
-    "captions": "burned in, no subtitle stream"
+    "captions": "burned in, no subtitle stream",
+    "note": "Rebuilt 28 Oct: the 91-98 s silence over the Send dialog is narrated; the Smart Client scene shows the post-restart alarm 5 preview with the detector box; the live scene no longer shows the stale preview note. Audio decoded: peak 0.89, no clipping, A/V durations equal. Narration is the local Windows voice; audio was analysed numerically, not listened to by a person."
   },
   "native": {
     "event": "Adaptive Watch Review Required",
@@ -136,21 +137,22 @@
       }
     ],
     "ledger": "original two rows unchanged; diagnostic test sends (alarms 6-9) added on 28 Oct",
-    "smartClientFinding": "Alarms 4-9 are listed with the right camera and source time. The preview says \"The camera is not available\" for all of them. Alarm 4: source time precedes retained recording. Alarm 5-9: source time inside one continuous recording, live snapshots retrievable. Refuted: missing ServerId (alarm 6, full management-server FQID), Smart Map MapType (alarm 7), related-camera entry (alarm 9). Remaining untested hypothesis: stale device list in the long-open Smart Client session. Overlay unverified.",
-    "definitionChange": "Adaptive Watch review: station platform: MapType 2->1, RelatedCameraList cleared (operator approved). Before-state in private runs/release/native/alarm-definition-before-maptype.json"
+    "smartClientFinding": "Resolved by closing and reopening only Smart Client (operator approved, 28 Oct). After the restart live and recorded playback of person_on_railway_tracks work; alarm 5's preview plays the recording at 15:34:29.5 with the detector box; alarms 6 and 9 preview too. Alarm 4's 22 Oct recording is past retention, so its preview shows other footage without the box. Stored association read with Get-AlarmLine: alarms 4-9 have CameraId = SourceId = 1dfb0898-730f-44c1-bca8-7f541e8ef116 (person_on_railway_tracks by GUID); alarms 1-3 carry 2de5fcf8-... (vandalism). The earlier ServerId, MapType and related-camera tests did not change the outcome; the stale session is the likely cause.",
+    "definitionChange": "Adaptive Watch review: station platform: MapType 2->1, RelatedCameraList cleared (operator approved). Before-state in private runs/release/native/alarm-definition-before-maptype.json",
+    "operatorStateNote": "runs/release/app/native/status.json still holds the old \"preview unavailable\" note; not edited (operator state). The film uses a copy with a corrected note."
   },
   "verification": {
-    "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, after the final code change)",
-    "typescript": "tsc --noEmit exit 0",
-    "frontendBuild": "vite production build OK",
-    "browserChecks": "62 real-browser checks at 1440x900 and 1920x1080 on an isolated demo instance (earlier run, 28 Oct); not re-run after the interval-chooser change, which is server-side only",
-    "smartClientPlayback": "not verified; automated tests do not exercise Smart Client"
+    "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, rerun after the final change)",
+    "typescript": "tsc -b exit 0 (rerun 28 Oct)",
+    "frontendBuild": "bun run build OK (28 Oct)",
+    "browserChecks": "check-app.mjs 62 checks and check-release.mjs 23 checks, all passed, at 1440x900 and 1920x1080 on the isolated demo started by scripts/launch.ps1 -Demo (28 Oct). check-release covers: footage starts at the detector trigger (5.4 s), three lanes seek, a refused and a failed New assessment are explained (server answers simulated), review persists across reload, native send refused while disabled.",
+    "smartClientPlayback": "verified by hand in Smart Client on 28 Oct after the restart: live, recorded playback and the alarm 5 preview; screenshots in private runs/release/sc"
   },
   "notClaimed": [
     "validated false-negative reduction",
     "independent accuracy benchmark",
     "production deployment",
-    "Smart Client camera playback or bounding-box overlay for the alarms",
-    "a human reviewed the footage or the live continuity"
+    "a human reviewed the footage or the live continuity",
+    "a real failed New assessment with a gateway session (the failure path is covered by unit tests and a simulated-response browser check)"
   ]
 }
