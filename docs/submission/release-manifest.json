@@ -1,8 +1,9 @@
 {
   "product": "Adaptive Watch",
   "branch": "release/adaptive-watch-submission",
-  "commit": "6801a416ebe92d4f65f689517973752de0e13ea0",
-  "workingTreeClean": true,
+  "releaseSourceCommit": "b8107ddf66bfaad0df0c3b0cddc749868d8e81ee",
+  "manifestNote": "releaseSourceCommit is the revision whose code the tests and build below ran against. This file is committed afterwards, so the branch head is a later commit; a file cannot hash itself. Frontend sources are unchanged since 6801a41.",
+  "deadline": "Monday, 2 November 2026 at 11:00 CET",
   "app": {
     "entry": "frontend/dist/index.html",
     "entrySha256": "e4b6d87ffbe5e3b7a8128ceed6dc8eddb44b9fc9a9fdcc79b2d65dac55de7f21",
@@ -64,30 +65,64 @@
         "media.json": "70df96ae458cd1e9d3c0025fe2a2ae43fbec7726e117cd541a1273e7da43814b",
         "railway-samples.mp4": "7f3cd4bf11e8f85678455a3c855d46d0ee47877d3abb098956a9ba477f6b4779"
       }
-    }
+    },
+    "liveAssessment": {
+      "job": "d7b21eae733d4b59a6b30301ae8bfde1",
+      "interval": [
+        "2026-10-28T15:34:25Z",
+        "2026-10-28T15:34:38Z"
+      ],
+      "hafniaRequests": 1,
+      "hafniaAnswer": "not_observed",
+      "detectorTrigger": "15:34:29.5 UTC (person proximity, not entry)",
+      "continuityConfirmedBy": "Claude (AI) as demo reviewer, not a human",
+      "continuityFinding": "Clip positions 1.0-12.5 s identical to the 22 Oct reference. Last frame (position 13.5 s) is a genuine tail frame of the seamless 15 s cycle showing the next walk-in; not a restart, but the window ended too late. Chooser now ends 2 s before the restart. Historical recording kept as is."
+    },
+    "footageReview": "Claude demo reviewer (AI), labelled as such"
   },
   "video": {
     "file": "adaptive-watch-submission.mp4",
     "sha256": "7bd64320931336002b1e72e12ff2491018d452f7b1b47efff4905a2c7aef2fe1",
     "durationSeconds": 173.16,
-    "resolution": "1920x1080"
+    "resolution": "1920x1080",
+    "frameRate": 25,
+    "codec": "H.264 + AAC 44.1 kHz",
+    "captions": "burned in, no subtitle stream"
   },
   "native": {
     "event": "Adaptive Watch Review Required",
     "alarmDefinition": "Adaptive Watch review: station platform",
-    "state": "alarm_verified",
-    "alarm": "4 (419b7320-3d78-4bb9-802d-a96665415403)",
-    "payloadSha256": "f428d1e0e12a1b5a3b04bfd13ce07c1834726a1f36cdfb3880770fbc9631550c",
-    "notVerified": "Playback association and bounding-box overlay: the 22 Oct recording is past retention."
+    "sends": [
+      {
+        "alarm": "4 (419b7320-3d78-4bb9-802d-a96665415403)",
+        "sourceTime": "2026-10-22T11:03:44Z",
+        "dispatchKey": "sc1-b162997a3e2dfd11bdcc0e8114f35ccb",
+        "payloadSha256": "f428d1e0e12a1b5a3b04bfd13ce07c1834726a1f36cdfb3880770fbc9631550c",
+        "http": 200
+      },
+      {
+        "alarm": "5 (e7ee9cd9-5c6e-4491-949d-72da788d2575)",
+        "sourceTime": "2026-10-28T15:34:29Z",
+        "dispatchKey": "sc1-a3ad7ae4962f809bc527d9c1a911c620",
+        "payloadSha256": "79ba404c04af83c973ac9735ec3fc0bfb22dde60544a68906872914218ca67f1",
+        "http": 200
+      }
+    ],
+    "ledger": "unchanged; no new send since 28 Oct",
+    "smartClientFinding": "Both alarms are listed with the right camera and source time. Alarm preview says \"The camera is not available\" for both. Alarm 4: its 22 Oct source time precedes the retained recording (from 27 Oct 17:13 UTC). Alarm 5: source time lies inside one continuous recording sequence and live snapshots of the camera are retrievable, so retention does not explain it. A missing ServerId in the event FQID is not sufficient: alarm 3 (vandalism, same serializer, no ServerId) previews. Root cause unresolved; open differences: related-camera entry on the Adaptive Watch definition, no snapshot attached, alarm-preview settings not inspected. Overlay unverified."
   },
   "verification": {
-    "pythonTests": "217 passed, 17 skipped (unittest discover)",
-    "browserChecks": "62 real-browser checks passed at 1440x900 and 1920x1080 on an isolated demo instance; one live browser assessment run end to end"
+    "pythonTests": "219 run, OK, 16 skipped (unittest discover, 28 Oct, includes 2 new regression tests)",
+    "typescript": "tsc --noEmit exit 0",
+    "frontendBuild": "vite production build OK",
+    "browserChecks": "62 real-browser checks at 1440x900 and 1920x1080 on an isolated demo instance (earlier run, 28 Oct); not re-run after the interval-chooser change, which is server-side only",
+    "smartClientPlayback": "not verified; automated tests do not exercise Smart Client"
   },
   "notClaimed": [
     "validated false-negative reduction",
     "independent accuracy benchmark",
     "production deployment",
-    "a live Hafnia request from the browser (needs the operator-supplied gateway password)"
+    "Smart Client camera playback or bounding-box overlay for the alarms",
+    "a human reviewed the footage or the live continuity"
   ]
 }
