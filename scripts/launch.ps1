@@ -1,6 +1,6 @@
 # Start Adaptive Watch on this machine and open it in Edge. Run inside p022 (localhost is local to it).
 #
-#   powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -Demo              # judge walkthrough, nothing saved yet
+#   powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -Demo              # older isolated copy; scripts\review.ps1 is the judge/review entry point
 #   powershell -ExecutionPolicy Bypass -File scripts\launch.ps1                    # the operator's real saved state
 #   powershell -ExecutionPolicy Bypass -File scripts\launch.ps1 -AssessmentLogin   # also enables New assessment
 #

@@ -2,14 +2,14 @@
   "product": "Adaptive Watch",
   "branch": "release/adaptive-watch-submission",
   "releaseSourceCommit": "abdb58328098693dacb82948bd9eafdc921ede72",
-  "manifestNote": "releaseSourceCommit is the revision whose code the tests and build below ran against. This file is committed afterwards, so the branch head is a later commit; a file cannot hash itself. Frontend sources changed only in Brief.tsx (confirmation preview) after 6801a41.",
+  "manifestNote": "releaseSourceCommit is the revision whose code the tests and build below ran against. This file is committed afterwards, so the branch head is a later commit; a file cannot hash itself. Frontend sources changed after 6801a41 only in Brief.tsx (confirmation preview) and app.css (the Evidence details link no longer collapses when the panel overflows).",
   "deadline": "Monday, 2 November 2026 at 11:00 CET",
   "app": {
     "entry": "frontend/dist/index.html",
-    "entrySha256": "d3fdb83ff9b58f33b7327e1252e10c7d88bef6e410332252cc6b1a1a143db23e",
+    "entrySha256": "290d51e4010f44c0800fa65d0f19b9fd7e43b65f158616b913531523326a04fc",
     "assets": {
-      "index-BgvTZV1y.js": "205b2906803b995beba6fbb52cc1f284fa0d3a49e518d766f572f72d4071a4a4",
-      "index-Cyo9r-Cw.css": "9556364e8adea1fbc93a2a47ed6e4624a147667488aa863b13af91ce4a785eee"
+      "index-BygCkVwN.css": "cfcbf19817096d469b9c3308c08804bce364713e17899ebd2c23fb03a24319c5",
+      "index-C1GRQqxx.js": "205b2906803b995beba6fbb52cc1f284fa0d3a49e518d766f572f72d4071a4a4"
     }
   },
   "evidence": {
@@ -144,7 +144,7 @@
   "verification": {
     "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, rerun after the repository cleanup and path moves)",
     "typescript": "tsc -b exit 0 (rerun 28 Oct after the Brief.tsx change)",
-    "frontendBuild": "bun run build OK (28 Oct); build hashes above are of the rebuilt release (Brief.tsx: the XProtect confirmation can be previewed with sending off)",
+    "frontendBuild": "bun run build OK (28 Oct); build hashes above are of the rebuilt release (Brief.tsx: the XProtect confirmation can be previewed with sending off; app.css: Evidence details link keeps its size in an overflowing panel)",
     "browserChecks": "check-app.mjs 62 checks and check-release.mjs 24 checks, all passed, at 1440x900 and 1920x1080 on the isolated session started by scripts/review.ps1 -Reset (28 Oct). check-release covers: footage starts at the detector trigger (5.4 s), three lanes seek, a refused and a failed New assessment are explained (server answers simulated), review persists across reload, the XProtect confirmation is a preview only while sending is off, and native send is refused by the server. Private screenshots at both resolutions were inspected for layout breakage.",
     "smartClientPlayback": "verified by hand in Smart Client on 28 Oct after the restart: live, recorded playback and the alarm 5 preview; screenshots in private runs/release/sc",
     "reviewSession": "scripts/review.ps1: isolated root runs/review (own railway copy, native status and empty duplicate ledger), port 8781 (falls back to 8783+ if busy), no --native-send, no gateway prompt. Hash comparison of runs/release/app and runs/negative-result-review/review.sqlite3 before and after the full browser run: no change. Stop and reset affect only the review server and runs/review.",

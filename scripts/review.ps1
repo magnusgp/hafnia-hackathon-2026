@@ -141,6 +141,11 @@ if (Test-PortBusy $chosen) {
 
 # ---- 3. Isolated review root ---------------------------------------------------------------------------------------------
 New-Item -ItemType Directory -Force $reviewRoot | Out-Null
+if ((Resolve-Path $reviewRoot).Path -ne (Join-Path (Resolve-Path (Join-Path $repo 'runs')).Path 'review')) { Stop-Fail 'Refusing to start: unexpected review folder.' }
+foreach ($sub in 'app', 'railway', 'release') {   # every fresh start begins from the beginning; only this session's own folders are removed
+    $dir = Join-Path $reviewRoot $sub
+    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+}
 $app = Join-Path $reviewRoot 'app'
 $railway = Join-Path $reviewRoot 'railway'
 $release = Join-Path $reviewRoot 'release'

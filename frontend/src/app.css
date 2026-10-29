@@ -112,7 +112,7 @@ button { cursor: pointer; }
 .native { margin: 0; color: var(--aw-text-secondary); font-size: 0.8125rem; }
 .native b { color: var(--aw-text); font-weight: 600; margin-right: 4px; }
 .native.alarm_verified b { color: var(--aw-confirmed); }
-.brief .details { align-self: flex-start; }
+.brief .details { align-self: flex-start; flex-shrink: 0; display: block; max-height: none; overflow: visible; }
 
 .loading, .problem { padding: 64px 32px; max-width: 640px; }
 .problem h1 { font: 600 1.75rem var(--aw-font-display); letter-spacing: -0.03em; margin: 0 0 8px; }

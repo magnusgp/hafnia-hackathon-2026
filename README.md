@@ -134,8 +134,10 @@ presentation/          HTML/CSS/JS deck, narration, timing and render scripts fo
 scripts/               launchers (review.ps1, launch.ps1), XProtect acquisition and setup, vision runner, release tooling
 tests/                 Python regression tests (unittest)
 docs/                  product docs, submission materials, research record, archive (see docs/README.md)
-results/, contracts/,  research result files and the earlier Scene Contracts / ML experiment code
-config/, prompts/,     (aw.py, vis.py, hack26.py, scene26.py, scene_web.py); tested but not part of the demo
+config/                camera capabilities and analytics-event definitions read by the application
+results/               research result files (two are read by the source-integrity check)
+contracts/, prompts/   earlier Scene Contracts experiment inputs. With the root scripts hack26.py, scene26.py,
+                       scene_web.py, aw.py and vis.py: tested, kept for the record, not part of the demo
 brand-kit/             Polar brand tokens
 ```
 
