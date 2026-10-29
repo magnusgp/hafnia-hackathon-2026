@@ -51,6 +51,18 @@ class FakeRunner:
         now = datetime.now(timezone.utc)
         return self.fail.get('seq', [dict(start_utc=iso(now-timedelta(hours=1)), end_utc=iso(now-timedelta(seconds=5)))])
 
+    def snapshot(self, camera, out):
+        """A synthetic picture for region drawing in tests; never a camera frame."""
+        import sys
+        sys.path.insert(0, str(REPO.parent/'hafnia-hackathon-2026/runs/tooling/pydeps'))
+        sys.path.insert(0, str(REPO/'runs/tooling/pydeps'))
+        from PIL import Image, ImageDraw
+        im = Image.new('RGB', (640, 360), (60, 70, 80))
+        ImageDraw.Draw(im).polygon([(160, 120), (640, 240), (640, 360), (400, 360)], fill=(110, 100, 90))
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        im.save(out, 'JPEG')
+        return Path(out), '2026-10-29T10:00:00Z'
+
     def acquire(self, camera, start, end, out, interval='0.5', mkv=True):
         self.calls.append('acquire')
         d = Path(out)/'cam_x'
