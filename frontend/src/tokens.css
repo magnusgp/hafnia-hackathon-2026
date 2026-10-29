@@ -1,21 +1,41 @@
-/* Adaptive Watch — Polar / approved palette; studio-default typography */
+/* Ortru design tokens: the Polar palette, extended with the two-watcher identity.
+   Hafnia is always blue, independent local vision is always violet (the two heads of the mark). */
 :root {
-  --aw-background: #F5F8FC;
-  --aw-surface: #FFFFFF;
-  --aw-surface-subtle: #EAF1FA;
-  --aw-border: #D3DDE9;
-  --aw-text: #13263A;
-  --aw-text-secondary: #53667D;
-  --aw-primary: #2858D6;
-  --aw-on-primary: #FFFFFF;
-  --aw-confirmed: #176F62;
-  --aw-review: #A65E14;
-  --aw-critical: #B83551;
-  --aw-font-display: 'Space Grotesk', system-ui, sans-serif;
-  --aw-font-body: 'DM Sans', system-ui, sans-serif;
-  --aw-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --aw-radius-sm: 6px;
-  --aw-radius-md: 10px;
-  --aw-radius-lg: 14px;
-  --aw-video-surface: #0A1524; /* supplementary neutral; not a studio palette color */
+  --bg: #F5F8FC;
+  --surface: #FFFFFF;
+  --surface-2: #EAF1FA;
+  --border: #D3DDE9;
+  --border-strong: #B7C5D8;
+  --ink: #13263A;
+  --ink-2: #53667D;
+  --primary: #2858D6;
+  --primary-press: #1F47B3;
+  --on-primary: #FFFFFF;
+  --hafnia: #2858D6;
+  --hafnia-soft: #E6EDFC;
+  --vision: #6048B8;
+  --vision-soft: #EEEAFA;
+  --confirmed: #176F62;
+  --confirmed-soft: #E3F2EF;
+  --review: #A65E14;
+  --review-soft: #FBF0E1;
+  --critical: #B83551;
+  --critical-soft: #FAE9ED;
+  --video: #0A1524;
+  --box: #5FE3B6;
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* type scale */
+  --t-title: 600 1.375rem/1.25 var(--font-display);
+  --t-section: 600 1rem/1.3 var(--font-display);
+  --t-body: 400 0.9375rem/1.5 var(--font-body);
+  --t-small: 400 0.8125rem/1.45 var(--font-body);
+  --t-mono: 400 0.75rem/1.4 var(--font-mono);
+
+  /* spacing 4 / 8 / 12 / 16 / 24 / 32 */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --r1: 6px; --r2: 10px; --r3: 14px;
 }
