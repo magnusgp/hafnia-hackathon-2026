@@ -144,10 +144,10 @@ def flag_loop(diffs, times=None, ratio=6.0, floor=4.0, minimum=20, span=5):
                 atSeconds=round(times[peak+1], 2) if times else round((peak+1)/10, 2))
 
 
-def check_manifest(manifest, guid, start, end):
+def check_manifest(manifest, guid, start, end, camera=CAMERA):
     manifest = Path(manifest)
     m = read(manifest)
-    if (m.get('camera_id', '').lower() != guid.lower() or m.get('camera_name') != CAMERA
+    if (m.get('camera_id', '').lower() != guid.lower() or m.get('camera_name') != camera
             or parse(m['requested_start_utc']) != parse(start) or parse(m['requested_end_utc']) != parse(end)
             or 'mkv_export' not in m or len(m.get('frames', [])) < 2):
         raise StageError('The recording does not match the requested camera and interval', 'Start a new assessment.')
@@ -242,12 +242,12 @@ class Effects:
         self.deps = Path(deps) if deps else (self.repo/'runs/tooling/pydeps' if (self.repo/'runs/tooling/pydeps').exists() else None)
         self.identity = Path(identity) if identity else Path.home()/'.ssh/hafnia_p022_linux'
 
-    def _ps(self, *extra):
+    def _ps(self, *extra, camera=CAMERA):
         return ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', self.repo/'scripts/acquire_recording.ps1',
-                '-CameraName', CAMERA, *extra]
+                '-CameraName', camera, *extra]
 
     def sequences(self, camera):
-        r = _run(self._ps('-ListSequences'), 180, self.repo)
+        r = _run(self._ps('-ListSequences', camera=camera), 180, self.repo)
         line = next((x for x in r.stdout.splitlines() if x.startswith('SEQUENCES_JSON:')), None)
         if r.returncode or line is None:
             raise StageError('XProtect did not list the recording', 'Check that the XProtect management server is running, then try again.')
@@ -255,7 +255,7 @@ class Effects:
 
     def acquire(self, camera, start, end, out, interval='0.5', mkv=True):
         seconds = int((parse(end)-parse(start)).total_seconds())
-        r = _run(self._ps('-Start', start, '-Seconds', seconds, '-Interval', interval, *(['-Mkv'] if mkv else []), '-OutRoot', out), 600, self.repo)
+        r = _run(self._ps('-Start', start, '-Seconds', seconds, '-Interval', interval, *(['-Mkv'] if mkv else []), '-OutRoot', out, camera=camera), 600, self.repo)
         manifests = list(Path(out).glob('*/manifest.json'))
         if r.returncode or len(manifests) != 1:
             if 'not covered' in r.stdout+r.stderr:

@@ -108,7 +108,7 @@ class Evaluation:
         me = datetime.fromisoformat(manifest['requested_end_utc'].replace('Z','+00:00'))
         if not ms <= start < end <= me:
             raise ValueError('Interval outside acquired recording')
-        payload = dict(Prompt=prompt(entry['scene'],entry['prompt_version']),
+        payload = dict(Prompt=entry.get('prompt') or prompt(entry['scene'],entry['prompt_version']),
                        VideoUris=[video_uri(entry['camera_id'],start,end)])
         digest = hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
         record = dict(entry=entry,request=payload,request_sha256=digest,
