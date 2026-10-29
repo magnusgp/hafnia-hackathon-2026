@@ -22,7 +22,7 @@ Fields not supplied by the team are left as placeholders on purpose. Submission 
 
 **Source:** https://github.com/magnusgp/hafnia-hackathon-2026 (branch `release/adaptive-watch-submission`, pushed to origin; not yet merged to `main`).
 
-**Judge access:** Remote Desktop to the existing Windows machine p022, then `scripts\launch.ps1` (see README). The application opens at `http://127.0.0.1:8780` inside p022; localhost does not reach it from another computer.
+**Judge access:** Remote Desktop to the existing Windows machine p022, then `scriptseview.ps1` (see README). It starts an isolated copy of the flagship case and opens it at `http://127.0.0.1:8781` inside p022; localhost does not reach it from another computer. Nothing is sent to XProtect in that session.
 
 **Supporting materials:** README, [storyboard](storyboard.md), [product definition](../adaptive-watch/product-definition.md), presentation source in `presentation/`, release manifest (`docs/submission/release-manifest.json`).
 
