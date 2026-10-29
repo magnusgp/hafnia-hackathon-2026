@@ -77,7 +77,7 @@ It is optional.
   `powershell -ExecutionPolicy Bypass -File scripts\review.ps1 -Reset`
 - **Stop** (stops only the review server, by its own process; other Adaptive Watch instances keep running):
   `powershell -ExecutionPolicy Bypass -File scripts\review.ps1 -Stop`
-- Closing the browser or media player does not stop the server; `-Stop` does.
+- Closing the browser or media player does not stop the server; `-Stop` does. Starting again after a `-Stop` also begins from the beginning; running the start command while the server is still running just reopens the windows and keeps your saved decision.
 
 Neither command touches the operator's real saved state.
 
