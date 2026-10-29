@@ -30,14 +30,15 @@ export function WatchList({ boot, open, create }: { boot: Bootstrap; open: (id: 
   );
 }
 
-function JobRow({ job, retry, openException }: { job: Job; retry: (id: string) => void; openException: (id: string) => void }) {
+function JobRow({ job, retry, discard, openException }: { job: Job; retry: (id: string) => void; discard: (id: string) => void; openException: (id: string) => void }) {
   const failed = job.state === 'failed';
   const waiting = job.stages.find((s) => s.status === 'needs_you');
   return (
     <li className={`job ${failed ? 'failed' : job.state === 'completed' ? 'done' : ''}`}>
       <div className="job-top"><span className="mono">{stamp(job.interval[0])}</span><span className="hint">{job.trigger === 'manual' ? 'Run by you' : 'Scheduled'} · {ago(job.created)}</span>
         <span className="grow" />{job.state === 'completed' && <button className="link" onClick={() => openException(job.id)}>Open result</button>}
-        {failed && !job.resumable && <button className="link" onClick={() => retry(job.id)}>Retry</button>}</div>
+        {failed && !job.resumable && <button className="link" onClick={() => retry(job.id)}>Retry</button>}
+        {waiting && !failed && <button className="link" onClick={() => discard(job.id)}>Discard</button>}</div>
       <ol className="stages">{job.stages.map((s) => <li key={s.key} className={s.status} title={s.detail}><i aria-hidden="true" />{s.label}</li>)}</ol>
       {failed && job.error && <p className="jerr"><b>{job.error.reason}.</b> {job.error.next}</p>}
       {waiting && !failed && <p className="jerr wait">{waiting.detail}</p>}
@@ -60,6 +61,7 @@ export function WatchPage({ boot, watch, edit, back, refresh, openException }: {
   const setStatus = (status: string) => act(() => api.post(`/api/watches/${watch.id}/status`, { status, baseVersion: watch.version }));
   const run = () => act(() => api.post(`/api/watches/${watch.id}/run`, {}));
   const retry = (id: string) => act(() => api.post(`/api/jobs/${id}/retry`, {}));
+  const discard = (id: string) => act(() => api.post(`/api/jobs/${id}/discard`, {}));
   const cap = boot.capabilities.find((x) => x.id === c.detector.id);
   const sc = watch.schedule;
   const snap = `/api/watches/${watch.id}/snapshot`;
@@ -105,7 +107,7 @@ export function WatchPage({ boot, watch, edit, back, refresh, openException }: {
       </div>
       <section className="panel wide"><h2>Assessments</h2>
         {watch.jobs.length === 0 ? <p className="hint">No recorded window has been assessed yet. {watch.status === 'active' ? 'The first look is due now.' : 'Activate the Watch or assess the latest window now.'}</p>
-          : <ul className="jobs">{watch.jobs.map((j) => <JobRow key={j.id} job={j} retry={retry} openException={openException} />)}</ul>}
+          : <ul className="jobs">{watch.jobs.map((j) => <JobRow key={j.id} job={j} retry={retry} discard={discard} openException={openException} />)}</ul>}
       </section>
       <details className="panel wide"><summary>History</summary>
         <ul className="history">{[...watch.history].reverse().map((h, i) => <li key={i}><span className="mono">{stamp(h.at)}</span> {h.text}</li>)}</ul></details>

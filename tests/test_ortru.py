@@ -274,6 +274,15 @@ class Loops(unittest.TestCase):
         seams, period = estimate(times, diffs)
         self.assertEqual((seams, period), ([7.5, 22.5], 15))
 
+    def test_two_cuts_per_cycle_are_not_a_loop_and_seam_time_maps_to_utc(self):
+        from ortru.loops import seam_utc
+        diffs = [1.0]*400
+        for i in (60, 141, 210, 291):  # gaps 8.1 and 6.9 seconds: a clip with an internal cut
+            diffs[i] = 40.0
+        times = [i/10 for i in range(401)]
+        self.assertIsNone(estimate(times, diffs)[1])
+        self.assertEqual(seam_utc('2026-10-29T12:50:25.000Z', 9.0, 0.2), '2026-10-29T12:50:33.800Z')
+
     def test_no_loop_and_single_seam(self):
         self.assertEqual(estimate([i for i in range(40)], [1.0]*39), ([], None))
         d = [1.0]*39
@@ -432,6 +441,29 @@ class Pipeline(Base):
         self.assertEqual(eng2.get(job['id'])['state'], 'completed')
         eng3 = Engine(self.root, self.watches, FakeRunner(), gateway_factory=lambda: gw)
         self.assertEqual(gw.posts, 1)
+
+    def test_discard_only_before_hafnia_and_loop_reference_is_verified(self):
+        eng = self.engine(gateway=False)
+        w, job = self.run_watch(eng)
+        self.assertEqual(eng.discard(job['id'])['state'], 'failed')
+        with self.assertRaises(ValueError):
+            eng.discard(job['id'])
+        gw = FakeGateway()
+        eng2 = self.engine(gateway=gw)
+        w2, job2 = self.run_watch(eng2, name='Looping', source=dict(loopReference='runs/xprotect/x/manifest.json'))
+        self.assertEqual(job2['state'], 'completed')
+        self.assertEqual(self.watches.get(w2)['config']['source'], dict(loopReference='runs/xprotect/x/manifest.json'))
+        for bad in ('../secret.json', 'C:/x/manifest.json', 'runs/x/other.json'):
+            with self.assertRaises(ValueError):
+                self.watches.create(config(name='Bad ref', source=dict(loopReference=bad)))
+
+        class Loopy(FakeRunner):
+            def verify_loop(self, cfg, manifest, start, root):
+                return dict(ok=False, reason='off by 3 s')
+        eng3 = self.engine(Loopy(), FakeGateway())
+        w3, job3 = self.run_watch(eng3, name='Bad timing', source=dict(loopReference='runs/xprotect/x/manifest.json'))
+        self.assertEqual(job3['state'], 'failed')
+        self.assertIn('loop timing', job3['error']['reason'])
 
     def test_loop_restart_in_window_fails_before_vision(self):
         diffs = [1.0]*149

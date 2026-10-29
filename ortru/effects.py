@@ -7,15 +7,55 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import shutil
+import sys
 
 from adaptive_watch.assessment_job import Effects, StageError, iso, parse
 
 
 class OrtruEffects(Effects):
+    def __init__(self, repo, deps=None, identity=None, private=None):
+        super().__init__(repo, deps, identity)
+        self.private = Path(private) if private else self.repo  # checkout that holds the private runs/ data (loop reference clips)
+        if self.deps and str(self.deps.resolve()) not in sys.path:
+            sys.path.insert(0, str(self.deps.resolve()))  # numpy, Pillow and av for loop alignment and encoding
+
+    def _reference(self, cfg):
+        return (cfg.get('source') or {}).get('loopReference')
+
+    def encode(self, manifest, out):
+        from adaptive_watch.review_media import prepare
+        return prepare(manifest, out, self.deps, adaptive=True)
+
     def phase(self, cfg, sequences, now, root):
-        """Loop phase for cameras that replay a short clip, or None. Measured by `ortru.loops` and cached per camera."""
-        from ortru.loops import window_phase
-        return window_phase(self, cfg, sequences, now, Path(root))
+        """Loop phase for cameras that replay a short clip, or None.
+
+        With a configured reference clip (a recording of the loop from its first frame) the restart instant is located by
+        matching it, which also works when the loop is visually seamless. Without one, `ortru.loops` looks for visible jumps.
+        """
+        ref = self._reference(cfg)
+        if not ref:
+            from ortru.loops import window_phase
+            return window_phase(self, cfg, sequences, now, Path(root))
+        cam = cfg['camera']['id'].lower()
+        path = Path(root)/'loops'/f'{cam}-reference.json'
+        if path.exists():
+            saved = json.loads(path.read_text(encoding='utf-8'))
+            if (now-parse(saved['calibrated_at'])).total_seconds() < 6*3600 and saved.get('loop_reference') == ref:
+                return saved
+        out = Path(root)/'loops'/cam/'calibration'
+        phase = dict(self.calibrate(sequences, now, out, camera=cfg['camera']['name'], reference=str(self.private/ref)), calibrated_at=now.isoformat(), loop_reference=ref)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(phase, indent=2), encoding='utf-8')
+        return phase
+
+    def verify_loop(self, cfg, manifest, start, root):
+        """Check a recorded window against the saved loop cycle. None when the Watch has no loop reference."""
+        if not self._reference(cfg):
+            return None
+        cam = cfg['camera']['id'].lower()
+        phase = json.loads((Path(root)/'loops'/f'{cam}-reference.json').read_text(encoding='utf-8'))
+        offset = (parse(start).timestamp()-parse(phase['seam_utc']).timestamp()) % float(phase['period'])
+        return self.check_window(manifest, offset, Path(root)/'loops'/cam/'loop-cycle.npz')
 
     def snapshot(self, camera, out):
         """One recorded frame of the camera (the newest retained second), saved as JPEG. Read only."""

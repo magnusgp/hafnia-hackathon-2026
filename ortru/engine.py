@@ -227,6 +227,16 @@ class Engine:
         self._kick(job_id)
         return self.get(job_id)
 
+    def discard(self, job_id):
+        """Drop an assessment that is still waiting before Hafnia (nothing was sent). A job with a Hafnia claim is never discarded."""
+        r = self.row(job_id)
+        if r is None or r['state'] in TERMINAL:
+            raise ValueError('Only an unfinished assessment can be discarded')
+        if self._claims(job_id) or r['state'] == 'hafnia_waiting':
+            raise ValueError('A Hafnia request already exists for this window, so this assessment cannot be discarded')
+        self._fail(job_id, self._stage_of(r['state']), 'Discarded by you before it was sent to Hafnia', 'Assess the latest window to try again.')
+        return self.get(job_id)
+
     # -- execution ----------------------------------------------------------------------------------
     def resume(self):
         with self.db() as db:
@@ -309,6 +319,13 @@ class Engine:
         times = [i/info['fps'] for i in range(len(diffs)+1)]
         (d/'frame-diffs.json').write_text(json.dumps(dict(times=times, diffs=diffs)), encoding='utf-8')
         (d/'job.json').write_text(json.dumps(self._job(job_id) | dict(manifest=str(manifest.relative_to(d)).replace('\\', '/'))), encoding='utf-8')
+        verify = getattr(self.runner, 'verify_loop', None)
+        window = verify(cfg, manifest, r['start'], self.root) if verify else None
+        if window is not None:
+            (d/'loop-window.json').write_text(json.dumps(window), encoding='utf-8')
+            if not window.get('ok'):
+                (self.root/'loops'/f"{cam['id'].lower()}-reference.json").unlink(missing_ok=True)  # measure the loop again next time
+                raise StageError('The recording does not follow the expected loop timing', 'Ortru will measure the loop again; nothing was sent to Hafnia.')
         check = flag_loop(diffs, times)
         (d/'loop-check.json').write_text(json.dumps(check), encoding='utf-8')
         if check['flagged']:

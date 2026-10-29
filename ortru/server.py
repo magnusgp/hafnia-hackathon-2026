@@ -295,6 +295,9 @@ def handler(app):
                 out = app.snapshots/(cam['id'].lower()+'.jpg')
                 _, at = app.runner.snapshot(cam['name'], out)
                 return self.reply(dict(at=at))
+            m = re.fullmatch(r'/api/jobs/([0-9a-f]{32})/discard', path)
+            if m:
+                return self.reply(app.engine.discard(m[1]))
             m = re.fullmatch(r'/api/jobs/([0-9a-f]{32})/retry', path)
             if m:
                 return self.reply(app.engine.retry(m[1]))
@@ -374,7 +377,7 @@ def main():
     from ortru.effects import OrtruEffects
     from ortru.engine import Engine
     from ortru.native import Native
-    runner = OrtruEffects(repo, deps=data/'runs/tooling/pydeps' if (data/'runs/tooling/pydeps').exists() else None)
+    runner = OrtruEffects(repo, deps=data/'runs/tooling/pydeps' if (data/'runs/tooling/pydeps').exists() else None, private=data)
     engine = Engine(root, watches, runner, gateway_factory=factory)
     native = Native((a.ledger or data/'runs/release/native/ledger.sqlite3').resolve(), a.event_target, a.native_send, root/'native-status.json', dest)
     archive = None

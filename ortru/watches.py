@@ -68,11 +68,15 @@ def normalize(raw, catalog, destinations=None):
     if not isinstance(raise_on, list) or not raise_on or any(k not in KINDS for k in raise_on) or 'clear' in raise_on:
         raise ValueError('Choose which signal combinations raise an exception')
     alarm = (destinations or {}).get(cams[0]['id'].lower())  # only a verified, existing XProtect destination counts
+    src = raw.get('source') or {}
+    ref = src.get('loopReference')
+    if ref is not None and (not isinstance(ref, str) or not re.fullmatch(r'runs/[A-Za-z0-9_./-]+manifest\.json', ref) or '..' in ref):
+        raise ValueError('The loop reference must be a recorded manifest under runs/')
     return dict(
         schema=SCHEMA, name=name, camera=dict(id=cams[0]['id'], name=cams[0]['name']),
         hafnia=dict(instruction=instruction, condition=condition, prompt=build_prompt(instruction),
                     output=dict(keys=OUTPUT_KEYS, outcomes=['supported', 'not_observed', 'uncertain'])),
-        detector=detector, region=region,
+        detector=detector, region=region, **({'source': dict(loopReference=ref)} if ref else {}),
         policy=dict(raiseOn=sorted(set(raise_on), key=KINDS.index)),
         schedule=dict(intervalMinutes=interval, windowSeconds=window, marginSeconds=90),
         quota=dict(perDay=per_day),

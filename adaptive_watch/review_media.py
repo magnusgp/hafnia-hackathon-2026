@@ -10,8 +10,13 @@ import sys
 from adaptive_watch.negative_review import read, sha
 
 
-def prepare(manifest, out, deps=None):
-    """Return (media_info, native_frame_diffs). Raises ValueError if any snapshot does not align."""
+def prepare(manifest, out, deps=None, adaptive=False):
+    """Return (media_info, native_frame_diffs). Raises ValueError if any snapshot does not align.
+
+    The saved railway release assumes the export starts 0.1 s before the first snapshot. With `adaptive` the constant offset
+    between the snapshot clock and the export is measured from the first snapshot (searching up to 2 s) and every later
+    snapshot must still sit within one native frame of that constant offset. Nothing else about the check is relaxed.
+    """
     manifest, out = Path(manifest), Path(out)
     if deps:
         sys.path.insert(0, str(Path(deps).resolve()))
@@ -44,27 +49,31 @@ def prepare(manifest, out, deps=None):
             out_c.mux(pk)
     if not frames:
         raise ValueError('The exported recording contains no video frames')
-    samples = []
+    samples, offset = [], -0.1
     for i, f in enumerate(m['frames']):
         ref = np.asarray(Image.open(manifest.parent/f['file']).convert('L').resize((104, 60)), dtype=float)
         # Search only around the expected time: a looping or static scene makes distant frames look alike, and the
         # first frames of an export are low quality. A gross offset still fails the error cap below.
-        expected = min(len(small)-1, round(max(0, i*.5-.1)*10))
-        lo, hi = max(0, expected-6), min(len(small), expected+7)
+        expected = min(len(small)-1, round(max(0, i*.5+offset)*10))
+        span = 20 if (adaptive and i == 0) else 6
+        lo, hi = max(0, expected-span), min(len(small), expected+span+1)
         errors = {j: float(np.abs(ref-small[j]).mean()) for j in range(lo, hi)}
         best = min(errors.values())
         k = min((j for j, e in errors.items() if e <= best+.15), key=lambda j: abs(j-expected))
         if errors[k] > (12.0 if i < 4 else 5.0):  # export warm-up frames are noisy
             raise ValueError(f'Snapshot {i} does not match the original stream (difference {errors[k]:.1f})')
+        if adaptive and i == 0:
+            offset = k/10
         samples.append(dict(index=i, timestamp=f['timestamp_utc'], mediaTime=round(k/10, 3),
                             matchError=round(errors[k], 2)))
     # Sampling is 2 Hz; the matched frame must lie within one native frame of i*0.5.
     for s_ in samples:
-        if abs(s_['mediaTime']-max(0, s_['index']*.5-.1)) > .1001:
+        if abs(s_['mediaTime']-max(0, s_['index']*.5+offset)) > .1001:
             raise ValueError(f"Snapshot {s_['index']} does not align with the original stream")
     info = dict(file='original.mp4', sha256=sha(target), sourceMkvSha256=m['mkv_export']['sha256'], fps=10,
                 frames=len(frames), duration=len(frames)/10, firstStreamPts=frames[0], samples=samples,
-                note='mediaTime = stream pts minus first pts; each manifest snapshot was matched to its decoded frame.')
+                note='mediaTime = stream pts minus first pts; each manifest snapshot was matched to its decoded frame.',
+                **(dict(exportOffset=offset) if adaptive else {}))
     (out/'media.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
     diffs = [float(np.abs(a-b).mean()) for a, b in zip(small, small[1:])]
     return info, diffs

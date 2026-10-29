@@ -263,16 +263,16 @@ class Effects:
             raise StageError('XProtect would not provide the recording', 'Check that the XProtect management server is running, then try again.')
         return manifests[0]
 
-    def calibrate(self, sequences, now, out):
+    def calibrate(self, sequences, now, out, camera=CAMERA, reference=REFERENCE):
         """Read a dense recent snapshot window (read only) and locate where the looping clip restarts."""
         import shutil
         from adaptive_watch.review_media import locate_seam
         start, end = choose_interval(sequences, now, window=CAL_SECONDS, margin=100)
-        manifest = self.acquire(CAMERA, start, end, out, interval='0.1', mkv=False)
+        manifest = self.acquire(camera, start, end, out, interval='0.1', mkv=False)
         try:
-            return locate_seam(manifest, self.repo/REFERENCE, cycle_out=Path(out).parent/CYCLE) | dict(calibrated_window=[start, end], reference=REFERENCE, cycle=CYCLE)
+            return locate_seam(manifest, self.repo/reference, cycle_out=Path(out).parent/CYCLE) | dict(calibrated_window=[start, end], reference=reference, cycle=CYCLE)
         except FileNotFoundError:
-            raise StageError('The reference clip needed to time the camera loop is missing', f'Restore {REFERENCE}.')
+            raise StageError('The reference clip needed to time the camera loop is missing', f'Restore {reference}.')
         except ValueError as exc:
             raise StageError('Could not time the camera loop: '+str(exc), 'Try again in a minute.')
         finally:
