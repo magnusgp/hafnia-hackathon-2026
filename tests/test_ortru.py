@@ -431,6 +431,58 @@ class Pipeline(Base):
         self.assertFalse(again['created'])
         self.assertEqual(gw.posts, 1)
 
+    def test_short_loop_window_is_refused_before_a_job_a_reservation_or_a_request_exist(self):
+        class Loop(FakeRunner):
+            def phase(self, cfg, sequences, now, root):
+                return dict(seam_utc=iso(now-timedelta(minutes=30))[:-1]+'.965Z', period=15.0)   # 11 whole seconds clear of the restart
+        gw = FakeGateway()
+        eng = self.engine(Loop(), gw)
+        w = self.watches.create(config())['id']
+        self.watches.set_status(w, 'active')
+        with self.assertRaisesRegex(ValueError, 'cannot be assessed'):
+            eng.start(w)
+        self.assertEqual((gw.posts, eng.used_today(), eng.jobs()), (0, 0, []))
+        self.assertIn('cannot be assessed', eng.schedule_view(self.watches.get(w))['lastCheck']['text'])
+
+    def test_failed_before_any_claim_releases_the_reservation_and_keeps_the_evidence(self):
+        from unittest import mock
+        gw = FakeGateway()
+        eng = self.engine(gateway=gw)
+        w = self.watches.create(config())['id']
+        self.watches.set_status(w, 'active')
+        end = datetime.now(timezone.utc).replace(microsecond=0)-timedelta(minutes=5)
+        with mock.patch('ortru.engine.choose_interval', return_value=(iso(end-timedelta(seconds=11)), iso(end))):  # the old, wrong window
+            job = eng.start(w)
+        eng.wait(job['id'])
+        j = eng.get(job['id'])
+        self.assertEqual((j['state'], gw.posts, eng.used_today(w), eng._claims(job['id'])), ('failed', 0, 0, 0))
+        self.assertIn('12–17 second', j['error']['reason'])
+        self.assertTrue((eng.dir(job['id'])/'job.json').exists())
+        # a legacy row that holds a reservation but whose ledger has no claim: released, with a record of it
+        with eng.db() as db:
+            db.execute('UPDATE assessments SET hafnia_at=? WHERE id=?', (datetime.now(timezone.utc).isoformat(), job['id']))
+        self.assertEqual(eng.used_today(w), 1)
+        self.assertEqual(eng.reconcile_quota(), [job['id']])
+        self.assertEqual(eng.used_today(w), 0)
+        with eng.db() as db:
+            q = json.loads(db.execute('SELECT details FROM assessments WHERE id=?', (job['id'],)).fetchone()[0])['quota']
+        self.assertEqual(q['claims'], 0)
+        self.assertIn('released', q['detail'])
+        self.assertEqual(eng.reconcile_quota(), [])
+
+    def test_a_claimed_or_uncertain_request_stays_counted(self):
+        class Boom(FakeGateway):
+            def request(self, method, path, payload=None, login=False):
+                if method == 'POST':
+                    self.posts += 1
+                    raise OSError('reset')
+                return super().request(method, path, payload, login)
+        eng = self.engine(gateway=Boom())
+        w, job = self.run_watch(eng)
+        self.assertEqual((job['state'], eng._claims(job['id']), eng.used_today(w)), ('failed', 1, 1))
+        self.assertEqual(eng.reconcile_quota(), [])
+        self.assertEqual(eng.used_today(w), 1)
+
     def test_resume_after_restart_does_not_resend(self):
         gw = FakeGateway()
         eng = self.engine(gateway=False)
@@ -517,6 +569,21 @@ class ReviewAndNative(Base):
                 reviews.decide(eid, bad, view)
         self.assertEqual(reviews.get(eid)['revision'], 0)
         self.assertEqual(reviews.decide(eid, dict(ok, outcome='dismiss', verdict='unclear', note=''), view)['status'], 'dismissed')
+
+    def test_ai_reviewer_is_recorded_as_such_and_never_as_a_human(self):
+        eng, eid = self.exception()
+        reviews = Reviews(eng)
+        view = build_view(eng, eid, reviews.get(eid))
+        self.assertIn('not authenticated', view['provenance']['human'])
+        ok = dict(expectedRevision=0, verdict='visible', note='x', watchedFootage=True, outcome='escalate')
+        with self.assertRaisesRegex(ValueError, 'Unknown reviewer'):
+            reviews.decide(eid, dict(ok, reviewer='a person'), view)
+        d = reviews.decide(eid, dict(ok, reviewer='claude_ai_demo'), view)
+        self.assertEqual((d['reviewer'], d['reviewerLabel']), ('claude_ai_demo', 'Claude, AI demo reviewer (not a human)'))
+        after = build_view(eng, eid, Reviews(eng).get(eid))
+        self.assertIn('Claude, AI demo reviewer (not a human)', after['provenance']['human'])
+        self.assertNotIn('local operator', after['provenance']['human'])
+        self.assertEqual(Reviews(eng).get('other')['reviewer'], None)
 
     def native(self, enabled=True):
         return Native(self.root/'ledger.sqlite3', '127.0.0.1:9090', enabled, self.root/'status.json', connection=FakeConnection)

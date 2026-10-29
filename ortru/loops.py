@@ -52,7 +52,7 @@ def measure(effects, camera, sequences, now, scratch):
     scratch = Path(scratch)
     shutil.rmtree(scratch, ignore_errors=True)
     try:
-        start, end = choose_interval(sequences, now, window=MEASURE_S, margin=100)
+        start, end = choose_interval(sequences, now, window=MEASURE_S, margin=100, hafnia=False)
     except ValueError:
         return dict(periodic=False, reason='No long enough retained recording to measure the camera loop')
     try:

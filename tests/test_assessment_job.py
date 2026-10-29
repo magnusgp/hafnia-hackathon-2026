@@ -447,6 +447,73 @@ class Case(Base):
         finally:
             book.close()
 
+class ClipBounds(unittest.TestCase):
+    """The Hafnia gateway accepts 12-17 s. A window is never stretched across a loop restart to reach 12."""
+    NOW = datetime(2026, 10, 28, 12, 0, 0, tzinfo=timezone.utc)
+    SEQ = [dict(start_utc='2026-10-28T06:00:00Z', end_utc='2026-10-28T13:00:00Z')]
+
+    def pick(self, frac, period, window=15):
+        seam = '2026-10-28T11:00:%06.3fZ' % frac
+        return choose_interval(self.SEQ, self.NOW, dict(seam_utc=seam, period=period), window=window)
+
+    def seconds(self, pair):
+        return (aj.parse(pair[1])-aj.parse(pair[0])).total_seconds()
+
+    def test_loop_leaving_10_or_11_seconds_is_a_source_limitation(self):
+        # whole-second window = floor(seam+period-2) - ceil(seam+0.6): period 13 -> 10 s, period 14 -> 11 s
+        for period, left in ((13, 10), (14, 11)):
+            with self.assertRaisesRegex(ValueError, 'leaves %d whole seconds.*will not stretch a recording across the restart' % left):
+                self.pick(.013, period)
+
+    def test_fractional_seam_that_rounds_to_11_is_refused_and_one_that_keeps_12_is_accepted(self):
+        for frac in (.965, .7):   # .965 is the school-gate loop: start rounds up to :20, end rounds down to :31
+            with self.assertRaisesRegex(ValueError, 'leaves 11 whole seconds'):
+                self.pick(frac, 15)
+        for frac in (.013, .2, .35):
+            self.assertEqual(self.seconds(self.pick(frac, 15)), 12.0)
+
+    def test_12_and_17_second_windows_are_accepted_and_stay_clear_of_the_restart(self):
+        self.assertEqual(self.seconds(self.pick(.013, 15)), 12.0)
+        self.assertEqual(self.seconds(self.pick(.013, 20, window=17)), 17.0)
+        seam = aj.parse('2026-10-28T11:00:00.013Z').timestamp()
+        for period, window in ((15, 15), (20, 17), (30, 17), (30, 12)):
+            s, e = (aj.parse(x).timestamp() for x in self.pick(.013, period, window))
+            self.assertGreaterEqual((s-seam) % period, .6)
+            self.assertLessEqual(((e-seam) % period) or period, period-aj.TAIL_S+1e-6)
+            self.assertTrue(12 <= e-s <= min(window, 17))
+
+    def test_longer_loop_is_shortened_to_the_watch_window_never_beyond_17(self):
+        self.assertEqual(self.seconds(self.pick(.013, 60, window=17)), 17.0)
+        self.assertEqual(self.seconds(self.pick(.013, 60, window=12)), 12.0)
+
+    def test_window_setting_outside_what_hafnia_accepts_is_refused(self):
+        for window in (11, 18):
+            with self.assertRaisesRegex(ValueError, '12 to 17 seconds'):
+                choose_interval(self.SEQ, self.NOW, window=window)
+            with self.assertRaisesRegex(ValueError, '12 to 17 seconds'):
+                self.pick(.013, 20, window=window)
+        self.assertEqual(self.seconds(choose_interval(self.SEQ, self.NOW, window=12)), 12.0)
+        self.assertEqual(self.seconds(choose_interval(self.SEQ, self.NOW, window=17)), 17.0)
+
+    def test_retention_still_limits_a_valid_window(self):
+        short = [dict(start_utc='2026-10-28T11:59:00Z', end_utc='2026-10-28T11:59:20Z')]
+        with self.assertRaisesRegex(ValueError, 'retained recording'):
+            choose_interval(short, self.NOW, dict(seam_utc='2026-10-28T11:00:00.013Z', period=15.0))
+
+    def test_calibration_windows_are_not_hafnia_clips(self):
+        self.assertEqual(self.seconds(choose_interval(self.SEQ, self.NOW, window=32, hafnia=False)), 32.0)
+
+    def test_shared_boundary_is_the_one_the_submission_uses(self):
+        from adaptive_watch.evaluation import check_clip
+        t = datetime(2026, 10, 28, 11, 0, 0, tzinfo=timezone.utc)
+        for secs, ok in ((10, False), (11, False), (11.9, False), (12, True), (17, True), (17.1, False)):
+            if ok:
+                check_clip(t, t+timedelta(seconds=secs), self.NOW)
+            else:
+                with self.assertRaisesRegex(ValueError, '12–17 second'):
+                    check_clip(t, t+timedelta(seconds=secs), self.NOW)
+
+
 class Phase(Base):
     SEAM = '2026-10-28T11:00:00.013Z'
 
@@ -457,7 +524,7 @@ class Phase(Base):
         into = (s-seam) % 15
         self.assertGreaterEqual(into, .6)
         self.assertLessEqual(into+(e-s), 15-aj.TAIL_S+1e-6)  # stops before the next walk-in, not at the restart
-        self.assertTrue(10 <= e-s <= 13)
+        self.assertTrue(12 <= e-s <= 13)
         self.assertLessEqual(e, now.timestamp()-90)
         return start, end
 

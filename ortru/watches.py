@@ -7,6 +7,7 @@ import sqlite3
 import threading
 import uuid
 
+from adaptive_watch.evaluation import MAX_CLIP_S, MIN_CLIP_S
 from ortru import SCHEMA
 from ortru.capabilities import check_detector
 from ortru.policy import DEFAULT_RAISE, KINDS
@@ -57,8 +58,8 @@ def normalize(raw, catalog, destinations=None):
     interval, window = s.get('intervalMinutes'), s.get('windowSeconds')
     if type(interval) is not int or not 5 <= interval <= 1440:
         raise ValueError('The cadence must be a whole number of minutes from 5 to 1440')
-    if type(window) is not int or not 12 <= window <= 17:
-        raise ValueError('The recording window must be 12 to 17 seconds (what Hafnia accepts)')
+    if type(window) is not int or not MIN_CLIP_S <= window <= MAX_CLIP_S:
+        raise ValueError(f'The recording window must be {MIN_CLIP_S} to {MAX_CLIP_S} seconds (what Hafnia accepts)')
     q = raw.get('quota') or {}
     per_day = q.get('perDay')
     if type(per_day) is not int or not 1 <= per_day <= 100:

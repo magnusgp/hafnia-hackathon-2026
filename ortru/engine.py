@@ -16,6 +16,7 @@ import threading
 import uuid
 
 from adaptive_watch.assessment_job import StageError, Waiting, check_manifest, choose_interval, flag_loop, iso, parse, run_hafnia
+from adaptive_watch.evaluation import check_clip
 from adaptive_watch.negative_review import read, sha
 from ortru import policy
 
@@ -44,6 +45,7 @@ class Engine:
                 resumable INTEGER NOT NULL DEFAULT 0, trigger TEXT NOT NULL DEFAULT 'schedule', created TEXT NOT NULL, updated TEXT NOT NULL,
                 hafnia_at TEXT, UNIQUE(watch_id, version, start, end));
             CREATE TABLE IF NOT EXISTS checks(watch_id TEXT PRIMARY KEY, at TEXT NOT NULL, text TEXT NOT NULL);''')
+        self.reconcile_quota()
         if resume:
             self.resume()
 
@@ -84,6 +86,28 @@ class Engine:
     def _fail(self, job_id, stage, reason, next_step, resumable=False):
         self._detail(job_id, stage, reason, 'failed')
         self._set(job_id, state='failed', failed_stage=stage, error=json.dumps(dict(reason=reason, next=next_step)), resumable=int(resumable))
+        self._release_unclaimed(job_id)
+
+    def _release_unclaimed(self, job_id):
+        """A budget reservation (hafnia_at) is only kept while the request ledger holds a claim. No claim means nothing was
+        accepted or even attempted at the gateway, so the reservation is released. The release is recorded; nothing is erased."""
+        r = self.row(job_id)
+        if r is None or r['state'] != 'failed' or not r['hafnia_at'] or self._claims(job_id):
+            return False
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            details = json.loads(db.execute('SELECT details FROM assessments WHERE id=?', (job_id,)).fetchone()[0])
+            details['quota'] = dict(reserved_at=r['hafnia_at'], released_at=self.clock().isoformat(), claims=0,
+                                    detail='Budget reservation released: no request was claimed or sent to Hafnia.')
+            db.execute('UPDATE assessments SET hafnia_at=NULL, details=? WHERE id=?', (json.dumps(details), job_id))
+            db.execute('COMMIT')
+        return True
+
+    def reconcile_quota(self):
+        """Release reservations held by failed assessments whose ledger shows no claim. Returns the ids released."""
+        with self.db() as db:
+            ids = [x['id'] for x in db.execute("SELECT id FROM assessments WHERE state='failed' AND hafnia_at IS NOT NULL").fetchall()]
+        return [i for i in ids if self._release_unclaimed(i)]
 
     def _note(self, watch_id, text):
         with self.db() as db:
@@ -363,6 +387,11 @@ class Engine:
                      recording_manifest=str((d/job['manifest']).resolve()))
         if read(d/'continuity.json')['manifest_sha256'] != sha(d/job['manifest']):
             raise StageError('The recording changed after the continuity check', 'Retry the assessment.')
+        if not self._claims(job_id):
+            try:
+                check_clip(parse(r['start']), parse(r['end']), self.clock())
+            except ValueError as exc:  # rejected locally: nothing is reserved, claimed or sent
+                raise StageError(str(exc), 'Nothing was sent to Hafnia. Assess a newer window.')
         self._detail(job_id, 'hafnia', 'Sending one request to Hafnia, or reading the answer to the one already sent.')
         if not self._claims(job_id) and not r['hafnia_at']:
             self._set(job_id, hafnia_at=self.clock().isoformat())  # counts against the budgets from the moment it is attempted

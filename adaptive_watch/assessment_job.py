@@ -18,7 +18,7 @@ import sys
 import threading
 import uuid
 
-from adaptive_watch.evaluation import Evaluation
+from adaptive_watch.evaluation import MAX_CLIP_S, MIN_CLIP_S, Evaluation, check_clip
 from adaptive_watch.negative_review import digest, distance, read, sha
 from adaptive_watch.tracking import foot
 
@@ -38,7 +38,7 @@ REFERENCE = 'runs/xprotect/person_on_railway_tracks_20261022T110339Z/manifest.js
 LEAD_S, PHASE_MAX_AGE_S, CAL_SECONDS, CYCLE = 0.6, 6*3600, 32, 'loop-cycle.npz'
 # The loop is visually seamless: the next walk-in already starts about 13.3 s into the 15 s cycle (measured on the
 # 28 Oct recording), so a window must stop well before the restart instant, not at it.
-TAIL_S, MIN_WINDOW_S = 2.0, 10
+TAIL_S = 2.0
 NATIVE_EVENT = 'Adaptive Watch Review Required'
 HANDOFF_NEGATIVE = ('Review exception: Hafnia reported no entry; independent person detection placed a person at the '
                     'platform edge from {trigger} UTC. Neither signal confirms entry. Review the footage.')
@@ -96,24 +96,41 @@ def _verified_once(key, paths, compute):
 
 
 # -- interval and continuity (pure) ----------------------------------------------------------------
-def choose_interval(sequences, now, phase=None, window=WINDOW_S, margin=MARGIN_S):
+def choose_interval(sequences, now, phase=None, window=WINDOW_S, margin=MARGIN_S, hafnia=True):
     """Newest whole-second window ending at least `margin` s ago, inside one recording sequence.
 
     Without `phase`: a `window`-second window. With a calibrated loop `phase` (the camera replays one clip every
     `period` s, restarting at seam_utc + k*period): the longest whole-second window that starts just after a
     restart and ends TAIL_S before the next one. The clip is seamless, so the next cycle's walk-in begins before
     the restart instant; ending early keeps it out of the window.
+
+    With `hafnia` (default) the window must be a length the gateway accepts (MIN_CLIP_S..MAX_CLIP_S), checked on the
+    serialized timestamps. A window is never lengthened across a loop restart to reach the minimum; if the loop leaves
+    too little clear time, the reason is raised before anything is claimed or sent.
     """
     latest = now.timestamp()-margin
     spans = [(math.ceil(parse(s['start_utc']).timestamp()), math.floor(parse(s['end_utc']).timestamp())) for s in sequences]
+    if hafnia and not MIN_CLIP_S <= window <= MAX_CLIP_S:
+        raise ValueError(f'The recording window must be {MIN_CLIP_S} to {MAX_CLIP_S} seconds (what Hafnia accepts)')
+
+    def pair(start, end):
+        s, e = iso(datetime.fromtimestamp(start, timezone.utc)), iso(datetime.fromtimestamp(end, timezone.utc))
+        return (s, e) if not hafnia or MIN_CLIP_S <= (parse(e)-parse(s)).total_seconds() <= MAX_CLIP_S else None
     if phase:
         seam0, period = parse(phase['seam_utc']).timestamp(), float(phase['period'])
         top = math.floor((latest-seam0)/period)
         for k in range(top, top-1500, -1):
             seam = seam0+k*period
             start, end = math.ceil(seam+LEAD_S), math.floor(seam+period-TAIL_S)
-            if end-start >= MIN_WINDOW_S and end <= latest and any(a <= start and end <= b for a, b in spans):
-                return iso(datetime.fromtimestamp(start, timezone.utc)), iso(datetime.fromtimestamp(end, timezone.utc))
+            if hafnia:
+                end = min(end, start+min(window, MAX_CLIP_S))  # shorten only, never past the loop-safe end
+            chosen = pair(start, end) if end > start and end <= latest and any(a <= start and end <= b for a, b in spans) else None
+            if chosen:
+                return chosen
+        clear = math.floor(seam0+(top)*period+period-TAIL_S)-math.ceil(seam0+top*period+LEAD_S)
+        if hafnia and clear < MIN_CLIP_S:
+            raise ValueError(f'This camera replays a {period:g} s loop. Keeping {TAIL_S:g} s clear of each restart leaves {clear} whole seconds, '
+                             f'and Hafnia needs at least {MIN_CLIP_S}. Ortru will not stretch a recording across the restart, so this camera cannot be assessed.')
     else:
         for a, b in sorted(spans, key=lambda x: x[1], reverse=True):
             end = min(math.floor(latest), b)
@@ -267,7 +284,7 @@ class Effects:
         """Read a dense recent snapshot window (read only) and locate where the looping clip restarts."""
         import shutil
         from adaptive_watch.review_media import locate_seam
-        start, end = choose_interval(sequences, now, window=CAL_SECONDS, margin=100)
+        start, end = choose_interval(sequences, now, window=CAL_SECONDS, margin=100, hafnia=False)
         manifest = self.acquire(camera, start, end, out, interval='0.1', mkv=False)
         try:
             return locate_seam(manifest, self.repo/reference, cycle_out=Path(out).parent/CYCLE) | dict(calibrated_window=[start, end], reference=reference, cycle=CYCLE)

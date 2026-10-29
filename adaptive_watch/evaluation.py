@@ -10,6 +10,17 @@ import time
 
 from scene_contracts.gateway import video_uri
 
+MIN_CLIP_S, MAX_CLIP_S = 12, 17  # the recording length the Hafnia gateway accepts
+
+
+def check_clip(start, end, now=None):
+    """The one place that decides whether an interval can be sent to Hafnia. Raises ValueError before anything is claimed."""
+    now = now or datetime.now(timezone.utc)
+    if (start.tzinfo is None or end.tzinfo is None or not MIN_CLIP_S <= (end-start).total_seconds() <= MAX_CLIP_S
+            or end > now or start < now-timedelta(hours=24)):
+        raise ValueError(f'Need a past {MIN_CLIP_S}–{MAX_CLIP_S} second UTC recording within the last 24 hours')
+
+
 SCENES = {
     'vehicle_breakdown_traffic_queue': 'a vehicle stops in a travel lane and traffic queues behind it; distinguish visible smoke or a driver exiting from a proven mechanical breakdown',
     'bin_pushed_over_onto_sidewalk': 'a person tips a wheeled bin over and leaves it lying on the sidewalk',
@@ -96,9 +107,7 @@ class Evaluation:
     def submit(self, gateway, entry):
         start = datetime.fromisoformat(entry['start'].replace('Z','+00:00'))
         end = datetime.fromisoformat(entry['end'].replace('Z','+00:00'))
-        if (start.tzinfo is None or end.tzinfo is None or not 12 <= (end-start).total_seconds() <= 17
-                or end > datetime.now(timezone.utc) or start < datetime.now(timezone.utc)-timedelta(hours=24)):
-            raise ValueError('Need a past 12–17 second UTC recording within the last 24 hours')
+        check_clip(start, end)
         if entry.get('continuity_review') != 'no_loop_boundary' or not entry.get('recording_manifest'):
             raise ValueError('Recording identity and manual loop continuity review required')
         manifest = json.loads(Path(entry['recording_manifest']).read_text(encoding='utf-8-sig'))

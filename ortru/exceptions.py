@@ -14,6 +14,7 @@ from ortru import SCHEMA, policy
 
 VERDICTS = ('visible', 'not_visible', 'unclear')
 OUTCOMES = ('escalate', 'dismiss', 'confirm_local')
+REVIEWERS = dict(operator='Local operator (identity not authenticated)', claude_ai_demo='Claude, AI demo reviewer (not a human)')
 
 
 class Stale(ValueError):
@@ -100,7 +101,9 @@ def build_view(engine, job_id, decision=None, native=None):
         provenance=dict(hashes=[dict(name=s['path'].split('/')[-1], path=s['path'], sha256=s['sha256']) for s in sources],
                         watchConfig=cfg, hafniaRequestSha256=record.get('request_sha256'),
                         continuity=read(d/'continuity.json').get('reviewer'),
-                        human='Review decisions are by the local operator; identity is not authenticated. Hafnia is an AI footage review, not a human one.'),
+                        human=('Reviewed by '+REVIEWERS[decision['reviewer']]+'. ' if decision and decision.get('reviewer') == 'claude_ai_demo' else
+                               'Review decisions are by the local operator; identity is not authenticated. ')
+                        + 'Hafnia is an AI footage review, not a human one.'),
         limitations=['Person tracks are association hypotheses; identities can switch and detections can be missed.',
                      'Hafnia answered the Watch instruction once. Its answer is a model assessment, not a verified fact.',
                      'The region was drawn on a snapshot and is not calibrated to real-world distances.'])
@@ -127,13 +130,16 @@ class Reviews:
         with engine.db() as db:
             db.execute('''CREATE TABLE IF NOT EXISTS decisions(exception_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, status TEXT NOT NULL,
                 verdict TEXT, note TEXT, outcome TEXT, watched INTEGER NOT NULL, at TEXT NOT NULL)''')
+            if 'reviewer' not in [c[1] for c in db.execute('PRAGMA table_info(decisions)')]:
+                db.execute("ALTER TABLE decisions ADD COLUMN reviewer TEXT NOT NULL DEFAULT 'operator'")
 
     def get(self, exception_id):
         with self.engine.db() as db:
             r = db.execute('SELECT * FROM decisions WHERE exception_id=?', (exception_id,)).fetchone()
         if r is None:
-            return dict(revision=0, status='undecided', verdict=None, note='', outcome=None, at=None)
-        return dict(revision=r['revision'], status=r['status'], verdict=r['verdict'], note=r['note'], outcome=r['outcome'], at=r['at'])
+            return dict(revision=0, status='undecided', verdict=None, note='', outcome=None, at=None, reviewer=None)
+        return dict(revision=r['revision'], status=r['status'], verdict=r['verdict'], note=r['note'], outcome=r['outcome'], at=r['at'],
+                    reviewer=r['reviewer'], reviewerLabel=REVIEWERS.get(r['reviewer']))
 
     def decide(self, exception_id, body, view):
         if not isinstance(body, dict):
@@ -147,6 +153,9 @@ class Reviews:
             raise ValueError('Confirm that you watched the relevant footage')
         if len(note) > 1000:
             raise ValueError('The note is too long')
+        reviewer = body.get('reviewer', 'operator')
+        if reviewer not in REVIEWERS:
+            raise ValueError('Unknown reviewer')
         if outcome != 'dismiss' and not view['raised']:
             raise ValueError('This assessment did not raise an exception')
         opt = next(o for o in view['review']['outcomes'] if o['id'] == outcome)
@@ -161,7 +170,7 @@ class Reviews:
             if (r['revision'] if r else 0) != body['expectedRevision']:
                 db.execute('ROLLBACK')
                 raise Stale('This exception was decided elsewhere. Reload to see the latest decision.')
-            db.execute('INSERT OR REPLACE INTO decisions VALUES (?,?,?,?,?,?,?,?)',
-                       (exception_id, body['expectedRevision']+1, status, verdict, note, outcome, 1, datetime.now(timezone.utc).isoformat()))
+            db.execute('INSERT OR REPLACE INTO decisions(exception_id,revision,status,verdict,note,outcome,watched,at,reviewer) VALUES (?,?,?,?,?,?,?,?,?)',
+                       (exception_id, body['expectedRevision']+1, status, verdict, note, outcome, 1, datetime.now(timezone.utc).isoformat(), reviewer))
             db.execute('COMMIT')
         return self.get(exception_id)
