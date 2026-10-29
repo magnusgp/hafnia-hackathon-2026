@@ -1,8 +1,8 @@
 {
   "product": "Adaptive Watch",
   "branch": "release/adaptive-watch-submission",
-  "releaseSourceCommit": "b8107ddf66bfaad0df0c3b0cddc749868d8e81ee",
-  "manifestNote": "releaseSourceCommit is the revision whose code the tests and build below ran against. This file is committed afterwards, so the branch head is a later commit; a file cannot hash itself. Frontend sources are unchanged since 6801a41.",
+  "releaseSourceCommit": "abdb58328098693dacb82948bd9eafdc921ede72",
+  "manifestNote": "releaseSourceCommit is the revision whose code the tests and build below ran against. This file is committed afterwards, so the branch head is a later commit; a file cannot hash itself. Frontend sources changed only in Brief.tsx (confirmation preview) after 6801a41.",
   "deadline": "Monday, 2 November 2026 at 11:00 CET",
   "app": {
     "entry": "frontend/dist/index.html",
