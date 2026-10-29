@@ -22,10 +22,12 @@ for (const [w, h] of [[1440, 900], [1920, 1080]]) {
   await page.locator('.card', { hasText: 'Station platform' }).first().click();
   await page.getByRole('heading', { name: /Station platform/ }).waitFor();
   await shot('watch-station');
+  await page.locator('.watch-page').screenshot({ path: `${out}/${w}-watch-station-clip.png` });
   await page.getByRole('link', { name: /^Watches/ }).click();
   await page.locator('.card', { hasText: 'School gate' }).first().click();
   await page.getByRole('heading', { name: /School gate/ }).waitFor();
   await shot('watch-gate');
+  await page.locator('.watch-page').screenshot({ path: `${out}/${w}-watch-gate-clip.png` });
   await page.getByRole('link', { name: /^Watches/ }).click();
   await page.getByRole('button', { name: 'Create Watch' }).click();
   await page.getByLabel('Authorized XProtect camera').selectOption({ label: 'Person on railway tracks' });
@@ -37,6 +39,7 @@ for (const [w, h] of [[1440, 900], [1920, 1080]]) {
   for (const [fx, fy] of [[0.3, 0.34], [0.98, 0.68], [0.98, 0.98], [0.62, 0.98]]) await page.mouse.click(bb.x + bb.width * fx, bb.y + bb.height * fy);
   await page.waitForTimeout(300);
   await shot('create-watch');
+  await page.locator('.editor').screenshot({ path: `${out}/${w}-create-watch-clip.png` });
   await page.getByRole('link', { name: 'Evidence archive' }).click();
   await page.getByRole('heading', { name: 'Evidence archive' }).waitFor();
   await shot('archive');

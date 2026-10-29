@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ortru: two watchers, one guardian</title>
+<link rel="icon" type="image/svg+xml" href="../../brand-kit/ortru/favicon.svg">
+<link rel="stylesheet" href="ortru.css">
+</head>
+<body>
+<!--
+  Ortru presentation. Standalone: no network, no build step. Open index.html in Edge or Chrome.
+  Keys: Right / Space / PageDown next (reveals steps first) | Left / PageUp back | F full screen | S speaker window
+        N notes dock | G overview | Home / End first / last | 1-9 jump
+  Real application screenshots live in media/ (private, not in Git; see media/README.md). Slides degrade to a caption without them.
+-->
+<main id="deck" aria-live="polite">
+
+<section class="slide s-title" data-title="Ortru">
+  <img class="big-mark" src="../../brand-kit/ortru/mark-reversed.svg" alt="">
+  <p class="eyebrow" data-step>Hafnia Hackathon 2026</p>
+  <h1 data-step>Two watchers.<br>One guardian.</h1>
+  <p class="lede" data-step>Ortru connects XProtect, Hafnia and independent local vision, and sends the exceptions that deserve a look to the operator.</p>
+  <aside class="notes">Open on the name. Orthrus is the two-headed hound of Greek myth who guards a herd. Our two heads are Hafnia, which reads recorded video and answers in words, and independent local computer vision. Ortru is what connects them to XProtect. Do not read the slide; let the mark and the line land, then move on.</aside>
+</section>
+
+<section class="slide s-miss" data-title="One assessment can miss it">
+  <p class="eyebrow">The problem</p>
+  <h2 data-step>One AI assessment can say <em>no</em><br>to something that matters.</h2>
+  <div class="split">
+    <figure class="shot" data-step><img src="media/1440-exceptions-record.png" alt="Station platform recording with the detector box on a person at the platform edge"><figcaption>Station platform, 22 Oct 2026, 11:03 UTC. A person in a red jacket sits on the platform edge, then climbs down onto the track.</figcaption></figure>
+    <blockquote class="quote" data-step><span class="who hafnia">Hafnia</span>“…no descent onto the tracks or movement onto the railway track area is visible.”<small>The original answer, kept on record: <b>No entry observed.</b></small></blockquote>
+  </div>
+  <aside class="notes">This is the real case that started the project. A person sits on the platform edge and about four seconds later climbs down onto the tracks. Hafnia read the footage and answered that no entry onto the track area was visible. That answer is a model's assessment, not a fact, and an operator who only saw that answer would move on. We keep Hafnia's answer on record; the point is that it should not be the last word.</aside>
+</section>
+
+<section class="slide s-second" data-title="A second, independent observer">
+  <p class="eyebrow">The second watcher</p>
+  <h2 data-step>An independent detector kept its own record<br>of the same footage.</h2>
+  <div class="lanes" data-step>
+    <div class="lane"><span class="who hafnia">Hafnia</span><div class="track"><div class="bar hafnia">No entry observed (one answer for the whole recording)</div></div></div>
+    <div class="lane"><span class="who vision">Local vision</span><div class="track dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><em>person at the region from 11:03:44.5</em></div></div>
+  </div>
+  <p class="lede" data-step>A person detector on a Linux A10G placed the person at the platform edge about four seconds before the climb. That is <b>proximity</b>, not entry. Where the two disagree, there is something worth a human look.</p>
+  <aside class="notes">Independent vision is a different kind of observer. A detector on the Linux GPU measures where tracked people are, twice a second, against a region. It places the person at the platform edge from 11:03:44.5. It does not claim entry; it only claims proximity. Hafnia says no, the detector says there is a person at the hazard. That is not a contradiction. They are two observers. Ortru keeps them apart and puts them on one timeline.</aside>
+</section>
+
+<section class="slide s-connect" data-title="Ortru connects them">
+  <p class="eyebrow">What Ortru does</p>
+  <h2 data-step>Ortru connects both to XProtect<br>and applies a policy <em>you</em> define.</h2>
+  <ol class="flow">
+    <li data-step><b>XProtect</b><span>records the camera</span></li>
+    <li data-step class="two"><b>Hafnia</b><span>answers the Watch's question</span><b class="v">Local vision</b><span>measures the region</span></li>
+    <li data-step><b>Watch policy</b><span>raises an exception when the two call for a look</span></li>
+    <li data-step><b>Operator</b><span>investigates, decides, confirms</span></li>
+    <li data-step class="end"><b>XProtect alarm</b><span>in Smart Client, once</span></li>
+  </ol>
+  <aside class="notes">One line per step. XProtect records. For each Watch, Hafnia is asked the Watch's own question about a recorded window, and local vision measures the Watch's region at the same time. A policy the operator chose decides when the two signals raise an exception. The operator investigates, decides, and only then does a confirmed event reach XProtect, where the operator already works.</aside>
+</section>
+
+<section class="slide s-create" data-title="Create a Watch">
+  <p class="eyebrow">The Watch</p>
+  <h2 data-step>Point a guardian at a camera.<br>No code.</h2>
+  <div class="split wide-left">
+    <figure class="shot" data-step><img src="media/1440-create-watch-clip.png" alt="The Create a Watch screen with a camera picture and a drawn region"><figcaption>The real camera picture, a drawn region, a custom question.</figcaption></figure>
+    <ol class="checklist" data-step>
+      <li><b>Camera</b> from the authorized XProtect catalog</li>
+      <li><b>Question</b> in plain words, for Hafnia</li>
+      <li><b>Local vision</b> from a verified registry</li>
+      <li><b>Region</b> drawn on the picture</li>
+      <li><b>Policy, cadence, budget</b></li>
+    </ol>
+  </div>
+  <aside class="notes">This is how an operator creates a Watch. Choose the camera from the real XProtect catalog. Write what Hafnia should look for; Ortru adds the fixed answer format and shows the exact request. Pick what local vision watches from a registry of capabilities that actually run; anything unsupported is unavailable and says why. Draw the region on the camera picture. Choose when to raise an exception, how often to look, and a daily Hafnia budget. Save and activate. Every edit is a new version, so completed assessments keep exactly the prompt and settings they used.</aside>
+</section>
+
+<section class="slide s-config" data-title="Not a railway program with new labels">
+  <p class="eyebrow">Configurable, not hardcoded</p>
+  <h2 data-step>Another camera. Its own question,<br>its own region, its own cadence.</h2>
+  <div class="pair">
+    <figure class="shot" data-step><img src="media/1440-watch-station-clip.png" alt="The station platform Watch"><figcaption>“A person climbs down from the platform edge onto the track area…”<br><b>Every 15 min</b> · alarm configured in XProtect</figcaption></figure>
+    <figure class="shot" data-step><img src="media/1440-watch-gate-clip.png" alt="The school gate Watch"><figcaption>“A person manipulates the gate or its lock with a tool…”<br><b>Every 30 min</b> · review only: no alarm set up yet</figcaption></figure>
+  </div>
+  <aside class="notes">Two Watches on two real cameras, created through the same screen. The platform Watch asks about entry onto the track area. The school gate Watch asks about someone working a gate lock with a tool, with its own region and its own cadence. The platform camera has a native alarm in XProtect. The gate camera does not, and Ortru says so in the Watch instead of showing a send button that cannot work. Review still works; adding an alarm changes XProtect, so it waits for explicit approval.</aside>
+</section>
+
+<section class="slide s-process" data-title="How a Watch processes a recording">
+  <p class="eyebrow">Monitoring</p>
+  <h2 data-step>Recorded windows, at a cadence,<br>inside a budget.</h2>
+  <ol class="stages">
+    <li data-step><b>1</b>Check the recording is still retained</li>
+    <li data-step><b>2</b>Read it from XProtect (read only)</li>
+    <li data-step><b>3</b>Run local vision on the A10G</li>
+    <li data-step><b>4</b>Ask Hafnia once, never twice</li>
+    <li data-step><b>5</b>Compare under the Watch policy</li>
+  </ol>
+  <p class="lede" data-step>Per-Watch and global request limits. A window is assessed once per Watch version. After an uncertain result a request is polled, never resent. This samples recorded windows; it is not streaming.</p>
+  <aside class="notes">Monitoring works over recorded windows. At the Watch's cadence Ortru checks the camera still retains the footage, reads the window read-only, runs local vision on the A10G, asks Hafnia exactly once, and compares the two. Budgets limit how often a Watch can call Hafnia. If a result is uncertain the request is polled, never resent. Be plain about it: this samples recorded windows. It is not real-time streaming.</aside>
+</section>
+
+<section class="slide s-queue" data-title="Exceptions and investigations">
+  <p class="eyebrow">The operator's screen</p>
+  <h2 data-step>Exceptions in a queue.<br>The decisive moment, large.</h2>
+  <figure class="shot full" data-step><img src="media/1440-exceptions-record.png" alt="The exception queue and an investigation"><figcaption>Queue, footage with the detector box at the corresponding sample, the two sources, and the Watch's own question.</figcaption></figure>
+  <aside class="notes">This is the default screen. A compact queue of exceptions, each with its camera, time and reason. The selected investigation shows the footage large, with the detector box only at the samples where the detector actually saw the person, the two sources side by side on one timeline, and the review question from the Watch. Hafnia is labelled as an AI footage review. The human review is the operator's decision, recorded separately.</aside>
+</section>
+
+<section class="slide s-native" data-title="A real event reaches XProtect">
+  <p class="eyebrow">The handoff</p>
+  <h2 data-step>Confirm once.<br>A real event reaches XProtect.</h2>
+  <ol class="three" data-step>
+    <li class="done"><b>Review decision</b><span>You watched the footage and requested a review</span></li>
+    <li class="done"><b>Event Server</b><span>Accepted the exact event you confirmed</span></li>
+    <li class="done"><b>Smart Client</b><span>Alarm verified: right camera, source time, detector box</span></li>
+  </ol>
+  <p class="lede" data-step>Three different facts, never merged. Duplicate-send ledger, exact payload fingerprint, no retries. Verified earlier on p022: two events sent once each, both alarms in Smart Client.</p>
+  <aside class="notes">The handoff is real and deliberate. The operator reviews the exact event: camera, source time, message, destination and fingerprint, then confirms. It goes through the duplicate-send ledger and is never retried. The Event Server accepting the event and Smart Client showing the alarm are different facts, and Ortru reports them as different states. This was verified earlier on this machine: two events, each sent once, both alarms listed in Smart Client; alarm 5 opens its source recording with the detector box.</aside>
+</section>
+
+<section class="slide s-limits" data-title="What it is not">
+  <p class="eyebrow">Honest limits</p>
+  <h2 data-step>Controlled scenarios.<br>No accuracy claim.</h2>
+  <ul class="limits" data-step>
+    <li>Recorded windows, not live streaming</li>
+    <li>Synthetic hackathon scenes, no benchmark, no measured reduction in missed events</li>
+    <li>Hafnia is an AI review; the operator's decision is the human one</li>
+    <li>Native alarms need an operator-approved setup per camera</li>
+  </ul>
+  <p class="lede" data-step>What is new is a way to stop one assessment from being the last word.</p>
+  <aside class="notes">Say the limits out loud. This is controlled scenarios; there is no accuracy benchmark and no production deployment. We process recorded windows, not live video. Hafnia is an AI review and the operator's decision is the human review. New cameras need an operator-approved alarm in XProtect before they can send. What is new is a way to stop one assessment from being the last word.</aside>
+</section>
+
+<section class="slide s-end" data-title="Ortru">
+  <img class="big-mark" src="../../brand-kit/ortru/mark-reversed.svg" alt="">
+  <h1 data-step>Ortru</h1>
+  <p class="lede" data-step>Two watchers. One guardian.</p>
+  <p class="eyebrow" data-step>Milestone XProtect · Hafnia VLM · independent local vision</p>
+  <aside class="notes">Close on the mark and the line. Then stop talking.</aside>
+</section>
+
+</main>
+<div id="hud" aria-hidden="true"><span id="count"></span></div>
+<div id="dock" hidden></div>
+<script src="ortru.js"></script>
+</body>
+</html>

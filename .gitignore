@@ -22,3 +22,5 @@ runs/
 # Presentation footage, narration audio and captures stay local
 presentation/assets/
 *.wav
+presentation/ortru/media/*
+!presentation/ortru/media/README.md

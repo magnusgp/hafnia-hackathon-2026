@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ortru guardian mark">
+  <title>Ortru</title>
+  <!-- For dark backgrounds: lighter tints of the same two heads and a lifted chest. Same geometry as mark.svg. -->
+  <rect x="15" y="38" width="34" height="21" rx="10.5" fill="#46628A"/>
+  <g stroke-linejoin="round" stroke-width="3">
+    <path d="M14 14 C6 9.5 2.5 17 4 27.5 C5 33 10.5 31 12.5 24.5 Z" fill="#4D78F0" stroke="#4D78F0"/>
+    <ellipse cx="21" cy="29" rx="10.5" ry="13" fill="#4D78F0"/>
+    <path d="M50 14 C58 9.5 61.5 17 60 27.5 C59 33 53.5 31 51.5 24.5 Z" fill="#8B74E0" stroke="#8B74E0"/>
+    <ellipse cx="43" cy="29" rx="10.5" ry="13" fill="#8B74E0"/>
+  </g>
+  <circle cx="21" cy="29" r="4.7" fill="#F5F8FC"/><circle cx="19.7" cy="29" r="2.3" fill="#0A1524"/>
+  <circle cx="43" cy="29" r="4.7" fill="#F5F8FC"/><circle cx="44.3" cy="29" r="2.3" fill="#0A1524"/>
+</svg>
