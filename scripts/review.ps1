@@ -185,6 +185,3 @@ Write-Host "Application: $base/#/railway   (isolated session in runs\review; por
 Write-Host "Film:        $filmPath"
 Write-Host 'Switch between the film and the application with Alt+Tab. Stop: scripts\review.ps1 -Stop   Start over: scripts\review.ps1 -Reset'
 if (-not $NoBrowser) { Open-App $chosen; Open-Film }
-
-
-

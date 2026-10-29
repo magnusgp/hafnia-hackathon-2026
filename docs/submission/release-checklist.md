@@ -4,7 +4,7 @@
 
 Done (evidence in `release-manifest.json`):
 - [x] Release branch pushed to origin (no force push)
-- [x] Python tests (220, 16 skipped), TypeScript check, production build, browser checks (62 + 23 at 1440x900 and 1920x1080)
+- [x] Python tests (220, 16 skipped), TypeScript check, production build, browser checks (62 + 24 at 1440x900 and 1920x1080)
 - [x] Smart Client preview defect resolved by restarting Smart Client; live, playback and alarm 5 preview verified (cause not independently established)
 - [x] Stale "preview unavailable" note in the operator's native status corrected with the product owner's authorization (private backup and checksum kept; no send record changed)
 - [x] Product-owner review session prepared: `scripts/review.ps1`, [guide](product-owner-review.md)

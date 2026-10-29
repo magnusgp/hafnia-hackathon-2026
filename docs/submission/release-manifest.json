@@ -142,11 +142,13 @@
     "operatorStateNote": "Corrected on 28 Oct 2026 with the product owner's authorization: only the two stale \"preview unavailable\" detail strings in runs/release/app/native/status.json (alarms 4 and 5) were rewritten; every send record, event ID, dispatch key, source time, payload hash, state and verifiedAt is unchanged. Private backup of the original: sha256 24e920f241633db040b54fa59fab22a1b0896b43cc7d4df3bffd86d3ac0a5283 (runs/release/private-backups/). The real application serves the corrected text."
   },
   "verification": {
-    "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, rerun after the final change)",
-    "typescript": "tsc -b exit 0 (rerun 28 Oct)",
-    "frontendBuild": "bun run build OK (28 Oct)",
-    "browserChecks": "check-app.mjs 62 checks and check-release.mjs 23 checks, all passed, at 1440x900 and 1920x1080 on the isolated demo started by scripts/launch.ps1 -Demo (28 Oct). check-release covers: footage starts at the detector trigger (5.4 s), three lanes seek, a refused and a failed New assessment are explained (server answers simulated), review persists across reload, native send refused while disabled.",
-    "smartClientPlayback": "verified by hand in Smart Client on 28 Oct after the restart: live, recorded playback and the alarm 5 preview; screenshots in private runs/release/sc"
+    "pythonTests": "220 run, OK, 16 skipped (unittest discover, 28 Oct, rerun after the repository cleanup and path moves)",
+    "typescript": "tsc -b exit 0 (rerun 28 Oct after the Brief.tsx change)",
+    "frontendBuild": "bun run build OK (28 Oct); build hashes above are of the rebuilt release (Brief.tsx: the XProtect confirmation can be previewed with sending off)",
+    "browserChecks": "check-app.mjs 62 checks and check-release.mjs 24 checks, all passed, at 1440x900 and 1920x1080 on the isolated session started by scripts/review.ps1 -Reset (28 Oct). check-release covers: footage starts at the detector trigger (5.4 s), three lanes seek, a refused and a failed New assessment are explained (server answers simulated), review persists across reload, the XProtect confirmation is a preview only while sending is off, and native send is refused by the server. Private screenshots at both resolutions were inspected for layout breakage.",
+    "smartClientPlayback": "verified by hand in Smart Client on 28 Oct after the restart: live, recorded playback and the alarm 5 preview; screenshots in private runs/release/sc",
+    "reviewSession": "scripts/review.ps1: isolated root runs/review (own railway copy, native status and empty duplicate ledger), port 8781 (falls back to 8783+ if busy), no --native-send, no gateway prompt. Hash comparison of runs/release/app and runs/negative-result-review/review.sqlite3 before and after the full browser run: no change. Stop and reset affect only the review server and runs/review.",
+    "releaseFilm": "Re-verified 28 Oct: 177.0 s, 1920x1080 H.264, AAC 44.1 kHz mono, SHA-256 matches; plays in Windows Media Player on p022. Narration has not been listened to by a person."
   },
   "notClaimed": [
     "validated false-negative reduction",
