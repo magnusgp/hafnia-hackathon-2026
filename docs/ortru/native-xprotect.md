@@ -50,6 +50,7 @@ Checked separately, each by its own evidence:
 - **Event Server**: HTTP 200, ledger attempt 1 `accepted`, payload sha256 `3691b7b2…9323` identical to the preview taken before any code change.
 - **Alarm in XProtect** (read-only `Get-AlarmLine`): `LocalId` 10, camera `person_on_railway_tracks`, source time 12:42:29.513 UTC, state New, vendor Ortru. The alarm count went from 9 to 10, with one alarm for the dispatch key.
 - **Source recording**: retained for 12:42:25 to 12:42:37 UTC (`Test-Playback` true at 12:42:29.5); the camera keeps about one day, so it will expire. The evidence MP4 and snapshots stay in Ortru's archive.
+- **Recording content**: a read-only `Get-Snapshot` of the camera's recording at 12:42:29.513 UTC is closest to the assessed evidence frame for that sample (index 9; mean grey-level difference 3.3, next closest 5.7, median over the 24 frames 10.3). Not bit-identical, since it is a separate JPEG encode, but it is the same footage and the same moment.
 - **Smart Client**: not viewed by the assistant, so Ortru keeps `smartClient: not_verified` for this exception until a person opens the alarm.
 
 The evidence files (send response, ledger row, alarm line, hashes) are in the private gate evidence directory, not in the repository.

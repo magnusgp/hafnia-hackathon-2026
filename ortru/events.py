@@ -87,6 +87,6 @@ def groups(signatures):
     result = []
     for members in out.values():
         first = members[0]
-        result.append(dict(key='ev-'+digest([first['focus'], first['mkv'] or first['boxes'], round(first['position'] or 0, 1)])[:12], members=[m['id'] for m in members],
+        result.append(dict(key='ev-'+digest([first['focus'], first['mkv'] or first['boxes'], first['id'] if first['position'] is None else round(first['position'], 1)])[:12], members=[m['id'] for m in members],
                            relations={m['id']: 'same_occurrence' if 'same_occurrence' in links.get(m['id'], ()) else 'recurrence' for m in members[1:]}))
     return result

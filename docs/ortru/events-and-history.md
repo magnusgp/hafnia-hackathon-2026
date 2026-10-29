@@ -36,9 +36,9 @@ evidence files, its decision or its native state, and it never stops a Watch fro
 * Matching content at a different cycle position, the same position with different content, or content with no measured
   cycle position stays distinct. A genuinely new event on the same camera and Watch therefore always stays its own event.
 
-What the interface and API do with a group (`event` on each exception and queue entry):
+What the interface and API do with a group (`event` on each exception view, `GET /api/exceptions/<id>`; queue entries do not carry it):
 
-* Every member stays in the queue and keeps its own review decision.
+* Every member stays in the queue (the queue lists all four) and keeps its own review decision.
 * Sending to XProtect for one member never hides the others. If another member of the same event has already been sent,
   the send is refused until the request carries `acknowledgeRepeat: true` (a deliberate second alarm). The duplicate-send
   ledger still blocks the same dispatch twice.

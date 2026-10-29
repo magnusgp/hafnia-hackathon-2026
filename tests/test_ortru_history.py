@@ -155,6 +155,15 @@ class Events(unittest.TestCase):
         self.assertEqual(len({g['key'] for g in gs}), 2)
 
 
+    def test_unrelated_exceptions_never_share_an_event_key(self):
+        a, b = sig('a', T[0], '2026-10-29T10:00:12Z', position=None), sig('b', T[1], '2026-10-29T11:00:12Z', position=None)
+        gs = events.groups([a, b])
+        self.assertEqual(len(gs), 2)
+        self.assertEqual(len({g['key'] for g in gs}), 2)
+        c, d = sig('c', T[2], '2026-10-29T12:00:12Z', mkv='m2'), sig('d', T[3], '2026-10-29T13:00:12Z', mkv='m2')
+        self.assertEqual(len({g['key'] for g in events.groups([a, b, c, d])}), 3)  # c and d recur together, a and b stand alone
+
+
 class EventsInApp(Base):
     def test_signature_comes_from_the_verified_assessment(self):
         eng = self.engine()
