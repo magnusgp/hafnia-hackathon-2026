@@ -123,23 +123,58 @@ def handoff(cfg, camera_name, reason, trigger, interval):
                 message=f'Review request: {reason} Camera {camera_name}. Review the footage.')
 
 
+GAP = 'This revision was overwritten before append-only storage existed. It cannot be reconstructed and no record of it has been invented.'
+COLS = 'exception_id,revision,status,verdict,note,outcome,watched,at,reviewer'
+
+
 class Reviews:
-    """Local decisions, one row per exception, with a revision counter. Never touches evidence or the native ledger."""
+    """Local decisions as an append-only revision history, one row per saved revision. Never touches evidence or the native ledger.
+
+    Rows in `decision_revisions` can be added but never changed or removed (the database refuses UPDATE and DELETE). The earlier
+    one-row-per-exception `decisions` table is kept, frozen, as the record it was; its rows are copied unchanged as the revision
+    they hold. A revision that was overwritten before this existed is reported as a gap, not reconstructed.
+    """
     def __init__(self, engine):
         self.engine = engine
         with engine.db() as db:
-            db.execute('''CREATE TABLE IF NOT EXISTS decisions(exception_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, status TEXT NOT NULL,
-                verdict TEXT, note TEXT, outcome TEXT, watched INTEGER NOT NULL, at TEXT NOT NULL)''')
-            if 'reviewer' not in [c[1] for c in db.execute('PRAGMA table_info(decisions)')]:
-                db.execute("ALTER TABLE decisions ADD COLUMN reviewer TEXT NOT NULL DEFAULT 'operator'")
+            db.executescript('''
+            CREATE TABLE IF NOT EXISTS decision_revisions(exception_id TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision >= 1),
+                status TEXT NOT NULL, verdict TEXT, note TEXT, outcome TEXT, watched INTEGER NOT NULL, at TEXT NOT NULL,
+                reviewer TEXT NOT NULL, PRIMARY KEY(exception_id, revision));
+            CREATE TRIGGER IF NOT EXISTS decision_revisions_no_update BEFORE UPDATE ON decision_revisions
+                BEGIN SELECT RAISE(ABORT, 'Decision revisions are append-only'); END;
+            CREATE TRIGGER IF NOT EXISTS decision_revisions_no_delete BEFORE DELETE ON decision_revisions
+                BEGIN SELECT RAISE(ABORT, 'Decision revisions are append-only'); END;''')
+            legacy = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='decisions'").fetchone()
+            if legacy:
+                cols = [c[1] for c in db.execute('PRAGMA table_info(decisions)')]
+                reviewer = 'reviewer' if 'reviewer' in cols else "'operator'"
+                db.execute('BEGIN IMMEDIATE')
+                db.execute(f'''INSERT OR IGNORE INTO decision_revisions({COLS}) SELECT exception_id,revision,status,verdict,note,outcome,watched,at,{reviewer}
+                    FROM decisions''')
+                db.execute('COMMIT')
+                for event in ('INSERT', 'UPDATE', 'DELETE'):  # the old table is frozen: nothing can overwrite it again
+                    db.execute(f"CREATE TRIGGER IF NOT EXISTS decisions_frozen_{event.lower()} BEFORE {event} ON decisions "
+                               "BEGIN SELECT RAISE(ABORT, 'The single-row decisions table is frozen; revisions are appended to decision_revisions'); END")
+
+    @staticmethod
+    def _decision(r):
+        return dict(revision=r['revision'], status=r['status'], verdict=r['verdict'], note=r['note'], outcome=r['outcome'], at=r['at'],
+                    reviewer=r['reviewer'], reviewerLabel=REVIEWERS.get(r['reviewer']))
 
     def get(self, exception_id):
         with self.engine.db() as db:
-            r = db.execute('SELECT * FROM decisions WHERE exception_id=?', (exception_id,)).fetchone()
+            r = db.execute('SELECT * FROM decision_revisions WHERE exception_id=? ORDER BY revision DESC LIMIT 1', (exception_id,)).fetchone()
         if r is None:
             return dict(revision=0, status='undecided', verdict=None, note='', outcome=None, at=None, reviewer=None)
-        return dict(revision=r['revision'], status=r['status'], verdict=r['verdict'], note=r['note'], outcome=r['outcome'], at=r['at'],
-                    reviewer=r['reviewer'], reviewerLabel=REVIEWERS.get(r['reviewer']))
+        return self._decision(r)
+
+    def history(self, exception_id):
+        """Every stored revision, oldest first, with an explicit gap entry for any revision number that has no stored row."""
+        with self.engine.db() as db:
+            rows = {r['revision']: r for r in db.execute('SELECT * FROM decision_revisions WHERE exception_id=?', (exception_id,))}
+        return [dict(self._decision(rows[n]), available=True) if n in rows else dict(revision=n, available=False, reason=GAP)
+                for n in range(1, max(rows, default=0)+1)]
 
     def decide(self, exception_id, body, view):
         if not isinstance(body, dict):
@@ -166,11 +201,11 @@ class Reviews:
         status = dict(escalate='review_requested', dismiss='dismissed', confirm_local='confirmed')[outcome]
         with self.engine.db() as db:
             db.execute('BEGIN IMMEDIATE')
-            r = db.execute('SELECT revision FROM decisions WHERE exception_id=?', (exception_id,)).fetchone()
-            if (r['revision'] if r else 0) != body['expectedRevision']:
+            r = db.execute('SELECT MAX(revision) FROM decision_revisions WHERE exception_id=?', (exception_id,)).fetchone()
+            if (r[0] or 0) != body['expectedRevision']:
                 db.execute('ROLLBACK')
                 raise Stale('This exception was decided elsewhere. Reload to see the latest decision.')
-            db.execute('INSERT OR REPLACE INTO decisions(exception_id,revision,status,verdict,note,outcome,watched,at,reviewer) VALUES (?,?,?,?,?,?,?,?,?)',
+            db.execute(f'INSERT INTO decision_revisions({COLS}) VALUES (?,?,?,?,?,?,?,?,?)',
                        (exception_id, body['expectedRevision']+1, status, verdict, note, outcome, 1, datetime.now(timezone.utc).isoformat(), reviewer))
             db.execute('COMMIT')
         return self.get(exception_id)

@@ -245,3 +245,7 @@ summary { cursor: pointer; font-weight: 500; }
   .sources { grid-template-columns: 1fr; } .steps { grid-template-columns: 1fr; } .seg { grid-template-columns: 1fr; } .pair { grid-template-columns: 1fr; }
   .lane { grid-template-columns: 1fr; }
 }
+
+ul.plain, ol.plain { margin: 6px 0 0; padding-left: 18px; font: var(--t-small); }
+details.history { margin: 8px 0; font: var(--t-small); }
+details.history summary { cursor: pointer; color: var(--ink-2); }

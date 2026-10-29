@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import { clock, cameraLabel, hms, stamp, VERDICT_LABEL } from './format';
-import type { Investigation as Inv, NativePreview, Sample } from './types';
+import type { Investigation as Inv, NativePreview, Revision, Sample } from './types';
 import { Chip, Dialog, Notice, Source, Spinner } from './ui';
 
 const ROOT = (i: Inv) => (i.kind === 'archive' ? `/api/archive/${i.id}` : `/api/exceptions/${i.id}`);
@@ -194,6 +194,35 @@ export function NativeLine({ inv }: { inv: Inv }) {
   );
 }
 
+function EventNote({ inv }: { inv: Inv }) {
+  const e = inv.event;
+  if (!e || !e.repeat) return null;
+  const others = e.members.filter((m) => m.id !== inv.id);
+  return (
+    <Notice tone="review" title={`Same visual event as ${others.length} other assessment${others.length > 1 ? 's' : ''}`}>
+      Assessment {e.number} of {e.size}: the camera replayed the same footage at the same point in its cycle, so these are repeats, not separate events. {e.policy}
+      <ul className="plain">{e.members.map((m) => <li key={m.id} className="mono">{m.id === inv.id ? 'This one' : m.id.slice(0, 8)} · {stamp(m.interval[0])} · {m.decision === 'undecided' ? 'not decided' : m.decision.replace('_', ' ')}{m.sent ? ' · sent to XProtect' : ''}</li>)}</ul>
+    </Notice>
+  );
+}
+
+function History({ inv }: { inv: Inv }) {
+  const [rows, setRows] = useState<Revision[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    api.get<{ revisions: Revision[] }>(`${ROOT(inv)}/history`).then((r) => { if (live) setRows(r.revisions); }).catch(() => { if (live) setRows([]); });
+    return () => { live = false; };
+  }, [inv.id, inv.decision.revision]);
+  if (!rows || rows.length === 0) return null;
+  return (
+    <details className="history"><summary>Decision history ({rows.length} revision{rows.length > 1 ? 's' : ''}, append-only)</summary>
+      <ol className="plain">{[...rows].reverse().map((r) => r.available
+        ? <li key={r.revision}><b>Revision {r.revision}</b> · {r.status?.replace('_', ' ')}{r.verdict ? ` · ${VERDICT_LABEL[r.verdict] ?? r.verdict}` : ''} · {r.reviewerLabel ?? r.reviewer}{r.at ? ` · ${stamp(r.at)}` : ''}{r.note ? <p className="hint">“{r.note}”</p> : null}</li>
+        : <li key={r.revision}><b>Revision {r.revision}</b> · <span className="hint">not available. {r.reason}</span></li>)}</ol>
+    </details>
+  );
+}
+
 function DecisionBar({ inv, reload }: { inv: Inv; reload: () => Promise<void> }) {
   const review = inv.review!;
   const d = inv.decision;
@@ -234,6 +263,8 @@ function DecisionBar({ inv, reload }: { inv: Inv; reload: () => Promise<void> })
           <Chip tone={d.status === 'review_requested' ? 'good' : 'plain'}>{d.status === 'review_requested' ? 'Review requested' : d.status === 'dismissed' ? 'Dismissed' : 'Confirmed, no alert'}</Chip>
         </div>
         <NativeLine inv={inv} />
+        <EventNote inv={inv} />
+        <History inv={inv} />
         {d.status === 'review_requested' && inv.native.state === 'ready' && <div className="row"><button className="primary" onClick={openPreview} disabled={busy}>Review and send to XProtect…</button><span className="hint">Nothing has been sent yet.</span></div>}
         {inv.native.state === 'sent' && <p className="hint">{inv.native.detail}</p>}
         {(inv.native.state === 'uncertain' || inv.native.state === 'blocked') && <Notice tone="review" title="This event will not be sent again">{inv.native.detail}</Notice>}
@@ -262,6 +293,8 @@ function DecisionBar({ inv, reload }: { inv: Inv; reload: () => Promise<void> })
           onClick={async () => { if (await save('escalate')) await openPreview(); }}>Send to XProtect…</button>
       </div>
       {sendOutcome?.enabled === false && <p className="hint warn">{sendOutcome.why}</p>}
+      <EventNote inv={inv} />
+      <History inv={inv} />
       {error && <Notice tone="bad">{error}</Notice>}
       {preview && <SendDialog inv={inv} preview={preview} onClose={() => setPreview(null)} onDone={async () => { setPreview(null); await reload(); }} />}
     </form>
@@ -273,9 +306,11 @@ function SendDialog({ inv, preview, onClose, onDone }: { inv: Inv; preview: Nati
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const already = preview.previous.length > 0;
+  const repeat = !!inv.event?.members.some((m) => m.id !== inv.id && m.sent);
+  const [again, setAgain] = useState(false);
   const send = async () => {
     setBusy(true); setError(null);
-    try { await api.post(`/api/exceptions/${inv.id}/native`, { action: 'send', confirmed: true, approval: preview.sha256.slice(0, 16) }); await onDone(); }
+    try { await api.post(`/api/exceptions/${inv.id}/native`, { action: 'send', confirmed: true, approval: preview.sha256.slice(0, 16), ...(repeat ? { acknowledgeRepeat: again } : {}) }); await onDone(); }
     catch (e) { setError(e instanceof ApiError ? e.message : 'The event was not sent.'); setBusy(false); }
   };
   return (
@@ -293,9 +328,10 @@ function SendDialog({ inv, preview, onClose, onDone }: { inv: Inv; preview: Nati
       <details><summary>Exact event (XML)</summary><pre className="xml">{preview.xml}</pre></details>
       {!preview.enabled && <Notice tone="review" title="Sending is switched off in this session">The event can be inspected but not sent. Start Ortru with sending enabled to send.</Notice>}
       {already && <Notice tone="review" title="Already handled">This exact event has {preview.previous.length} earlier attempt{preview.previous.length > 1 ? 's' : ''} in the ledger: {preview.previous.map((p) => p.state).join(', ')}. It will not be sent again.</Notice>}
+      {repeat && <Notice tone="review" title="This visual event was already sent from another assessment"><label className="check"><input type="checkbox" checked={again} onChange={(e) => setAgain(e.target.checked)} />I want a further alarm for the same event</label></Notice>}
       {error && <Notice tone="bad">{error}</Notice>}
       <label className="check big"><input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />I confirm sending this event to XProtect now</label>
-      <div className="row end"><button className="quiet" onClick={onClose}>Not now</button><button className="primary" disabled={!confirm || busy || !preview.enabled || already} onClick={send}>Send event</button></div>
+      <div className="row end"><button className="quiet" onClick={onClose}>Not now</button><button className="primary" disabled={!confirm || busy || !preview.enabled || already || (repeat && !again)} onClick={send}>Send event</button></div>
     </Dialog>
   );
 }

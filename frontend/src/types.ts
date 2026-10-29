@@ -47,7 +47,9 @@ export type NativeState = {
   transport?: { state: string | null; attempt?: number; at?: string | null; httpStatus?: number | null } | null;
   smartClient?: 'verified' | 'not_verified'; alarm?: string | null;
 };
-export type Decision = { revision: number; status: string; verdict: string | null; note: string; outcome?: string | null; at: string | null; readOnly?: boolean };
+export type Decision = { reviewer?: string | null; reviewerLabel?: string | null; revision: number; status: string; verdict: string | null; note: string; outcome?: string | null; at: string | null; readOnly?: boolean };
+export type EventGroup = { key: string; size: number; number: number; repeat: boolean; policy: string; members: { id: string; interval: [string, string]; decision: string; relation: string | null; sent: boolean }[] };
+export type Revision = { revision: number; available: boolean; reason?: string; status?: string; verdict?: string | null; note?: string; at?: string | null; reviewer?: string | null; reviewerLabel?: string | null };
 export type Outcome = { id: string; label: string; enabled?: boolean; why?: string | null };
 export type Investigation = {
   schema: 'ortru.v1'; id: string; kind: 'live' | 'archive'; origin?: string; note?: string; title?: string; record?: boolean;
@@ -63,7 +65,7 @@ export type Investigation = {
   frames: { index: number; url: string }[];
   review?: { question: string; options: { id: string; label: string }[]; condition: string; outcomes: Outcome[] };
   handoff: null | { event: string; alarm: string | null; camera: string; window: [string, string]; message: string };
-  decision: Decision; native: NativeState;
+  decision: Decision; native: NativeState; event?: EventGroup | null;
   provenance: { hashes: { name: string; path?: string; sha256: string }[]; watchConfig?: WatchConfig; hafniaRequestSha256?: string; continuity?: string; human?: string; reference?: unknown };
   limitations: string[] | null;
 };

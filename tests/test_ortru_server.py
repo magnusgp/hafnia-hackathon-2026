@@ -47,8 +47,8 @@ class ServerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         root = Path(self.temp.name)
         self.watches = Watches(root/'ortru.sqlite3', CATALOG, DEST)
-        self.runner = FakeRunner()
-        self.engine = Engine(root, self.watches, self.runner, gateway_factory=lambda: FakeGateway())
+        self.runner, self.gateway = FakeRunner(), FakeGateway()  # one gateway: every request gets its own summary id, as the real one does
+        self.engine = Engine(root, self.watches, self.runner, gateway_factory=lambda: self.gateway)
         FakeConnection.sent = []
         self.native = Native(root/'ledger.sqlite3', '127.0.0.1:9090', True, root/'status.json', DEST, connection=FakeConnection)
         (root/'fe').mkdir()
@@ -163,6 +163,42 @@ class ServerTests(unittest.TestCase):
         wid2, b = self.run_watch(name='Another', cameraId=GUID2, region=BOX)
         self.assertEqual(self.c.call('GET', f'/api/exceptions/{b}')[1]['data']['decision']['status'], 'undecided')
         self.assertEqual(self.c.call('GET', f'/api/exceptions/{a}')[1]['data']['decision']['status'], 'dismissed')
+
+
+    def test_history_endpoint_lists_every_revision_and_is_append_only(self):
+        wid, job = self.run_watch()
+        dec = dict(expectedRevision=0, verdict='visible', note='first look', watchedFootage=True, outcome='escalate')
+        self.c.call('POST', f'/api/exceptions/{job}/decision', dec)
+        self.c.call('POST', f'/api/exceptions/{job}/decision', dict(dec, expectedRevision=1, note='second look', outcome='confirm_local'))
+        st, h = self.c.call('GET', f'/api/exceptions/{job}/history')
+        self.assertEqual(st, 200)
+        self.assertEqual((h['data']['appendOnly'], [(r['revision'], r['note']) for r in h['data']['revisions']]), (True, [(1, 'first look'), (2, 'second look')]))
+        self.assertNotEqual(self.c.call('GET', '/api/exceptions/' + '0'*32 + '/history')[0], 200)
+
+    def test_same_visual_event_assessed_twice_is_grouped_not_hidden_and_a_repeat_send_needs_acknowledgement(self):
+        wid, a = self.run_watch()
+        wid2, b = self.run_watch(name='Second Watch, same focus')
+        self.assertNotEqual(a, b)
+        ea, eb = (self.c.call('GET', f'/api/exceptions/{x}')[1]['data'] for x in (a, b))
+        self.assertEqual((ea['event']['key'], ea['event']['size'], eb['event']['repeat']), (eb['event']['key'], 2, True))
+        self.assertEqual(sorted(m['id'] for m in ea['event']['members']), sorted([a, b]))
+        queue = self.c.call('GET', '/api/queue')[1]['data']['live']
+        self.assertEqual(sorted(e['id'] for e in queue), sorted([a, b]))  # both stay in the queue
+        wid3, other = self.run_watch(name='Other camera', cameraId=GUID2, region=BOX)
+        self.assertEqual(self.c.call('GET', f'/api/exceptions/{other}')[1]['data']['event']['size'], 1)
+        dec = dict(expectedRevision=0, verdict='visible', note='Person on track bed', watchedFootage=True, outcome='escalate')
+        for x in (a, b):
+            self.assertEqual(self.c.call('POST', f'/api/exceptions/{x}/decision', dec)[0], 200)
+        sha = lambda x: self.c.call('POST', f'/api/exceptions/{x}/native', dict(action='preview'))[1]['data']['preview']['sha256'][:16]
+        st, j = self.c.call('POST', f'/api/exceptions/{a}/native', dict(action='send', confirmed=True, approval=sha(a)))
+        self.assertEqual(st, 200, j)
+        st, j = self.c.call('POST', f'/api/exceptions/{b}/native', dict(action='send', confirmed=True, approval=sha(b)))
+        self.assertEqual(st, 422)
+        self.assertIn('already sent', j['error']['message'])
+        self.assertEqual(len(FakeConnection.sent), 1)
+        st, j = self.c.call('POST', f'/api/exceptions/{b}/native', dict(action='send', confirmed=True, approval=sha(b), acknowledgeRepeat=True))
+        self.assertEqual((st, len(FakeConnection.sent)), (200, 2))
+        self.assertEqual(self.c.call('GET', f'/api/exceptions/{a}')[1]['data']['native']['state'], 'sent')
 
 
 if __name__ == '__main__':

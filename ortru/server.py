@@ -17,7 +17,8 @@ import time
 from urllib.parse import urlsplit
 
 from adaptive_watch.assessment_job import StageError
-from ortru import SCHEMA, capabilities, policy
+from adaptive_watch.negative_review import digest
+from ortru import SCHEMA, capabilities, events, policy
 from ortru.exceptions import Reviews, Stale, build_view
 from ortru.watches import Conflict, Watches
 
@@ -33,6 +34,7 @@ class App:
         self.reviews = Reviews(engine)
         self.sessions, self.lock = set(), threading.RLock()
         self.snapshots = self.root/'snapshots'
+        self.signatures = {}
 
     # -- views ----------------------------------------------------------------------------------
     def watch_view(self, w):
@@ -44,7 +46,38 @@ class App:
         view = build_view(self.engine, job_id, d)
         view['native'] = self.native.state(view) if view['handoff'] else dict(state='no_event', detail='Nothing to hand off.')
         view['decision'] = d
+        view['event'] = self.event_of(job_id, view)
         return view
+
+    def signature(self, job_id, view):
+        key = (job_id, digest([h['sha256'] for h in view['provenance']['hashes']]))
+        if key not in self.signatures:
+            self.signatures[key] = events.signature(view, self.engine.dir(job_id))
+        return self.signatures[key]
+
+    def event_of(self, job_id, view):
+        """The event this exception belongs to and the other assessments of it. Display and send guidance only: nothing is hidden."""
+        if not view['raised']:
+            return None
+        mine = self.signature(job_id, view)
+        sigs = [mine]
+        for j in self.engine.jobs(None, 200):
+            if j['state'] == 'completed' and j['id'] != job_id:
+                try:
+                    v = build_view(self.engine, j['id'])
+                except (ValueError, OSError, KeyError):
+                    continue
+                if v['raised']:
+                    sigs.append(self.signature(j['id'], v))
+        g = next(g for g in events.groups(sigs) if job_id in g['members'])
+        members = []
+        for m in g['members']:
+            row = next(s for s in sigs if s['id'] == m)
+            native = self.native.state(build_view(self.engine, m))
+            members.append(dict(id=m, interval=[row['start'], row['end']], decision=self.reviews.get(m)['status'], relation=g['relations'].get(m),
+                                sent=native.get('state') in ('sent', 'uncertain')))
+        return dict(key=g['key'], size=len(members), number=g['members'].index(job_id)+1, members=members, repeat=len(members) > 1,
+                    policy='Assessments of the same visual event are kept as separate records. Sending one does not hide the others.')
 
     def queue(self):
         """Raised exceptions (newest first), then the authentic archive records, each with its decision and native state."""
@@ -220,6 +253,10 @@ def handler(app):
             m = re.fullmatch(rf'/api/exceptions/([0-9a-f]{{32}})', path)
             if m:
                 return self.reply(app.exception_view(m[1]))
+            m = re.fullmatch(r'/api/exceptions/([0-9a-f]{32})/history', path)
+            if m:
+                build_view(app.engine, m[1])
+                return self.reply(dict(appendOnly=True, revisions=app.reviews.history(m[1])))
             m = re.fullmatch(r'/api/exceptions/([0-9a-f]{32})/(video|frames/\d+)', path)
             if m:
                 view = build_view(app.engine, m[1])
@@ -315,6 +352,10 @@ def handler(app):
                     return self.reply(dict(preview=app.native.preview(view), exception=view))
                 if body.get('action') != 'send' or body.get('confirmed') is not True:
                     raise ValueError('Explicit confirmation is required')
+                earlier = [x['id'] for x in (view['event'] or dict(members=[]))['members'] if x['id'] != m[1] and x['sent']]
+                if earlier and body.get('acknowledgeRepeat') is not True:
+                    raise ValueError('The same visual event was already sent to XProtect from another assessment ('+earlier[0]
+                                     +'). Confirm that you want a further alarm for it.')
                 if view['decision']['status'] != 'review_requested':
                     raise ValueError('Save your decision to send to XProtect first')
                 app.native.send(view, str(body.get('approval', '')))
