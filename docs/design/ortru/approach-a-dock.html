@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="common.css"><style>
+.app{display:grid;grid-template-columns:320px minmax(0,1fr) 360px;height:calc(100vh - 48px)}
+.q{border-right:1px solid var(--border);background:var(--surface);overflow:auto}.qh{padding:14px 16px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)}
+.row{padding:12px 16px;border-bottom:1px solid var(--border);display:grid;gap:2px}.row.on{background:var(--sub);box-shadow:inset 3px 0 var(--blue)}.row small{color:var(--ink2)}
+.c{padding:16px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}.lane{display:grid;grid-template-columns:90px 1fr;align-items:center;height:26px;font-size:12px;color:var(--ink2)}.lane i{display:block;height:8px;border-radius:4px;background:var(--sub);position:relative}
+.r{border-left:1px solid var(--border);background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.src{border:1px solid var(--border);border-radius:10px;padding:12px;border-top:3px solid var(--blue)}.src.v{border-top-color:var(--violet)}
+.opt{display:flex;gap:8px;padding:9px 12px;border:1px solid var(--border);border-radius:6px;margin-top:6px}.opt.on{border-color:var(--blue);background:var(--sub)}
+</style><div class="top"><img src="../../../brand-kit/ortru/mark.svg"><b>Ortru</b><nav><a class="on">Exceptions 3</a><a>Watches 2</a><a>Archive</a></nav><span class="chip">Hafnia signed in</span><span class="chip">XProtect sending on</span></div>
+<div class="app"><div class="q"><div class="qh"><span class="h">Exceptions</span><span class="mono">3 open</span></div>
+<div class="row on"><b>Station platform</b><span>Hafnia said no · person at the region</span><small class="mono">22 Oct 11:03:44 · person_on_railway_tracks</small></div>
+<div class="row"><b>Entrance wall</b><span>Both sources point to it</span><small class="mono">29 Oct 09:12:08 · vandalism</small></div>
+<div class="row"><b>Station platform</b><span>Hafnia unsure · person at the region</span><small class="mono">29 Oct 08:58:31 · person_on_railway_tracks</small></div></div>
+<div class="c"><div><span class="h" style="font-size:20px">Person on the track area</span> <span class="mono" style="color:var(--ink2)">Station platform · 22 Oct 2026 11:03:44.5 UTC</span></div>
+<div class="vid" style="aspect-ratio:16/9;max-height:56vh"><img src="file:///C:/Users/Administrator/dev/hafnia-hackathon-2026/runs/xprotect/person_on_railway_tracks_20261022T110339Z/frame_0020.jpg"><div class="box" style="left:44%;top:40%;width:9%;height:30%"></div></div>
+<div><div class="lane"><span>Hafnia</span><i><b style="position:absolute;left:0;right:0;top:-3px;height:14px;border-radius:7px;background:var(--blue);opacity:.25"></b></i></div><div class="lane"><span>Local vision</span><i><b style="position:absolute;left:42%;right:0;top:-3px;height:14px;border-radius:7px;background:var(--violet)"></b></i></div></div></div>
+<div class="r"><div class="src"><span class="h">Hafnia</span><p style="margin:6px 0 0">Did not observe the person entering the track area.</p></div><div class="src v"><span class="h">Local vision</span><p style="margin:6px 0 0">A person at the region edge from 11:03:44.5.</p></div>
+<div><span class="h">Is "Person on the track area" visible?</span><div class="opt on">Yes</div><div class="opt">No</div><div class="opt">Can't tell</div></div><button class="btn">Send to XProtect</button><button class="btn q">Dismiss</button></div></div>

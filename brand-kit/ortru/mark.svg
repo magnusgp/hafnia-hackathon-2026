@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ortru guardian mark">
+  <title>Ortru</title>
+  <!-- Two watchers, one guardian. Left head: Hafnia (blue). Right head: local vision (violet). One chest joins them (ink). -->
+  <rect x="15" y="38" width="34" height="21" rx="10.5" fill="#13263A"/>
+  <g stroke-linejoin="round" stroke-width="3">
+    <path d="M14 14 C6 9.5 2.5 17 4 27.5 C5 33 10.5 31 12.5 24.5 Z" fill="#2858D6" stroke="#2858D6"/>
+    <ellipse cx="21" cy="29" rx="10.5" ry="13" fill="#2858D6"/>
+    <path d="M50 14 C58 9.5 61.5 17 60 27.5 C59 33 53.5 31 51.5 24.5 Z" fill="#6048B8" stroke="#6048B8"/>
+    <ellipse cx="43" cy="29" rx="10.5" ry="13" fill="#6048B8"/>
+  </g>
+  <circle cx="21" cy="29" r="4.7" fill="#F5F8FC"/><circle cx="19.7" cy="29" r="2.3" fill="#13263A"/>
+  <circle cx="43" cy="29" r="4.7" fill="#F5F8FC"/><circle cx="44.3" cy="29" r="2.3" fill="#13263A"/>
+</svg>
