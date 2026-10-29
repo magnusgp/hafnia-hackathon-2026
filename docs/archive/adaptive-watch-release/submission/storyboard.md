@@ -15,4 +15,4 @@ Total 177.0 s (timing plan 177.3 s), 1920x1080, local Windows voice (Microsoft D
 
 The first ten seconds work without sound: the footage shows the climb, the caption states it, and Hafnia's answer card appears at 5 s.
 
-Narration script: [presentation/narration.json](../../presentation/narration.json). Source: [presentation/](../../presentation/).
+Narration script: [presentation/narration.json](../../../../presentation/narration.json). Source: [presentation/](../../../../presentation/).

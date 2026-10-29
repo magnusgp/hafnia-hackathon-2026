@@ -1,7 +1,7 @@
 [project]
 name = "adaptive-watch"
 version = "0.2.0"
-description = "Adaptive Watch: an independent second signal for XProtect review (Hafnia Hackathon 2026)"
+description = "Ortru: configurable Watches over recorded XProtect windows, assessed by Hafnia VLM and independent local vision (Hafnia Hackathon 2026)"
 requires-python = ">=3.11,<3.12"
 dependencies = []
 

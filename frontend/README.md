@@ -1,30 +1,34 @@
-# Adaptive Watch frontend
+# Ortru frontend
 
-React 19, TypeScript and Vite. `src/app.tsx` is the only entry. It reads the unified case view model from
-`adaptive_watch.app_api` (`/api/casebook`, `/api/cases/<id>`), never from files, so private footage is not in the
-production bundle (`publicDir: false`).
+React 19, TypeScript and Vite. `src/main.tsx` is the only entry. It talks to `ortru.server` through the versioned envelope
+API (`src/api.ts`, `src/types.ts`) and never reads files, so private footage is not in the production bundle
+(`publicDir: false`).
 
-- `src/app/Stage.tsx` footage with the detector box and region, drawn only on the frame the detector measured
-- `src/app/Timeline.tsx` three evidence lanes on one clock (Hafnia, local vision, footage review)
-- `src/app/Brief.tsx` the two signals and the review exception XProtect receives
-- `src/app/Dialogs.tsx` decision, XProtect send confirmation, evidence details, New assessment
+| File | What it is |
+|---|---|
+| `src/Exceptions.tsx` | Default screen: the exception queue (live exceptions, then verified earlier records) and the selected investigation |
+| `src/Investigation.tsx` | Footage with the detector box drawn only at the corresponding sample, the synchronized Hafnia / local vision timeline, the Watch's review question and decision bar, the native send dialog, evidence details |
+| `src/Watches.tsx`, `src/WatchEditor.tsx`, `src/RegionDrawer.tsx` | Watch list and page (lifecycle, schedule, budget, assessments with real progress and failure reasons) and the create/edit flow with region drawing on a camera picture |
+| `src/Archive.tsx` | The evidence archive: authentic records and historical experiments |
+| `src/tokens.css`, `src/style.css`, `src/ui.tsx` | The Ortru design system: Polar palette extended with Hafnia blue and local-vision violet, type scale, spacing, components |
 
-```powershell
-..\runs\tooling\bun-windows-x64\bun.exe run build
-```
-
-Browser checks use real Edge against an isolated session (never the operator's saved decisions). Start one with
-`scripts\review.ps1 -NoBrowser` from the repository root (port 8781), then, in this order (the second expects the
-review the first saves):
+The mark, favicon and wordmark are editable SVG in `../brand-kit/ortru/`. The design record is `../docs/design/ortru/`.
 
 ```powershell
-$env:PLAYWRIGHT_BROWSERS_PATH = (Resolve-Path ..\runs\tooling\playwright).Path
-..\runs\tooling\bun-windows-x64\bun.exe scripts\check-app.mjs ..\runs\review-notes\checks http://127.0.0.1:8781
-..\runs\tooling\bun-windows-x64\bun.exe scripts\check-release.mjs ..\runs\review-notes\checks http://127.0.0.1:8781
+..\runs\tooling\bun-windows-x64\bun.exe run build      # tsc -b, then vite build
 ```
 
-Stop it with `scripts\review.ps1 -Stop`; `-Reset` gives a fresh session.
+## Browser acceptance
 
+`scripts/check-ortru.mjs` drives real Edge through the operator's workflow at 1440x900 and 1920x1080: create a Watch (camera,
+custom prompt, detector, region, cadence), activate, assess, open the exception, review the evidence, save a decision,
+preview and confirm the native handoff, create a second Watch with a different question and camera, and exercise malformed
+prompts, unsupported detectors, stale revisions, duplicate sends and persistence. It runs against `tests/ortru_fixture.py`
+(fake XProtect, GPU and Hafnia effects and a test transport that cannot reach the Event Server). From the repository root:
 
-`frontend/scripts/shoot.mjs` captures screenshots, `capture-walkthrough.mjs` records the application for the presentation,
-`record-deck.mjs` and `deck-preview.mjs` record and preview the deck (see `../presentation`).
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run-ortru-check.ps1
+```
+
+`scripts/shoot-real.mjs` takes read-only screenshots of the real server; `scripts/shot-html.mjs` screenshots any local HTML file
+(used for the design comparison and the deck). `record-deck.mjs` and `deck-preview.mjs` belong to the earlier film.

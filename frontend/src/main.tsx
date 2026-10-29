@@ -38,7 +38,7 @@ function App() {
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => { const h = () => setRoute(parse(location.hash)); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   // While any assessment is running, follow its progress.
-  const running = boot?.watches.some((w) => w.schedule.runningJob || w.jobs.some((j) => !['completed', 'failed'].includes(j.state) && !j.stages.some((s) => s.status === 'needs_you')));
+  const running = boot?.watches.some((w) => w.jobs.some((j) => !['completed', 'failed'].includes(j.state) && !j.stages.some((s) => s.status === 'needs_you')));
   useEffect(() => { if (!running) return; const t = setInterval(() => void refresh(), 3000); return () => clearInterval(t); }, [running, refresh]);
   const go = (h: string) => { location.hash = h; };
 

@@ -24,7 +24,7 @@ Fields not supplied by the team are left as placeholders on purpose. Submission 
 
 **Judge access:** Remote Desktop to the existing Windows machine p022, then `scriptseview.ps1` (see README). It starts an isolated copy of the flagship case and opens it at `http://127.0.0.1:8781` inside p022; localhost does not reach it from another computer. Nothing is sent to XProtect in that session.
 
-**Supporting materials:** README, [storyboard](storyboard.md), [product definition](../adaptive-watch/product-definition.md), presentation source in `presentation/`, release manifest (`docs/submission/release-manifest.json`).
+**Supporting materials:** README, [storyboard](storyboard.md), [product definition](../product-definition.md), presentation source in `presentation/`, release manifest (`docs/submission/release-manifest.json`).
 
 **Video URL:** `<to be published by the team>`  (local file: `runs/release/adaptive-watch-submission.mp4`)
 

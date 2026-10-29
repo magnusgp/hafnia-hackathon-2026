@@ -88,7 +88,7 @@ export function WatchPage({ boot, watch, edit, back, refresh, openException }: {
         <section className="panel"><h2>Schedule and budget</h2>
           <dl className="facts">
             <dt>Cadence</dt><dd>Every {c.schedule.intervalMinutes} min, {c.schedule.windowSeconds} s of recording</dd>
-            <dt>Next evaluation</dt><dd>{watch.status === 'active' ? until(sc.nextDue) : 'not scheduled'}</dd>
+            <dt>Next evaluation</dt><dd>{watch.status !== 'active' ? 'not scheduled' : sc.runningJob ? 'after the current assessment finishes' : until(sc.nextDue)}</dd>
             <dt>Last completed</dt><dd>{sc.lastAssessment ? `${ago(sc.lastAssessment.at)}` : 'none yet'}</dd>
             <dt>Hafnia today</dt><dd>{sc.usedToday} of {sc.budgetPerDay} for this Watch · {sc.globalUsedToday} of {sc.globalBudget} overall</dd>
           </dl>

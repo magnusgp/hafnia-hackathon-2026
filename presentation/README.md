@@ -11,6 +11,6 @@ powershell -ExecutionPolicy Bypass -File presentation\synthesize.ps1  # narratio
 .\.venv\Scripts\python.exe presentation\build_timing.py <operator_capture_seconds> "<proof line>"
 ```
 
-Then record the application (`frontend/scripts/capture-walkthrough.mjs`), convert it with `render.py convert`, record the
+Then record the application, convert it with `render.py convert`, record the
 deck (`frontend/scripts/record-deck.mjs`) and mux with `render.py mux`. The narration script is `narration.json`; the
-timed storyboard is in `docs/submission/storyboard.md`.
+timed storyboard is in `docs/archive/adaptive-watch-release/submission/storyboard.md`.

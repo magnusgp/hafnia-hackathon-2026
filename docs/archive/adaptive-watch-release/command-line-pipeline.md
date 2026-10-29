@@ -115,4 +115,4 @@ independently labeled accuracy comparison.
 Run `python -m unittest discover -s tests` for checks. Keep recordings, screenshots,
 raw responses, camera catalogs, identities and local configuration out of Git.
 The public repository contains code, tests and documentation, never private
-viewer exports or demonstration footage. See [the actual demo sequence](../archive/final-integration.md).
+viewer exports or demonstration footage. See [the actual demo sequence](../final-integration.md).

@@ -107,7 +107,7 @@ class Engine:
             check = db.execute('SELECT * FROM checks WHERE watch_id=?', (wid,)).fetchone()
         interval = watch['config']['schedule']['intervalMinutes']
         due = None
-        if watch['status'] == 'active':
+        if watch['status'] == 'active' and not running:  # one assessment at a time per Watch: the next starts after this one ends
             due = self.clock().isoformat() if last is None else (parse(last['created'])+timedelta(minutes=interval)).isoformat()
         return dict(status=watch['status'], intervalMinutes=interval, nextDue=due, runningJob=running['id'] if running else None,
                     lastAssessment=dict(id=done['id'], at=done['created']) if done else None,

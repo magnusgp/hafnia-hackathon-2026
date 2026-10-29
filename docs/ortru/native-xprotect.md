@@ -1,5 +1,7 @@
 # Native XProtect verification
 
+The event and alarm names below (`Adaptive Watch Review Required`, `Adaptive Watch review: station platform`) were created before the product was named Ortru. They are kept so that existing events, recorded payloads and Smart Client alarms stay valid; Ortru sends the same event type.
+
 What was actually verified against the real XProtect Corporate 2026 R1 installation on p022, as of 28 October 2026.
 Controlled test scene (`person_on_railway_tracks`, a camera that replays a 15 s clip on a loop).
 
