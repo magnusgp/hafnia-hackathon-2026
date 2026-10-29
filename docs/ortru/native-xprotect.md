@@ -23,6 +23,7 @@ answered HTTP 200 (transport acceptance only).
 |---|---|---|
 | 4 | The saved railway case | 22 Oct 2026 11:03:44 UTC |
 | 5 | A live assessment started from the browser, with the detector's bounding box | 28 Oct 2026 15:34:29 UTC |
+| 10 | Ortru exception `b586966c` (station platform Watch), sent once on 29 Oct 2026 15:08:38 UTC with the product owner's explicit authorization | 29 Oct 2026 12:42:29 UTC |
 | 6 to 9 | Diagnostic test events sent while investigating the alarm preview. They stay in the Alarm Manager with their ledgers; no further event was sent | 28 Oct 2026 |
 
 ## Smart Client
@@ -41,6 +42,17 @@ answered HTTP 200 (transport acceptance only).
   Alarms 1 to 3 belong to `vandalism`.
 - Diagnostic changes that did not by themselves change the outcome: the full management-server `ServerId` block
   (alarm 6) and the definition edits above (alarms 7 to 9).
+
+## Alarm 10 (Ortru, 29 Oct 2026)
+
+Checked separately, each by its own evidence:
+
+- **Event Server**: HTTP 200, ledger attempt 1 `accepted`, payload sha256 `3691b7b2…9323` identical to the preview taken before any code change.
+- **Alarm in XProtect** (read-only `Get-AlarmLine`): `LocalId` 10, camera `person_on_railway_tracks`, source time 12:42:29.513 UTC, state New, vendor Ortru. The alarm count went from 9 to 10, with one alarm for the dispatch key.
+- **Source recording**: retained for 12:42:25 to 12:42:37 UTC (`Test-Playback` true at 12:42:29.5); the camera keeps about one day, so it will expire. The evidence MP4 and snapshots stay in Ortru's archive.
+- **Smart Client**: not viewed by the assistant, so Ortru keeps `smartClient: not_verified` for this exception until a person opens the alarm.
+
+The evidence files (send response, ledger row, alarm line, hashes) are in the private gate evidence directory, not in the repository.
 
 ## Operator state
 

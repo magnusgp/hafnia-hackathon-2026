@@ -17,7 +17,7 @@ import time
 from urllib.parse import urlsplit
 
 from adaptive_watch.assessment_job import StageError
-from adaptive_watch.negative_review import digest
+from adaptive_watch.negative_review import digest, read
 from ortru import SCHEMA, capabilities, events, policy
 from ortru.exceptions import Reviews, Stale, build_view
 from ortru.watches import Conflict, Watches
@@ -261,11 +261,11 @@ def handler(app):
             if m:
                 view = build_view(app.engine, m[1])
                 d = app.engine.dir(m[1])
-                job = json.loads((d/'job.json').read_text(encoding='utf-8'))
+                job = read(d/'job.json')
                 if m[2] == 'video':
                     return self.file(d/'media/original.mp4')
                 manifest = d/job['manifest']
-                frames = json.loads(manifest.read_text(encoding='utf-8'))['frames']
+                frames = read(manifest)['frames']  # XProtect's PowerShell export writes a BOM
                 i = int(m[2].split('/')[1])
                 return self.file(manifest.parent/frames[i]['file']) if i < len(frames) else self.fail('Frame not found', 404)
             m = re.fullmatch(rf'/api/archive/({ID})', path)

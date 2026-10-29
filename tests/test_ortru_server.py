@@ -1,4 +1,6 @@
 """Ortru HTTP contract: envelope, same-origin and CSRF, Watch lifecycle, decision persistence, native preview/send with a fake transport."""
+import codecs
+import hashlib
 from http.client import HTTPConnection
 import json
 from pathlib import Path
@@ -199,6 +201,21 @@ class ServerTests(unittest.TestCase):
         st, j = self.c.call('POST', f'/api/exceptions/{b}/native', dict(action='send', confirmed=True, approval=sha(b), acknowledgeRepeat=True))
         self.assertEqual((st, len(FakeConnection.sent)), (200, 2))
         self.assertEqual(self.c.call('GET', f'/api/exceptions/{a}')[1]['data']['native']['state'], 'sent')
+
+
+    def test_frames_are_served_when_the_manifest_has_a_byte_order_mark(self):
+        """Windows PowerShell writes a BOM into the real XProtect manifests; the evidence is hashed with it."""
+        wid, job = self.run_watch()
+        d = self.engine.dir(job)
+        rel = json.loads((d/'job.json').read_text(encoding='utf-8'))['manifest']
+        (d/rel).write_bytes(codecs.BOM_UTF8+(d/rel).read_bytes())
+        sources = json.loads((d/'sources.json').read_text(encoding='utf-8'))
+        for src in sources:
+            if src['path'] == rel:
+                src['sha256'] = hashlib.sha256((d/rel).read_bytes()).hexdigest()
+        (d/'sources.json').write_text(json.dumps(sources), encoding='utf-8')
+        self.assertEqual(self.c.call('GET', f'/api/exceptions/{job}')[0], 200)
+        self.assertEqual(self.c.call('GET', f'/api/exceptions/{job}/frames/0')[0], 200)
 
 
 if __name__ == '__main__':
