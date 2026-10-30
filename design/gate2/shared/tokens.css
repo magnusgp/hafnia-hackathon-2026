@@ -76,3 +76,4 @@ h1, h2, h3, p { margin: 0; }
 .redit.drawing { cursor: crosshair; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+ul.plain { margin: 4px 0 0; padding-left: 18px; }

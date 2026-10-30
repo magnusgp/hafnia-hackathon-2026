@@ -17,7 +17,7 @@
   /* ---------- exceptions ---------- */
   function exceptions(drawer) {
     const ev = (cls, start, end, t, when, p) => `<li class="ev ${cls}" data-seek="${start}" data-start="${start}" data-end="${end}"><span class="mk"></span><div><b>${t}</b><span class="when">${when}</span><p>${p}</p></div></li>`;
-    const body = `<div class="strip"><button class="occ" aria-current="true"><img src="generated/media/frame-09.jpg" alt=""><span><b>${esc(O.title)}</b><small><span class="dot green"></span>Alerted · seen ${members.length} times</small></span></button>
+    const body = `<div class="strip"><button class="occ" aria-current="true"><img src="generated/media/frame-09.jpg" alt=""><span><b>${esc(O.title)}</b><small><span class="dot green"></span>Alerted · seen ${members.length} times</small><small><span class="dot amber"></span>No operator review yet</small></span></button>
         <details class="earlier"><summary>Earlier (${D.records.length})</summary><div class="menu">${D.records.map((r) => `<div><b style="font-weight:500">${esc(r.title || 'Station platform')}</b><small>${day(r.at)} ${hm(r.at)} UTC · alarm verified</small></div>`).join('')}</div></details></div>
       <div class="work"><section class="media"><h1>${esc(O.title)}</h1>
         <p class="lede">${esc(why.disagreement)} ${esc(O.watchName)}.</p>
@@ -29,7 +29,7 @@
       <aside class="side">
         <div class="alarmline"><span class="dot green"></span>Alarm ${O.alert.localId} in XProtect · verified in Smart Client<button class="btn" data-go="#/exceptions/alert">Details</button></div>
         <ol class="story">
-          ${ev('hafnia', 0, O.duration, 'Hafnia: no entry seen', 'whole clip', 'AI footage review. It was asked about someone entering the track area, and that area is not in view.')}
+          ${ev('hafnia', 0, O.duration, 'Hafnia: no entry seen', 'whole clip', 'AI footage review. Asked about someone entering the track area, it reported that it could not see that area.')}
           ${ev('vision', O.vision.from, O.vision.to + 0.5, 'Vision: person at the region', '0:04.4–0:10.4', 'Measures closeness to the outlined area, not entry.')}
           ${ev('review', O.review.from, O.review.to, 'Review: steps down onto the track bed', '0:06.4–0:07.9', `${esc(O.review.who)}. Not a detector output.`)}</ol>
         <form class="decide" id="decide" onsubmit="return false"><h2>Is a person on the track area?</h2>
@@ -87,11 +87,13 @@
     else if (!cam.hasSnapshot) top = `<div class="noframe"><div><b>No frame yet for ${esc(cam.name)}</b><div style="color:var(--stage-ink-2)">Ortru needs one frame to show what it will observe.</div></div><button class="btn" data-act="getframe">Get a frame</button>${ed.failed ? '<div class="fail">Could not get a frame from XProtect. Check that the camera is recording, then try again. (Design of the failure state: acquisition is not connected here.)</div>' : ''}</div>`;
     else top = `<div class="frame stage"><div id="re"></div></div><div class="legend" id="legend"></div>`;
     const film = ed.step === 1 ? `<div class="film" role="group" aria-label="Cameras">${D.cameras.map((c) => `<button data-cam="${esc(c.name)}" aria-pressed="${c.name === ed.cam}"><div class="t">${c.hasSnapshot ? `<img src="${frame(c.name)}" alt="">` : 'No frame yet'}</div><span title="${esc(c.name)}">${esc(c.name)}</span></button>`).join('')}</div>` : '';
+    host.className = ed.step === 1 ? 'cv pick' : 'cv';
     host.innerHTML = top + film;
     if (cam?.hasSnapshot) ed.re = regionEditor($('#re'), frame(cam.name), ed.region, (pts, drawing) => { ed.region = pts.length ? pts : null; ed.drawing = drawing; legend(); });
   }
   function legend() {
     const l = $('#legend'); if (!l) return;
+    if (ed.step === 1) { l.innerHTML = '<span>This is the frame Ortru will observe. Choose another camera, or continue.</span>'; return; }
     l.innerHTML = !ed.local ? `<span>Ortru watches the whole frame, every ${ed.every} min for ${ed.window}&nbsp;s.</span>`
       : ed.drawing ? '<span>Click the image to outline the area Ortru should watch. Click the first point to close it.</span>'
       : `<span>Ortru watches the outlined area, every ${ed.every} min for ${ed.window}&nbsp;s.</span><button class="btn quiet" data-act="redraw">Redraw</button><span class="muted" title="Double-click a point to remove it">Drag points to adjust</span>`;
@@ -111,7 +113,7 @@
       <label class="check"><input type="checkbox" id="loc" ${ed.local ? 'checked' : ''}><span><b>Also check with ${esc(cap.label.toLowerCase())}</b><br><span class="muted">Vision measures closeness to the area you outline. It does not confirm entry.</span></span></label>
       <div class="nav"><button class="btn" data-step="1">Back</button><div class="r"><button class="btn primary" data-step="3">Next: monitoring</button></div></div>`;
     else h = `<h2>When should it raise an exception?</h2>
-      <div>Raise one when <b>${[...ed.raise].map((k) => RAISE[k].toLowerCase()).join('</b>, or <b>')}</b>.</div>
+      <div>Raise an exception when:<ul class="plain">${[...ed.raise].map((k) => `<li>${RAISE[k]}</li>`).join('')}</ul></div>
       <label class="field"><span>Check every</span><select id="every">${[5, 15, 30, 60].map((m) => `<option ${+ed.every === m ? 'selected' : ''} value="${m}">${m} minutes</option>`).join('')}</select></label>
       <div class="hint">${al ? `An exception can alert XProtect: <b>${esc(al)}</b>.` : 'No XProtect alarm is set up for this camera. Exceptions stay in Ortru.'}</div>
       <details class="adv"><summary>Advanced</summary><div class="g"><div class="two"><label class="field"><span>Requests per day</span><input type="text" value="${ed.perDay}"></label><label class="field"><span>Clip length (s)</span><input type="text" value="${ed.window}"></label></div>

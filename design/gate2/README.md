@@ -38,6 +38,6 @@ URL to start the clip at a given second. Keys: space plays, arrows step half a s
   evidence); the running application still reports `smartClient: not_verified` because nothing records that outcome yet.
 * Reworded: the server's `policy.label` and `reason` ("Hafnia saw no match, local vision did") name the two sources, not what
   each claimed, so the prototypes write the reason from the policy kind. Job error text is rewritten in plain words (the
-  school-gate message reaches the UI with a corrupted dash: `12?17 second`).
+  school-gate message is rewritten from the stored text).
 * Design states, not wired: "Get a frame" and its failure message, saving a Watch, activating, recording a review, sending
   an alert again.

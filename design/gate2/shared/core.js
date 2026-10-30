@@ -58,7 +58,7 @@
   }
   const why = {
     // why the review policy raised attention, per policy kind (the server's own label is not used: it names the two sources, not the claims)
-    disagreement: 'Hafnia found no entry, but vision found a person at the region.',
+    disagreement: 'Raised because vision placed a person at the region while Hafnia reported no entry. This Watch flags that combination.',
     corroborated: 'Hafnia and vision both point to it.',
     unresolved: 'Hafnia could not decide and vision found a person at the region.',
   };
@@ -149,9 +149,8 @@
     }
     if (which === 'evidence') {
       const p = O.primary;
-      return head('Evidence details') + `<dl class="kv"><dt>Recording</dt><dd><code>${p.video.sha256}</code><br>12.0 s, identical in all ${members.length} observations</dd>
-        <dt>Hafnia request</dt><dd><code>${p.requestSha256}</code></dd>
-        ${members.map((m, i) => `<dt>Summary ${i + 1}</dt><dd><code>${m.hafnia.summaryId}</code></dd>`).join('')}
+      return head('Evidence details') + `<dl class="kv"><dt>Recording</dt><dd>${p.video.duration} s. ${members.every((m) => m.video.sha256 === p.video.sha256) ? `Identical in all ${members.length} observations.` : 'The observations differ.'}</dd>
+        ${members.map((m, i) => `<dt>Observation ${i + 1}</dt><dd>${m.interval[0].slice(11, 19)} UTC<br>recording <code>${m.video.sha256}</code><br>Hafnia request <code>${m.requestSha256}</code><br>summary <code>${m.hafnia.summaryId}</code></dd>`).join('')}
         <dt>Hafnia answer</dt><dd>${esc(p.hafnia.outcome)} · timing ${esc(p.hafnia.timing)}</dd>
         <dt>Local vision</dt><dd>${esc(p.vision.model)} on ${esc(p.vision.device)}, ${p.vision.samplesPerSecond} samples per second, ${p.vision.tracks} tracks</dd>
         <dt>Requests today</dt><dd>This Watch ${O.watch.schedule.usedToday} of ${O.watch.schedule.budgetPerDay}; all Watches ${D.budget.usedToday} of ${D.budget.global_}</dd></dl>

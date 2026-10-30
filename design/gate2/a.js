@@ -34,7 +34,7 @@
       ${D.records.map((r) => `<div class="item old"><div><b>${esc(r.title || 'Station platform')}</b><span class="when">${day(r.at)} ${hm(r.at)} UTC · ${r.smartClient === 'verified' ? 'alarm verified' : 'sent'}</span></div></div>`).join('')}
     </aside>`;
     const claims = `<div class="claims">
-      <button class="claim" data-seek="0"><span class="dot blue"></span><span><b>Hafnia: no entry seen</b><span class="by">AI footage review of the whole clip. The track area is not in view.</span></span></button>
+      <button class="claim" data-seek="0"><span class="dot blue"></span><span><b>Hafnia: no entry seen</b><span class="by">AI footage review of the whole clip. Hafnia reported that it could not see the track area.</span></span></button>
       <button class="claim" data-seek="${O.vision.from}"><span class="dot violet"></span><span><b>Vision: at the region, 0:04–0:10</b><span class="by">Measures closeness to the drawn area, not entry.</span></span></button>
       <button class="claim" data-seek="${O.review.from}"><span class="dot amber"></span><span><b>Review: steps down at 0:06</b><span class="by">${esc(O.review.who)}, revision ${O.review.rev}. Not a detector output.</span></span></button></div>`;
     const body = `<div class="ex">${list}<section class="inv">
@@ -127,6 +127,7 @@
   }
   function legend() {
     const l = $('#legend'); if (!l) return;
+    if (ed.step === 1) { l.innerHTML = '<span>This is the frame Ortru will observe. Choose another camera, or continue.</span>'; return; }
     l.innerHTML = !ed.local ? `<span>Ortru watches the whole frame, every ${ed.every} min for ${ed.window}&nbsp;s.</span>`
       : ed.drawing ? '<span>Click the image to outline the area Ortru should watch. Click the first point to close it.</span>'
       : `<span>Ortru watches the outlined area, every ${ed.every} min for ${ed.window}&nbsp;s.</span><button class="btn quiet" data-act="redraw">Redraw</button><span class="muted" title="Double-click a point to remove it">Drag points to adjust</span>`;
@@ -140,7 +141,7 @@
     const s2 = `<label class="field"><span>What should Ortru look for?</span><textarea id="q" rows="3" placeholder="Describe the event in a sentence">${esc(ed.question)}</textarea></label>
       <label class="field"><span>Shown as</span><input type="text" id="lab" value="${esc(ed.label)}"><small class="muted">Taken from your question. Edit it if it reads wrong.</small></label>
       <label class="check"><input type="checkbox" id="loc" ${ed.local ? 'checked' : ''}><span><b>Also check with ${esc(cap.label.toLowerCase())}</b><br><span class="muted">Vision measures closeness to the area you outline. It does not confirm entry.</span></span></label>`;
-    const s3 = `<div>Raise an exception when <b>${[...ed.raise].map((k) => RAISE[k].toLowerCase()).join('</b>, or <b>')}</b>.</div>
+    const s3 = `<div>Raise an exception when:<ul class="plain">${[...ed.raise].map((k) => `<li>${RAISE[k]}</li>`).join('')}</ul></div>
       <label class="field"><span>Check every</span><select id="every">${[5, 15, 30, 60].map((m) => `<option ${+ed.every === m ? 'selected' : ''} value="${m}">${m} minutes</option>`).join('')}</select></label>
       <div class="muted">${al ? `Raising an exception can alert XProtect: <b>${esc(al)}</b>.` : 'No XProtect alarm is set up for this camera. Exceptions stay in Ortru.'}</div>
       <details class="adv"><summary>Advanced</summary><div class="g"><div class="two"><label class="field"><span>Requests per day</span><input type="text" value="${ed.perDay}"></label><label class="field"><span>Clip length (s)</span><input type="text" value="${ed.window}"></label></div>

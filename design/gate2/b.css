@@ -103,3 +103,6 @@ main { min-height: 0; overflow: auto; }
 details.adv summary { cursor: pointer; color: var(--blue); font-weight: 500; } details.adv .g { display: grid; gap: 10px; padding-top: 10px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sum { display: grid; gap: 8px; } .sum div { display: flex; gap: 10px; } .sum b { min-width: 84px; font-weight: 500; color: var(--ink-2); }
+
+/* step 1: the camera strip is the action, so the frame leaves room for it */
+.cv.pick .frame { max-width: calc((100vh - 420px) * 1.7333); }
