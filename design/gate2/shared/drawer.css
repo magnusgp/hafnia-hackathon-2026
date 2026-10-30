@@ -1,0 +1,12 @@
+/* drawers */
+.scrim { position: fixed; inset: 0; background: rgba(10, 21, 36, .28); z-index: 30; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; background: var(--surface); border-left: 1px solid var(--line-strong); z-index: 31; display: grid; grid-template-rows: auto 1fr; box-shadow: -8px 0 24px rgba(19, 38, 58, .12); }
+.drawer header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.drawer header h2 { font: 600 16px var(--display); }
+.drawer .body { overflow: auto; padding: 16px 20px 24px; display: grid; gap: 18px; align-content: start; }
+.drawer h3 { font: 600 13px var(--body); margin-bottom: 8px; }
+.obs { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.obs:first-of-type { border-top: 0; } .obs b { font-weight: 600; }
+.kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; font-size: 13px; } .kv dt { color: var(--ink-2); } .kv dd { margin: 0; word-break: break-all; } .kv code { font: 12px var(--mono); }
+.gap { color: var(--ink-2); font-style: italic; }
+

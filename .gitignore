@@ -24,3 +24,6 @@ presentation/assets/
 *.wav
 presentation/ortru/media/*
 !presentation/ortru/media/README.md
+
+# Gate 2 design prototypes: generated from the private runs (footage, camera frames, review text)
+design/gate2/generated/

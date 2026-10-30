@@ -1,0 +1,78 @@
+/* Polar palette and the two-watcher identity from the Ortru frontend (Hafnia blue, local vision violet), reduced to what the
+   design uses. Fonts are the ones the frontend already ships; build-data.py copies them next to data.js. */
+@font-face { font-family: 'DM Sans'; font-weight: 400; src: url('../generated/fonts/dm-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'DM Sans'; font-weight: 500; src: url('../generated/fonts/dm-sans-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'DM Sans'; font-weight: 600; src: url('../generated/fonts/dm-sans-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 500; src: url('../generated/fonts/space-grotesk-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 600; src: url('../generated/fonts/space-grotesk-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('../generated/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+
+:root {
+  --bg: #F5F8FC; --surface: #FFFFFF; --surface-2: #EAF1FA; --line: #D3DDE9; --line-strong: #B7C5D8;
+  --ink: #13263A; --ink-2: #53667D; --ink-3: #6F8197;
+  --blue: #2858D6; --blue-press: #1F47B3; --blue-soft: #E6EDFC;
+  --violet: #6048B8; --violet-soft: #EEEAFA;
+  --green: #176F62; --green-soft: #E3F2EF;
+  --amber: #A65E14; --amber-soft: #FBF0E1;
+  --red: #B83551;
+  --stage: #0A1524; --stage-2: #13233A; --stage-line: #27405F; --stage-ink: #E8EFF8; --stage-ink-2: #9DB0C7; --mint: #5FE3B6;
+  --display: 'Space Grotesk', system-ui, sans-serif; --body: 'DM Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--body); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.stage :focus-visible { outline-color: var(--mint); }
+h1, h2, h3, p { margin: 0; }
+.wordmark { display: flex; align-items: center; gap: 8px; font: 600 18px/1 var(--display); letter-spacing: -.01em; }
+.wordmark img { width: 26px; height: 26px; }
+.muted { color: var(--ink-2); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* the one marker that says this is not the running application */
+.proto-mark { position: fixed; left: 88px; bottom: 10px; z-index: 50; font: 500 11px/1 var(--body); color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; pointer-events: none; }
+
+/* shared controls */
+.btn { height: 34px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); font-weight: 500; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn.primary:hover { background: var(--blue-press); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--blue); padding: 0 8px; }
+.btn.quiet:hover { background: var(--blue-soft); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.dot.green { background: var(--green); } .dot.amber { background: var(--amber); } .dot.blue { background: var(--blue); } .dot.violet { background: var(--violet); } .dot.red { background: var(--red); }
+.hafnia-c { color: var(--blue); } .vision-c { color: var(--violet); } .review-c { color: var(--amber); }
+.seg { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { flex: 1; height: 34px; border: 0; border-right: 1px solid var(--line); background: none; font-weight: 500; }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--surface-2); }
+.seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.field { display: grid; gap: 4px; }
+.field > span { font-weight: 500; font-size: 13px; }
+.field input[type=text], .field textarea { border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 10px; background: var(--surface); width: 100%; resize: vertical; }
+.check { display: flex; gap: 8px; align-items: flex-start; }
+.check input { margin-top: 3px; }
+
+/* video overlay */
+.pv { position: relative; aspect-ratio: 832 / 480; background: var(--stage); line-height: 0; }
+.pv video, .pv img { width: 100%; height: 100%; display: block; object-fit: fill; }
+.pv svg.ov { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ov .region { fill: rgba(95, 227, 182, .13); stroke: var(--mint); stroke-width: 1.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+.ov .box { fill: none; stroke: var(--mint); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.ov .boxtag { font: 500 13px var(--body); fill: #04281D; }
+
+/* region editor */
+.redit { position: relative; aspect-ratio: 832 / 480; background: var(--stage); line-height: 0; user-select: none; touch-action: none; }
+.redit img { width: 100%; height: 100%; display: block; }
+.redit svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.redit .poly { fill: rgba(95, 227, 182, .2); stroke: var(--mint); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.redit .handle { fill: #fff; stroke: var(--mint); stroke-width: 2.5; cursor: grab; vector-effect: non-scaling-stroke; }
+.redit .handle:hover { fill: var(--mint); }
+.redit.drawing { cursor: crosshair; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
